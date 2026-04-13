@@ -113,8 +113,8 @@ mavenPublishing {
     variant = "prodRelease",
   ))
   // Use coordinates to set group, artifact, and version
-//  coordinates("com.xendit", "paymentsdk", "0.0.1")
-  coordinates("io.github.argaasasta", "paymentsdk", "0.0.1")
+  coordinates("com.xendit", "paymentsdk", "0.0.1")
+//  coordinates("io.github.argaasasta", "paymentsdk", "0.0.1")
   // Enable Maven Central and GPG signing
   publishToMavenCentral()
   val signingEnabled = (project.findProperty("signingEnabled") as String?)?.toBoolean() ?: true
@@ -125,7 +125,7 @@ mavenPublishing {
   pom {
     name.set("Xendit Payment SDK")
     description.set("Jetpack Compose Payment SDK for Xendit.")
-    url.set("https://github.com/argaasasta/XenComponentPrivate")
+    url.set("https://github.com/xendit/xendit-components-android")
     licenses {
       license {
         name.set("The Apache License, Version 2.0")
@@ -134,13 +134,13 @@ mavenPublishing {
     }
     developers {
       developer {
-        id.set("argaasasta")
-        name.set("Arga")
+        id.set("xenditdeveloper")
+        name.set("Xendit")
       }
     }
     scm {
-      connection.set("scm:git:git://github.com/argaasasta/XenComponentPrivate.git")
-      url.set("https://github.com/argaasasta/XenComponentPrivate")
+      connection.set("scm:git:git://github.com/xendit/xendit-components-android.git")
+      url.set("https://github.com/xendit/xendit-components-android")
     }
   }
 }
@@ -168,7 +168,7 @@ mavenPublishing {
 //        pom {
 //          name.set("Xendit Payment SDK")
 //          description.set("A standalone Android SDK module for payment card input using Jetpack Compose.")
-//          url.set("https://github.com/argaasasta/XenComponentPrivate") // Assuming repo name
+//          url.set("https://github.com/xendit/xendit-components-android") // Assuming repo name
 //          licenses {
 //            license {
 //              name.set("The Apache License, Version 2.0")
@@ -177,8 +177,8 @@ mavenPublishing {
 //          }
 //          developers {
 //            developer {
-//              id.set("argaasasta")
-//              name.set("Arga")
+//              id.set("XenditDeveloper")
+//              name.set("Xendit")
 //            }
 //          }
 //        }
