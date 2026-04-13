@@ -47,6 +47,6 @@ dependencyResolutionManagement {
   }
 }
 
-rootProject.name = "XenComponentPrivate"
+rootProject.name = "XenditComponentsAndroid"
 include(":app")
 include(":paymentsdk") // comment this if use jitpack
