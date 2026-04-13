@@ -25,8 +25,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.graphics.Outline
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import co.xendit.paymentsdk.data.model.BffChannel
 import co.xendit.paymentsdk.data.model.BffSession
@@ -39,167 +46,33 @@ import co.xendit.paymentsdk.ui.style.xenditAppearance
 
 val SUPPORTED_PAYMENT_METHOD = listOf("cards", "qr_code")
 
-@Preview
-@Composable
-fun tryalaccordion() {
-  val items = listOf("Cards", "E-Wallet", "QR Code")
-
-  Column(
-    modifier = Modifier
-      .fillMaxWidth()
-      .padding(16.dp)
-      // Main container border
-      .border(1.dp, Color(0xFFE0E0E0), RoundedCornerShape(12.dp))
-      .clip(RoundedCornerShape(12.dp))
-      .background(Color.White)
-  ) {
-
-    Box(
-      modifier = Modifier
-        .fillMaxWidth()
-        // Apply a top border to every item EXCEPT the first one
-        // to create the "stacked" effect
-        .offset(y = 0.dp)
-    ) {
-      Column() {
-        Row(
-          modifier = Modifier
-            .fillMaxWidth()
-            .clickable { }
-            .padding(horizontal = 16.dp, vertical = 14.dp),
-          verticalAlignment = Alignment.CenterVertically
-        ) {
-          // Your Icon, Text, and Arrow here...
-          Icon(Icons.Default.Menu, contentDescription = null)
-          Text(
-            text = "title",
-            modifier = Modifier
-              .weight(1f)
-              .padding(start = 16.dp)
-          )
-          Icon(Icons.Default.KeyboardArrowDown, contentDescription = null)
-        }
-
-        // expanded content here
-
-      }
+fun createTopRoundedOpenShape(radius: Dp) = object : Shape {
+  override fun createOutline(
+    size: Size,
+    layoutDirection: LayoutDirection,
+    density: Density
+  ): Outline {
+    val rPx = with(density) { radius.toPx() }
+    val path = Path().apply {
+      moveTo(0f, size.height)
+      lineTo(0f, rPx)
+      arcTo(
+        rect = Rect(0f, 0f, rPx * 2, rPx * 2),
+        startAngleDegrees = 180f,
+        sweepAngleDegrees = 90f,
+        forceMoveTo = false
+      )
+      lineTo(size.width - rPx, 0f)
+      arcTo(
+        rect = Rect(size.width - rPx * 2, 0f, size.width, rPx * 2),
+        startAngleDegrees = 270f,
+        sweepAngleDegrees = 90f,
+        forceMoveTo = false
+      )
+      lineTo(size.width, size.height)
     }
-    Box(
-      modifier = Modifier
-        .fillMaxWidth()
-        // Apply a top border to every item EXCEPT the first one
-        // to create the "stacked" effect
-        .offset(y = 0.dp)
-        .then(
-          Modifier.border(
-            width = 1.dp,
-            color = Color(0xFFE0E0E0),
-            shape = RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)
-          )
-        )
-    ) {
-      Column() {
-        Row(
-          modifier = Modifier
-            .fillMaxWidth()
-            .clickable { }
-            .padding(horizontal = 16.dp, vertical = 14.dp),
-          verticalAlignment = Alignment.CenterVertically
-        ) {
-          // Your Icon, Text, and Arrow here...
-          Icon(Icons.Default.Menu, contentDescription = null)
-          Text(
-            text = "title",
-            modifier = Modifier
-              .weight(1f)
-              .padding(start = 16.dp)
-          )
-          Icon(Icons.Default.KeyboardArrowDown, contentDescription = null)
-        }
-
-        // expanded content here
-
-      }
-    }
-
-    Box(
-      modifier = Modifier
-        .fillMaxWidth()
-        // Apply a top border to every item EXCEPT the first one
-        // to create the "stacked" effect
-        .offset(y = 0.dp)
-        .then(
-          Modifier.border(
-            width = 1.dp,
-            color = Color(0xFFE0E0E0),
-            shape = RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)
-          )
-        )
-    ) {
-      Column() {
-        Row(
-          modifier = Modifier
-            .fillMaxWidth()
-            .clickable { }
-            .padding(horizontal = 16.dp, vertical = 14.dp),
-          verticalAlignment = Alignment.CenterVertically
-        ) {
-          // Your Icon, Text, and Arrow here...
-          Icon(Icons.Default.Menu, contentDescription = null)
-          Text(
-            text = "title",
-            modifier = Modifier
-              .weight(1f)
-              .padding(start = 16.dp)
-          )
-          Icon(Icons.Default.KeyboardArrowDown, contentDescription = null)
-        }
-
-        // expanded content here
-
-      }
-    }
-
-    Box(
-      modifier = Modifier
-        .fillMaxWidth()
-        // Apply a top border to every item EXCEPT the first one
-        // to create the "stacked" effect
-        .offset(y = 0.dp)
-        .then(
-          Modifier.border(
-            width = 1.dp,
-            color = Color(0xFFE0E0E0),
-            shape = RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)
-          )
-        )
-    ) {
-      Column() {
-        Row(
-          modifier = Modifier
-            .fillMaxWidth()
-            .clickable { }
-            .padding(horizontal = 16.dp, vertical = 14.dp),
-          verticalAlignment = Alignment.CenterVertically
-        ) {
-          // Your Icon, Text, and Arrow here...
-          Icon(Icons.Default.Menu, contentDescription = null)
-          Text(
-            text = "title",
-            modifier = Modifier
-              .weight(1f)
-              .padding(start = 16.dp)
-          )
-          Icon(Icons.Default.KeyboardArrowDown, contentDescription = null)
-        }
-
-        // expanded content here
-
-      }
-    }
-
+    return Outline.Generic(path)
   }
-
 }
 
 @Composable
@@ -244,16 +117,15 @@ fun PaymentMethodsUI(
         .fillMaxWidth()
         .padding(16.dp)
         // Main container border
-        .border(1.dp, Color(0xFFE0E0E0), RoundedCornerShape(12.dp))
+        .border(
+          1.dp,
+          appearance.colorBorder ?: MaterialTheme.colorScheme.outline,
+          RoundedCornerShape(12.dp)
+        )
         .clip(RoundedCornerShape(12.dp))
         .background(Color.White)
     ) {
-      val group = mutableListOf<String>()
-      group.addAll(filteredUiGroup)
-      group.addAll(filteredUiGroup)
-      group.addAll(filteredUiGroup)
-
-      group.forEachIndexed { index, uiGroup ->
+      filteredUiGroup.forEachIndexed { index, uiGroup ->
         val isExpanded = expandedUiGroup == uiGroup
         val displayName = displayNameForUiGroup(uiGroup)
         val groupChannels = groups[uiGroup].orEmpty()
@@ -270,8 +142,8 @@ fun PaymentMethodsUI(
               if (index > 0) {
                 Modifier.border(
                   width = 1.dp,
-                  color = Color(0xFFE0E0E0),
-                  shape = RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)
+                  color = appearance.colorBorder ?: MaterialTheme.colorScheme.outline,
+                  shape = createTopRoundedOpenShape(12.dp)
                 )
               } else Modifier
             )
