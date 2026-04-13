@@ -1,0 +1,181 @@
+package co.xendit.paymentsdk
+
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
+import android.util.Log
+import android.view.ViewGroup
+import androidx.activity.ComponentActivity
+import androidx.compose.ui.platform.ComposeView
+import androidx.lifecycle.setViewTreeLifecycleOwner
+import androidx.lifecycle.setViewTreeViewModelStoreOwner
+import androidx.savedstate.setViewTreeSavedStateRegistryOwner
+import co.xendit.paymentsdk.data.model.PaymentResult
+import co.xendit.paymentsdk.data.model.XenditError
+import co.xendit.paymentsdk.ui.PaymentContainerHost
+import co.xendit.paymentsdk.ui.PaymentContainerPresentation
+import co.xendit.paymentsdk.ui.style.XenditAppearance
+import co.xendit.paymentsdk.ui.theme.XenditTheme
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+
+/** Main SDK entry point for displaying payment UI */
+object XenditComponents {
+
+  private var composeView: ComposeView? = null
+  private var currentCallback: ((PaymentResult) -> Unit)? = null
+  private var xenditAppearance: XenditAppearance? = null
+  private var merchantPreferredPaymentMethod: List<String>? = null
+  private val scope = CoroutineScope(Dispatchers.Main)
+  private var origin: String? = null
+
+  /**
+   * Global configuration for the SDK appearance. Call this before show() to apply custom styles.
+   */
+  fun initialize(
+    appearance: XenditAppearance? = null,
+    merchantPreferredPaymentMethod: List<String>? = null
+  ) {
+    this.xenditAppearance = appearance
+    this.merchantPreferredPaymentMethod = merchantPreferredPaymentMethod
+  }
+
+  /**
+   * Optional configuration to set the Origin header used for API requests.
+   * Use the same origin as the merchant website embedding the SDK.
+   */
+  fun setOrigin(origin: String) {
+    this.origin = origin
+    co.xendit.paymentsdk.core.CoreSdkComponent.headerProvider.setOrigin(origin)
+  }
+
+  /** Internal data class to holding parsed keys. */
+  internal data class Keys(
+    val sessionAuthKey: String,
+    val publicKey: String,
+    val signature: String,
+    val terminalId: String? = null
+  )
+
+  /**
+   * Parse the component SDK key. Format: session_auth_key-host_id-public_key-signature Example:
+   * session-123-prod-PK123-SIG123
+   */
+  internal fun parseSdkKey(sdkKey: String): Keys {
+    val parts = sdkKey.split("-")
+    if (parts.size < 5) {
+      throw IllegalArgumentException("Invalid SDK Key format")
+    }
+    // Reconstruct session auth key (session-id)
+    val sessionAuthKey = "${parts[0]}-${parts[1]}"
+    val hostId = parts[2] // used for host selection, stored if needed
+    val publicKey = parts[3]
+    val signature = parts[4]
+
+    return Keys(sessionAuthKey, publicKey, signature)
+  }
+
+  /**
+   * Initializes and displays the Xendit Payment SDK UI.
+   *
+   * @param activity The Android Context (e.g., Activity or Application Context).
+   * @param componentsSdkKey The Session ID or Components SDK Key obtained from your backend.
+   * @param style Custom styling configuration for the SDK.
+   * @param onPaymentResult Callback triggered when a payment finishes (Success, Error, or
+   * Canceled).
+   */
+  fun present(
+    activity: ComponentActivity,
+    componentsSdkKey: String,
+    merchantPreferredPaymentMethod: List<String>? = null,
+    onPaymentResult: (PaymentResult) -> Unit
+  ) {
+    if (activity !is Activity) {
+      throw IllegalArgumentException("Context must be an Activity to show the Payment SDK.")
+    }
+
+    this.merchantPreferredPaymentMethod = merchantPreferredPaymentMethod
+
+    val keys =
+      try {
+        parseSdkKey(componentsSdkKey)
+      } catch (e: Exception) {
+        Log.e("PaymentSDK", "Failed to parse SDK Key", e)
+        onPaymentResult.invoke(
+          PaymentResult.Failed(
+            XenditError(
+              code = "111",
+              message = e.toString(),
+              cause = e
+            )
+          )
+        )
+        return
+      }
+
+    // Clear previous if any
+    cleanup()
+
+    currentCallback = onPaymentResult
+
+    // Create a new ComposeView for this session
+    composeView =
+      ComposeView(activity).apply {
+        setViewTreeLifecycleOwner(activity)
+        setViewTreeViewModelStoreOwner(activity)
+        setViewTreeSavedStateRegistryOwner(activity)
+      }
+
+    // Apply origin if set
+    origin?.let { co.xendit.paymentsdk.core.CoreSdkComponent.headerProvider.setOrigin(it) }
+
+    // Set the content
+    composeView?.setContent {
+      XenditTheme(style = this.xenditAppearance ?: XenditAppearance()) {
+        PaymentContainerHost(
+          presentation = PaymentContainerPresentation.Dialog,
+          sessionAuthKey = keys.sessionAuthKey,
+          publicKey = keys.publicKey,
+          merchantPreferredPaymentMethod = merchantPreferredPaymentMethod,
+          style = xenditAppearance ?: XenditAppearance(),
+          onResult = { result -> currentCallback?.invoke(result) },
+          onCleanup = { cleanup() }
+        )
+      }
+    }
+
+    // Add view to activity's content
+    composeView?.let { view ->
+      activity.addContentView(
+        view,
+        ViewGroup.LayoutParams(
+          ViewGroup.LayoutParams.MATCH_PARENT,
+          ViewGroup.LayoutParams.MATCH_PARENT
+        )
+      )
+    }
+  }
+
+  /** Dismiss the payment bottom sheet manually */
+  fun dismiss() {
+    currentCallback?.invoke(PaymentResult.Canceled)
+    cleanup()
+  }
+
+  /** Internal cleanup to remove the view from hierarchy */
+  private fun cleanup() {
+    composeView?.let { view -> (view.parent as? ViewGroup)?.removeView(view) }
+    composeView = null
+    currentCallback = null
+  }
+
+  /** Find the ComponentActivity from the context */
+  private fun Context.findActivity(): ComponentActivity? {
+    var context = this
+    while (context is ContextWrapper) {
+      if (context is ComponentActivity) return context
+      context = context.baseContext
+    }
+    return null
+  }
+}
