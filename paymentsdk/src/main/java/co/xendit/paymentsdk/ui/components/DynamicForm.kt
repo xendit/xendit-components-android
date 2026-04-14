@@ -145,100 +145,210 @@ fun DynamicForm(
     var i = 0
     while (i < filteredFields.size) {
       val field = filteredFields[i]
+      val isGrouped = field.groupLabel != null
 
-      // Handle group label
-      if (field.groupLabel != null) {
+      if (isGrouped) {
         Text(
-          text = field.groupLabel,
+          text = field.groupLabel ?: "",
           style = MaterialTheme.typography.titleMedium,
           color = appearance.colorText ?: MaterialTheme.colorScheme.onSurfaceVariant,
           modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
         )
-      }
 
-      // Detect if we can combine two fields in one row (both span 1 and consecutive)
-      if (field.span == 1 && i + 1 < filteredFields.size && filteredFields[i + 1].span == 1) {
-        Row(
+        val groupFields = mutableListOf<ChannelFormField>()
+        var j = i
+        while (j < filteredFields.size) {
+          val candidate = filteredFields[j]
+          
+          if (j > i) {
+            // Check if the field belongs to the current group
+            // Rule: it must have join == true OR it has the same groupLabel.
+            // Wait, if it has a new groupLabel, it breaks (unless it's the same groupLabel).
+            if (candidate.groupLabel != null && candidate.groupLabel != field.groupLabel) {
+              break
+            }
+            if (candidate.join != true && candidate.groupLabel == null) {
+              break
+            }
+          }
+          
+          groupFields.add(candidate)
+          j++
+        }
+
+        Column(
           modifier = Modifier
             .fillMaxWidth()
-            .height(IntrinsicSize.Min)
             .border(
               width = 1.dp,
               color = appearance.colorBorder ?: MaterialTheme.colorScheme.outline,
               shape = RoundedCornerShape(10.dp)
-            ),
+            )
+            .background(appearance.colorBackground ?: MaterialTheme.colorScheme.surface)
         ) {
-          val field1 = filteredFields[i]
-          val field2 = filteredFields[i + 1]
+          var k = 0
+          while (k < groupFields.size) {
+            val groupField = groupFields[k]
+            if (groupField.span == 1 && k + 1 < groupFields.size && groupFields[k + 1].span == 1) {
+              val field1 = groupFields[k]
+              val field2 = groupFields[k + 1]
 
-          Box(modifier = Modifier.weight(1f)) {
-            FormFieldItem(
-              field = field1,
-              allFields = filteredFields,
-              values = formValues,
-              errors = formErrors,
-              onValueChange = { key, value ->
-                formValues[key] = value
-                formErrors[key] = validateField(field1, value)
-                onValuesChanged(formValues.toMap())
-                // Trigger card number change callback for card number fields
-                if (field1.type.name == "credit_card_number") {
-                  onCardNumberChanged(value)
+              Row(
+                modifier = Modifier
+                  .fillMaxWidth()
+                  .height(IntrinsicSize.Min)
+              ) {
+                Box(modifier = Modifier.weight(1f)) {
+                  FormFieldItem(
+                    field = field1,
+                    allFields = filteredFields,
+                    values = formValues,
+                    errors = formErrors,
+                    onValueChange = { key, value ->
+                      formValues[key] = value
+                      formErrors[key] = validateField(field1, value)
+                      onValuesChanged(formValues.toMap())
+                      if (field1.type.name == "credit_card_number") {
+                        onCardNumberChanged(value)
+                      }
+                    },
+                    cardDetails = cardDetails,
+                    bffCardInfo = bffCardInfo,
+                    installmentPlans = installmentPlans,
+                    noBorder = true
+                  )
                 }
-              },
-              cardDetails = cardDetails,
-              bffCardInfo = bffCardInfo,
-              installmentPlans = installmentPlans,
-              noBorder = true
-            )
-          }
-          VerticalDivider(
-            thickness = 2.dp,
-            color = appearance.colorBorder ?: MaterialTheme.colorScheme.outline
-          )
-          Box(modifier = Modifier.weight(1f)) {
-            FormFieldItem(
-              field = field2,
-              allFields = filteredFields,
-              values = formValues,
-              errors = formErrors,
-              onValueChange = { key, value ->
-                formValues[key] = value
-                formErrors[key] = validateField(field2, value)
-                onValuesChanged(formValues.toMap())
-                // Trigger card number change callback for card number fields
-                if (field2.type.name == "credit_card_number") {
-                  onCardNumberChanged(value)
+                VerticalDivider(
+                  thickness = 2.dp,
+                  color = appearance.colorBorder ?: MaterialTheme.colorScheme.outline
+                )
+                Box(modifier = Modifier.weight(1f)) {
+                  FormFieldItem(
+                    field = field2,
+                    allFields = filteredFields,
+                    values = formValues,
+                    errors = formErrors,
+                    onValueChange = { key, value ->
+                      formValues[key] = value
+                      formErrors[key] = validateField(field2, value)
+                      onValuesChanged(formValues.toMap())
+                      if (field2.type.name == "credit_card_number") {
+                        onCardNumberChanged(value)
+                      }
+                    },
+                    cardDetails = cardDetails,
+                    bffCardInfo = bffCardInfo,
+                    installmentPlans = installmentPlans,
+                    noBorder = true
+                  )
                 }
-              },
-              cardDetails = cardDetails,
-              bffCardInfo = bffCardInfo,
-              installmentPlans = installmentPlans,
-              noBorder = true
-            )
+              }
+              k += 2
+            } else {
+              FormFieldItem(
+                field = groupField,
+                allFields = filteredFields,
+                values = formValues,
+                errors = formErrors,
+                onValueChange = { key, value ->
+                  formValues[key] = value
+                  formErrors[key] = validateField(groupField, value)
+                  onValuesChanged(formValues.toMap())
+                  if (groupField.type.name == "credit_card_number") {
+                    onCardNumberChanged(value)
+                  }
+                },
+                cardDetails = cardDetails,
+                bffCardInfo = bffCardInfo,
+                installmentPlans = installmentPlans,
+                noBorder = true
+              )
+              k++
+            }
           }
         }
-        i += 2
+        i += groupFields.size
       } else {
-        FormFieldItem(
-          field = field,
-          allFields = filteredFields,
-          values = formValues,
-          errors = formErrors,
-          onValueChange = { key, value ->
-            formValues[key] = value
-            formErrors[key] = validateField(field, value)
-            onValuesChanged(formValues.toMap())
-            // Trigger card number change callback for card number fields
-            if (field.type.name == "credit_card_number") {
-              onCardNumberChanged(value)
+        if (field.span == 1 && i + 1 < filteredFields.size && filteredFields[i + 1].span == 1) {
+          Row(
+            modifier = Modifier
+              .fillMaxWidth()
+              .height(IntrinsicSize.Min)
+              .border(
+                width = 1.dp,
+                color = appearance.colorBorder ?: MaterialTheme.colorScheme.outline,
+                shape = RoundedCornerShape(10.dp)
+              ),
+          ) {
+            val field1 = filteredFields[i]
+            val field2 = filteredFields[i + 1]
+
+            Box(modifier = Modifier.weight(1f)) {
+              FormFieldItem(
+                field = field1,
+                allFields = filteredFields,
+                values = formValues,
+                errors = formErrors,
+                onValueChange = { key, value ->
+                  formValues[key] = value
+                  formErrors[key] = validateField(field1, value)
+                  onValuesChanged(formValues.toMap())
+                  if (field1.type.name == "credit_card_number") {
+                    onCardNumberChanged(value)
+                  }
+                },
+                cardDetails = cardDetails,
+                bffCardInfo = bffCardInfo,
+                installmentPlans = installmentPlans,
+                noBorder = true
+              )
             }
-          },
-          cardDetails = cardDetails,
-          bffCardInfo = bffCardInfo,
-          installmentPlans = installmentPlans
-        )
-        i++
+            VerticalDivider(
+              thickness = 2.dp,
+              color = appearance.colorBorder ?: MaterialTheme.colorScheme.outline
+            )
+            Box(modifier = Modifier.weight(1f)) {
+              FormFieldItem(
+                field = field2,
+                allFields = filteredFields,
+                values = formValues,
+                errors = formErrors,
+                onValueChange = { key, value ->
+                  formValues[key] = value
+                  formErrors[key] = validateField(field2, value)
+                  onValuesChanged(formValues.toMap())
+                  if (field2.type.name == "credit_card_number") {
+                    onCardNumberChanged(value)
+                  }
+                },
+                cardDetails = cardDetails,
+                bffCardInfo = bffCardInfo,
+                installmentPlans = installmentPlans,
+                noBorder = true
+              )
+            }
+          }
+          i += 2
+        } else {
+          FormFieldItem(
+            field = field,
+            allFields = filteredFields,
+            values = formValues,
+            errors = formErrors,
+            onValueChange = { key, value ->
+              formValues[key] = value
+              formErrors[key] = validateField(field, value)
+              onValuesChanged(formValues.toMap())
+              if (field.type.name == "credit_card_number") {
+                onCardNumberChanged(value)
+              }
+            },
+            cardDetails = cardDetails,
+            bffCardInfo = bffCardInfo,
+            installmentPlans = installmentPlans
+          )
+          i++
+        }
       }
     }
   }
@@ -487,3 +597,5 @@ private fun getBestCountryForProvinceField(
   }
   return null
 }
+
+
