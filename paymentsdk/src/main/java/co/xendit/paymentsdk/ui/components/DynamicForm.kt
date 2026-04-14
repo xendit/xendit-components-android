@@ -153,6 +153,61 @@ fun DynamicForm(
       }
     }
 
+    @Composable
+    fun RenderField(field: ChannelFormField, noBorder: Boolean) {
+      FormFieldItem(
+        field = field,
+        allFields = filteredFields,
+        values = formValues,
+        errors = formErrors,
+        onValueChange = { key, value -> handleValueChange(field, key, value) },
+        cardDetails = cardDetails,
+        bffCardInfo = bffCardInfo,
+        installmentPlans = installmentPlans,
+        noBorder = noBorder
+      )
+    }
+
+    @Composable
+    fun RenderTwoColumnRow(
+      leftField: ChannelFormField,
+      rightField: ChannelFormField,
+      modifier: Modifier
+    ) {
+      Row(modifier = modifier) {
+        Box(modifier = Modifier.weight(1f)) { RenderField(field = leftField, noBorder = true) }
+        VerticalDivider(
+          thickness = 1.dp,
+          color = appearance.colorBorder ?: MaterialTheme.colorScheme.outline
+        )
+        Box(modifier = Modifier.weight(1f)) { RenderField(field = rightField, noBorder = true) }
+      }
+    }
+
+    fun canRenderAsTwoColumnRow(fields: List<ChannelFormField>, index: Int): Boolean {
+      return fields[index].span == 1 && index + 1 < fields.size && fields[index + 1].span == 1
+    }
+
+    @Composable
+    fun renderFieldOrTwoColumnRow(
+      fields: List<ChannelFormField>,
+      index: Int,
+      rowModifier: Modifier,
+      singleNoBorder: Boolean
+    ): Int {
+      return if (canRenderAsTwoColumnRow(fields, index)) {
+        RenderTwoColumnRow(
+          leftField = fields[index],
+          rightField = fields[index + 1],
+          modifier = rowModifier
+        )
+        2 // add 2 index because can render as two column
+      } else {
+        RenderField(field = fields[index], noBorder = singleNoBorder)
+        1 // just add 1 index
+      }
+    }
+
     fun collectGroupFields(groupStartIndex: Int): Pair<List<ChannelFormField>, Int> {
       val startField = filteredFields[groupStartIndex]
       val groupLabel = startField.groupLabel
@@ -202,69 +257,15 @@ fun DynamicForm(
         ) {
           var groupFieldIndex = 0
           while (groupFieldIndex < groupFields.size) {
-            val currentGroupField = groupFields[groupFieldIndex]
-
-            val canRenderAsRow =
-              currentGroupField.span == 1 &&
-                groupFieldIndex + 1 < groupFields.size &&
-                groupFields[groupFieldIndex + 1].span == 1
-
-            if (canRenderAsRow) {
-              val leftField = groupFields[groupFieldIndex]
-              val rightField = groupFields[groupFieldIndex + 1]
-
-              Row(
-                modifier = Modifier
+            groupFieldIndex +=
+              renderFieldOrTwoColumnRow(
+                fields = groupFields,
+                index = groupFieldIndex,
+                rowModifier = Modifier
                   .fillMaxWidth()
-                  .height(IntrinsicSize.Min)
-              ) {
-                Box(modifier = Modifier.weight(1f)) {
-                  FormFieldItem(
-                    field = leftField,
-                    allFields = filteredFields,
-                    values = formValues,
-                    errors = formErrors,
-                    onValueChange = { key, value -> handleValueChange(leftField, key, value) },
-                    cardDetails = cardDetails,
-                    bffCardInfo = bffCardInfo,
-                    installmentPlans = installmentPlans,
-                    noBorder = true
-                  )
-                }
-                VerticalDivider(
-                  thickness = 1.dp,
-                  color = appearance.colorBorder ?: MaterialTheme.colorScheme.outline
-                )
-                Box(modifier = Modifier.weight(1f)) {
-                  FormFieldItem(
-                    field = rightField,
-                    allFields = filteredFields,
-                    values = formValues,
-                    errors = formErrors,
-                    onValueChange = { key, value -> handleValueChange(rightField, key, value) },
-                    cardDetails = cardDetails,
-                    bffCardInfo = bffCardInfo,
-                    installmentPlans = installmentPlans,
-                    noBorder = true
-                  )
-                }
-              }
-
-              groupFieldIndex += 2
-            } else {
-              FormFieldItem(
-                field = currentGroupField,
-                allFields = filteredFields,
-                values = formValues,
-                errors = formErrors,
-                onValueChange = { key, value -> handleValueChange(currentGroupField, key, value) },
-                cardDetails = cardDetails,
-                bffCardInfo = bffCardInfo,
-                installmentPlans = installmentPlans,
-                noBorder = true
+                  .height(IntrinsicSize.Min),
+                singleNoBorder = true
               )
-              groupFieldIndex++
-            }
 
             if (groupFieldIndex < groupFields.size) {
               HorizontalDivider(
@@ -277,17 +278,11 @@ fun DynamicForm(
 
         fieldIndex = nextFieldIndex
       } else {
-        val canRenderAsRow =
-          startField.span == 1 &&
-            fieldIndex + 1 < filteredFields.size &&
-            filteredFields[fieldIndex + 1].span == 1
-
-        if (canRenderAsRow) {
-          val leftField = filteredFields[fieldIndex]
-          val rightField = filteredFields[fieldIndex + 1]
-
-          Row(
-            modifier = Modifier
+        fieldIndex +=
+          renderFieldOrTwoColumnRow(
+            fields = filteredFields,
+            index = fieldIndex,
+            rowModifier = Modifier
               .fillMaxWidth()
               .height(IntrinsicSize.Min)
               .border(
@@ -295,53 +290,8 @@ fun DynamicForm(
                 color = appearance.colorBorder ?: MaterialTheme.colorScheme.outline,
                 shape = RoundedCornerShape(10.dp)
               ),
-          ) {
-            Box(modifier = Modifier.weight(1f)) {
-              FormFieldItem(
-                field = leftField,
-                allFields = filteredFields,
-                values = formValues,
-                errors = formErrors,
-                onValueChange = { key, value -> handleValueChange(leftField, key, value) },
-                cardDetails = cardDetails,
-                bffCardInfo = bffCardInfo,
-                installmentPlans = installmentPlans,
-                noBorder = true
-              )
-            }
-            VerticalDivider(
-              thickness = 1.dp,
-              color = appearance.colorBorder ?: MaterialTheme.colorScheme.outline
-            )
-            Box(modifier = Modifier.weight(1f)) {
-              FormFieldItem(
-                field = rightField,
-                allFields = filteredFields,
-                values = formValues,
-                errors = formErrors,
-                onValueChange = { key, value -> handleValueChange(rightField, key, value) },
-                cardDetails = cardDetails,
-                bffCardInfo = bffCardInfo,
-                installmentPlans = installmentPlans,
-                noBorder = true
-              )
-            }
-          }
-
-          fieldIndex += 2
-        } else {
-          FormFieldItem(
-            field = startField,
-            allFields = filteredFields,
-            values = formValues,
-            errors = formErrors,
-            onValueChange = { key, value -> handleValueChange(startField, key, value) },
-            cardDetails = cardDetails,
-            bffCardInfo = bffCardInfo,
-            installmentPlans = installmentPlans
+            singleNoBorder = false
           )
-          fieldIndex++
-        }
       }
     }
   }
@@ -590,4 +540,3 @@ private fun getBestCountryForProvinceField(
   }
   return null
 }
-
