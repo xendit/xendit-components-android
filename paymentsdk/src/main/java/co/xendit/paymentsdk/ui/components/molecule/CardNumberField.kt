@@ -28,7 +28,8 @@ fun CardNumberField(
   isError: Boolean = false,
   errorMessage: String? = null,
   logoUrl: String? = null,
-  shape: Shape? = null
+  shape: Shape? = null,
+  noBorder: Boolean = false,
 ) {
   val context = LocalContext.current
   val imageLoader = remember { SdkImageLoader.get(context) }
@@ -65,6 +66,7 @@ fun CardNumberField(
           )
         }
       } else null,
-    shape = shape
+    shape = shape,
+    noBorder = noBorder
   )
 }

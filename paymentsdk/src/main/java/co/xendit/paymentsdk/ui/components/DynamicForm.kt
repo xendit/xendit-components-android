@@ -1,20 +1,27 @@
 package co.xendit.paymentsdk.ui.components
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -152,7 +159,14 @@ fun DynamicForm(
       // Detect if we can combine two fields in one row (both span 1 and consecutive)
       if (field.span == 1 && i + 1 < filteredFields.size && filteredFields[i + 1].span == 1) {
         Row(
-          modifier = Modifier.fillMaxWidth(),
+          modifier = Modifier
+            .fillMaxWidth()
+            .height(IntrinsicSize.Min)
+            .border(
+              width = 1.dp,
+              color = appearance.colorBorder ?: MaterialTheme.colorScheme.outline,
+              shape = RoundedCornerShape(10.dp)
+            ),
         ) {
           val field1 = filteredFields[i]
           val field2 = filteredFields[i + 1]
@@ -175,9 +189,13 @@ fun DynamicForm(
               cardDetails = cardDetails,
               bffCardInfo = bffCardInfo,
               installmentPlans = installmentPlans,
-              shape = customCornersShapeLeft
+              noBorder = true
             )
           }
+          VerticalDivider(
+            thickness = 2.dp,
+            color = appearance.colorBorder ?: MaterialTheme.colorScheme.outline
+          )
           Box(modifier = Modifier.weight(1f)) {
             FormFieldItem(
               field = field2,
@@ -196,7 +214,7 @@ fun DynamicForm(
               cardDetails = cardDetails,
               bffCardInfo = bffCardInfo,
               installmentPlans = installmentPlans,
-              shape = customCornersShapeRight
+              noBorder = true
             )
           }
         }
@@ -285,6 +303,7 @@ fun FormFieldItem(
   bffCardInfo: BffCardInfo? = null,
   installmentPlans: List<InstallmentPlan>? = null,
   shape: Shape? = null,
+  noBorder: Boolean = false
 ) {
   val appearance = xenditAppearance
   val propertyKey = field.primaryChannelPropertyKey()
@@ -317,7 +336,8 @@ fun FormFieldItem(
         errorMessage = errorMessage,
         logoUrl = logoUrl,
         modifier = Modifier.fillMaxWidth(),
-        shape = shape
+        shape = shape,
+        noBorder = noBorder
       )
     }
 
@@ -329,7 +349,8 @@ fun FormFieldItem(
         isError = isError,
         errorMessage = errorMessage,
         modifier = Modifier.fillMaxWidth(),
-        shape = shape
+        shape = shape,
+        noBorder = noBorder
       )
     }
 
@@ -341,7 +362,8 @@ fun FormFieldItem(
         isError = isError,
         errorMessage = errorMessage,
         modifier = Modifier.fillMaxWidth(),
-        shape = shape
+        shape = shape,
+        noBorder = noBorder
       )
     }
 
@@ -359,7 +381,8 @@ fun FormFieldItem(
         isError = isError,
         errorMessage = errorMessage,
         modifier = Modifier.fillMaxWidth(),
-        shape = shape
+        shape = shape,
+        noBorder = noBorder
       )
     }
 
@@ -372,7 +395,8 @@ fun FormFieldItem(
         isError = isError,
         errorMessage = errorMessage,
         modifier = Modifier.fillMaxWidth(),
-        shape = shape
+        shape = shape,
+        noBorder = noBorder
       )
     }
 
@@ -392,7 +416,8 @@ fun FormFieldItem(
         isError = isError,
         errorMessage = errorMessage,
         modifier = Modifier.fillMaxWidth(),
-        shape = shape
+        shape = shape,
+        noBorder = noBorder
       )
     }
 
@@ -408,7 +433,8 @@ fun FormFieldItem(
         modifier = Modifier.fillMaxWidth(),
         isError = isError,
         errorMessage = errorMessage,
-        shape = shape
+        shape = shape,
+        noBorder = noBorder
       )
     }
 
@@ -432,7 +458,8 @@ fun FormFieldItem(
               }
           },
         singleLine = true,
-        shape = shape
+        shape = shape,
+        noBorder = noBorder
       )
     }
   }

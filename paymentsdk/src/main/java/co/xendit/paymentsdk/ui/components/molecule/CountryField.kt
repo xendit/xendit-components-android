@@ -27,7 +27,8 @@ fun CountryField(
   placeholder: String = "Select Country",
   isError: Boolean = false,
   errorMessage: String? = null,
-  shape: Shape? = null
+  shape: Shape? = null,
+  noBorder: Boolean = false,
 ) {
   var expanded by remember { mutableStateOf(false) }
 
@@ -72,6 +73,7 @@ fun CountryField(
         )
       }
     },
-    shape = shape
+    shape = shape,
+    noBorder = noBorder
   )
 }

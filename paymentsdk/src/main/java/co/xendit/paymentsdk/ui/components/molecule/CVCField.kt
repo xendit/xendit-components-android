@@ -16,7 +16,8 @@ fun CVCField(
   onValueChange: (String) -> Unit,
   isError: Boolean = false,
   errorMessage: String? = null,
-  shape: Shape? = null
+  shape: Shape? = null,
+  noBorder: Boolean = false,
 ) {
   XenditTextField(
     value = value,
@@ -33,6 +34,7 @@ fun CVCField(
     isError = isError,
     modifier = modifier,
     errorMessage = errorMessage,
-    shape = shape
+    shape = shape,
+    noBorder = noBorder
   )
 }

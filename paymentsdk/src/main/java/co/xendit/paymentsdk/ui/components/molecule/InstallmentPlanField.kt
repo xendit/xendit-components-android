@@ -31,7 +31,8 @@ fun InstallmentPlanField(
   placeholder: String = "Select an installment plan",
   isError: Boolean = false,
   errorMessage: String? = null,
-  shape: Shape? = null
+  shape: Shape? = null,
+  noBorder: Boolean = false,
 ) {
   val appearance = xenditAppearance
   var expanded by remember { mutableStateOf(false) }
@@ -51,7 +52,8 @@ fun InstallmentPlanField(
       modifier = Modifier.menuAnchor().fillMaxWidth(),
       isError = isError,
       errorMessage = errorMessage,
-      shape = shape
+      shape = shape,
+      noBorder = noBorder
     )
     ExposedDropdownMenu(
       expanded = expanded,

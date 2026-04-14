@@ -44,7 +44,8 @@ fun ProvinceField(
   placeholder: String = "Select Province",
   isError: Boolean = false,
   errorMessage: String? = null,
-  shape: Shape? = null
+  shape: Shape? = null,
+  noBorder: Boolean = false,
 ) {
   val appearance = xenditAppearance
   val options = remember(countryCode) { Provinces.forCountry(countryCode) }
@@ -98,7 +99,8 @@ fun ProvinceField(
       },
       isError = isError,
       errorMessage = errorMessage,
-      shape = shape
+      shape = shape,
+      noBorder = noBorder
     )
   }
 

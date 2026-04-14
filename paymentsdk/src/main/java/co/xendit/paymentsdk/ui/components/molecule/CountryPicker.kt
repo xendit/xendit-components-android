@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -97,13 +98,18 @@ internal fun CountryPicker(
     Row(
       modifier = Modifier
         .clickable { onExpandedChange(true) }
-        .padding(horizontal = 12.dp),
+        .padding(start = 8.dp),
       verticalAlignment = Alignment.CenterVertically,
       horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
       FlagIcon(countryCode = selectedCountry.code)
+      Text(
+        text = selectedCountry.dialCode,
+        style = MaterialTheme.typography.bodyMedium,
+        color = appearance.colorText ?: MaterialTheme.colorScheme.onSurface
+      )
       Icon(
-        imageVector = Icons.Default.ArrowDropDown,
+        imageVector = Icons.Default.KeyboardArrowDown,
         contentDescription = "Select Country",
         tint = appearance.colorTextSecondary ?: MaterialTheme.colorScheme.onSurfaceVariant
       )

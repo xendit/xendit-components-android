@@ -27,7 +27,7 @@ enum class XenditTextFieldLabelPlacement {
 }
 
 @Composable
-fun XenditOutlineTextField(
+fun XenditTextField(
   modifier: Modifier = Modifier,
   value: String,
   textStyle : TextStyle = MaterialTheme.typography.bodyLarge,
@@ -43,6 +43,7 @@ fun XenditOutlineTextField(
   enabled: Boolean = true,
   visualTransformation: VisualTransformation = VisualTransformation.None,
   shape: Shape? = null,
+  noBorder: Boolean = false,
   leadingIcon: (@Composable (() -> Unit))? = null,
   trailingIcon: (@Composable (() -> Unit))? = null
 ) {
@@ -95,17 +96,11 @@ fun XenditOutlineTextField(
           null
         },
       shape = shape ?: MaterialTheme.shapes.small,
-//      colors = OutlinedTextFieldDefaults.colors(
-//        focusedBorderColor = Color.Transparent,
-//        unfocusedBorderColor = Color.Transparent,
-//        disabledBorderColor = Color.Transparent,
-//        errorBorderColor = Color.Transparent,
-//      )
       colors =
         OutlinedTextFieldDefaults.colors(
-          focusedBorderColor = appearance.colorBorder ?: MaterialTheme.colorScheme.outline,
-          unfocusedBorderColor = appearance.colorBorder ?: MaterialTheme.colorScheme.outline,
-          errorBorderColor = appearance.colorDanger ?: MaterialTheme.colorScheme.error,
+          focusedBorderColor = if (noBorder) Color.Transparent else appearance.colorBorder ?: MaterialTheme.colorScheme.outline,
+          unfocusedBorderColor = if (noBorder) Color.Transparent else appearance.colorBorder ?: MaterialTheme.colorScheme.outline,
+          errorBorderColor = if (noBorder) Color.Transparent else appearance.colorDanger ?: MaterialTheme.colorScheme.error,
           focusedTextColor = appearance.colorText ?: MaterialTheme.colorScheme.onSurface,
           unfocusedTextColor = appearance.colorText ?: MaterialTheme.colorScheme.onSurface,
           disabledTextColor =
@@ -115,6 +110,7 @@ fun XenditOutlineTextField(
           unfocusedLabelColor = appearance.colorText ?: MaterialTheme.colorScheme.onSurface,
           disabledLabelColor =
             (appearance.colorText ?: MaterialTheme.colorScheme.onSurface).copy(alpha = 0.5f),
+          disabledBorderColor = if (noBorder) Color.Transparent else MaterialTheme.colorScheme.outline,
           errorLabelColor = appearance.colorDanger ?: MaterialTheme.colorScheme.error,
           cursorColor = appearance.colorPrimary ?: MaterialTheme.colorScheme.primary,
           errorCursorColor = appearance.colorDanger ?: MaterialTheme.colorScheme.error
@@ -124,7 +120,7 @@ fun XenditOutlineTextField(
 }
 
 @Composable
-fun XenditTextField(
+fun XenditsTextField(
   modifier: Modifier = Modifier,
   value: String,
   textStyle : TextStyle = MaterialTheme.typography.bodyLarge,

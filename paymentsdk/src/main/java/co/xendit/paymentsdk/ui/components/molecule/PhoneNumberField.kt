@@ -1,7 +1,16 @@
 package co.xendit.paymentsdk.ui.components.molecule
 
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -14,6 +23,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import co.xendit.paymentsdk.data.model.Country
 import co.xendit.paymentsdk.data.model.findCountryByCode
@@ -31,7 +41,8 @@ fun PhoneNumberField(
   placeholder: String? = null,
   isError: Boolean = false,
   errorMessage: String? = null,
-  shape: Shape? = null
+  shape: Shape? = null,
+  noBorder: Boolean = false,
 ) {
   val appearance = xenditAppearance
   val phoneUtil = remember { PhoneNumberUtil.getInstance() }
@@ -65,23 +76,28 @@ fun PhoneNumberField(
       }
     }
 
-  Row(modifier = modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-    XenditTextField(
-      value = value,
-      onValueChange = { newValue ->
-        // Format as you type
-        val digitsOnly = newValue.filter { it.isDigit() }
-        onValueChange(digitsOnly)
-      },
-      label = label,
-      placeholder = dynamicPlaceholder,
-      modifier = Modifier.fillMaxWidth(),
-      isError = isError,
-      errorMessage = errorMessage,
-      keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-      singleLine = true,
-      leadingIcon = {
-        selectedCountry?.let { country ->
+  Column() {
+    Text(
+      text = label ?: "",
+      style = MaterialTheme.typography.titleSmall,
+      color = appearance.colorText ?: MaterialTheme.colorScheme.onSurface
+    )
+    Spacer(modifier = Modifier.height(8.dp))
+
+    Row(
+      modifier = modifier.fillMaxWidth(),
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.Center
+    ) {
+
+      selectedCountry?.let { country ->
+        Box(
+          modifier = Modifier.border(
+            width = 1.dp,
+            color = appearance.colorBorder ?: MaterialTheme.colorScheme.outline,
+            shape = RoundedCornerShape(10.dp)
+          )
+        ) {
           CountryPicker(
             selectedCountry = country,
             onCountrySelected = { selected ->
@@ -89,11 +105,31 @@ fun PhoneNumberField(
               expanded = false
             },
             expanded = expanded,
-            onExpandedChange = { expanded = it }
+            onExpandedChange = { expanded = it },
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 16.dp)
           )
         }
-      },
-      shape = shape
-    )
+        Spacer(modifier = Modifier.width(8.dp))
+
+      }
+
+      XenditTextField(
+        value = value,
+        onValueChange = { newValue ->
+          // Format as you type
+          val digitsOnly = newValue.filter { it.isDigit() }
+          onValueChange(digitsOnly)
+        },
+        placeholder = dynamicPlaceholder,
+        modifier = Modifier.fillMaxWidth(),
+        isError = isError,
+        errorMessage = errorMessage,
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+        singleLine = true,
+        shape = shape,
+        noBorder = noBorder
+      )
+    }
   }
+
 }
