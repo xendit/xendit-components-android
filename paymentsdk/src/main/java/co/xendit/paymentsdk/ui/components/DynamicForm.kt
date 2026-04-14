@@ -7,12 +7,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
@@ -142,39 +144,51 @@ fun DynamicForm(
   }
 
   Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-    var i = 0
-    while (i < filteredFields.size) {
-      val field = filteredFields[i]
-      val isGrouped = field.groupLabel != null
+    fun handleValueChange(changedField: ChannelFormField, key: String, value: String) {
+      formValues[key] = value
+      formErrors[key] = validateField(changedField, value)
+      onValuesChanged(formValues.toMap())
+      if (changedField.type.name == "credit_card_number") {
+        onCardNumberChanged(value)
+      }
+    }
 
-      if (isGrouped) {
+    fun collectGroupFields(groupStartIndex: Int): Pair<List<ChannelFormField>, Int> {
+      val startField = filteredFields[groupStartIndex]
+      val groupLabel = startField.groupLabel
+
+      val collected = mutableListOf<ChannelFormField>()
+      var scanIndex = groupStartIndex
+      while (scanIndex < filteredFields.size) {
+        val candidate = filteredFields[scanIndex]
+        if (scanIndex > groupStartIndex) {
+          val startsNewGroup = candidate.groupLabel != null && candidate.groupLabel != groupLabel
+          val isJoinContinuation = candidate.join == true
+          if (startsNewGroup || (!isJoinContinuation && candidate.groupLabel == null)) {
+            break
+          }
+        }
+        collected.add(candidate)
+        scanIndex++
+      }
+
+      return collected to scanIndex
+    }
+
+    var fieldIndex = 0
+    while (fieldIndex < filteredFields.size) {
+      val startField = filteredFields[fieldIndex]
+      val startsGroup = startField.groupLabel != null
+
+      if (startsGroup) {
         Text(
-          text = field.groupLabel ?: "",
+          text = startField.groupLabel,
           style = MaterialTheme.typography.titleMedium,
           color = appearance.colorText ?: MaterialTheme.colorScheme.onSurfaceVariant,
           modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
         )
 
-        val groupFields = mutableListOf<ChannelFormField>()
-        var j = i
-        while (j < filteredFields.size) {
-          val candidate = filteredFields[j]
-          
-          if (j > i) {
-            // Check if the field belongs to the current group
-            // Rule: it must have join == true OR it has the same groupLabel.
-            // Wait, if it has a new groupLabel, it breaks (unless it's the same groupLabel).
-            if (candidate.groupLabel != null && candidate.groupLabel != field.groupLabel) {
-              break
-            }
-            if (candidate.join != true && candidate.groupLabel == null) {
-              break
-            }
-          }
-          
-          groupFields.add(candidate)
-          j++
-        }
+        val (groupFields, nextFieldIndex) = collectGroupFields(fieldIndex)
 
         Column(
           modifier = Modifier
@@ -186,12 +200,18 @@ fun DynamicForm(
             )
             .background(appearance.colorBackground ?: MaterialTheme.colorScheme.surface)
         ) {
-          var k = 0
-          while (k < groupFields.size) {
-            val groupField = groupFields[k]
-            if (groupField.span == 1 && k + 1 < groupFields.size && groupFields[k + 1].span == 1) {
-              val field1 = groupFields[k]
-              val field2 = groupFields[k + 1]
+          var groupFieldIndex = 0
+          while (groupFieldIndex < groupFields.size) {
+            val currentGroupField = groupFields[groupFieldIndex]
+
+            val canRenderAsRow =
+              currentGroupField.span == 1 &&
+                groupFieldIndex + 1 < groupFields.size &&
+                groupFields[groupFieldIndex + 1].span == 1
+
+            if (canRenderAsRow) {
+              val leftField = groupFields[groupFieldIndex]
+              val rightField = groupFields[groupFieldIndex + 1]
 
               Row(
                 modifier = Modifier
@@ -200,18 +220,11 @@ fun DynamicForm(
               ) {
                 Box(modifier = Modifier.weight(1f)) {
                   FormFieldItem(
-                    field = field1,
+                    field = leftField,
                     allFields = filteredFields,
                     values = formValues,
                     errors = formErrors,
-                    onValueChange = { key, value ->
-                      formValues[key] = value
-                      formErrors[key] = validateField(field1, value)
-                      onValuesChanged(formValues.toMap())
-                      if (field1.type.name == "credit_card_number") {
-                        onCardNumberChanged(value)
-                      }
-                    },
+                    onValueChange = { key, value -> handleValueChange(leftField, key, value) },
                     cardDetails = cardDetails,
                     bffCardInfo = bffCardInfo,
                     installmentPlans = installmentPlans,
@@ -219,23 +232,16 @@ fun DynamicForm(
                   )
                 }
                 VerticalDivider(
-                  thickness = 2.dp,
+                  thickness = 1.dp,
                   color = appearance.colorBorder ?: MaterialTheme.colorScheme.outline
                 )
                 Box(modifier = Modifier.weight(1f)) {
                   FormFieldItem(
-                    field = field2,
+                    field = rightField,
                     allFields = filteredFields,
                     values = formValues,
                     errors = formErrors,
-                    onValueChange = { key, value ->
-                      formValues[key] = value
-                      formErrors[key] = validateField(field2, value)
-                      onValuesChanged(formValues.toMap())
-                      if (field2.type.name == "credit_card_number") {
-                        onCardNumberChanged(value)
-                      }
-                    },
+                    onValueChange = { key, value -> handleValueChange(rightField, key, value) },
                     cardDetails = cardDetails,
                     bffCardInfo = bffCardInfo,
                     installmentPlans = installmentPlans,
@@ -243,33 +249,43 @@ fun DynamicForm(
                   )
                 }
               }
-              k += 2
+
+              groupFieldIndex += 2
             } else {
               FormFieldItem(
-                field = groupField,
+                field = currentGroupField,
                 allFields = filteredFields,
                 values = formValues,
                 errors = formErrors,
-                onValueChange = { key, value ->
-                  formValues[key] = value
-                  formErrors[key] = validateField(groupField, value)
-                  onValuesChanged(formValues.toMap())
-                  if (groupField.type.name == "credit_card_number") {
-                    onCardNumberChanged(value)
-                  }
-                },
+                onValueChange = { key, value -> handleValueChange(currentGroupField, key, value) },
                 cardDetails = cardDetails,
                 bffCardInfo = bffCardInfo,
                 installmentPlans = installmentPlans,
                 noBorder = true
               )
-              k++
+              groupFieldIndex++
+            }
+
+            if (groupFieldIndex < groupFields.size) {
+              HorizontalDivider(
+                thickness = 1.dp,
+                color = appearance.colorBorder ?: MaterialTheme.colorScheme.outline
+              )
             }
           }
         }
-        i += groupFields.size
+
+        fieldIndex = nextFieldIndex
       } else {
-        if (field.span == 1 && i + 1 < filteredFields.size && filteredFields[i + 1].span == 1) {
+        val canRenderAsRow =
+          startField.span == 1 &&
+            fieldIndex + 1 < filteredFields.size &&
+            filteredFields[fieldIndex + 1].span == 1
+
+        if (canRenderAsRow) {
+          val leftField = filteredFields[fieldIndex]
+          val rightField = filteredFields[fieldIndex + 1]
+
           Row(
             modifier = Modifier
               .fillMaxWidth()
@@ -280,23 +296,13 @@ fun DynamicForm(
                 shape = RoundedCornerShape(10.dp)
               ),
           ) {
-            val field1 = filteredFields[i]
-            val field2 = filteredFields[i + 1]
-
             Box(modifier = Modifier.weight(1f)) {
               FormFieldItem(
-                field = field1,
+                field = leftField,
                 allFields = filteredFields,
                 values = formValues,
                 errors = formErrors,
-                onValueChange = { key, value ->
-                  formValues[key] = value
-                  formErrors[key] = validateField(field1, value)
-                  onValuesChanged(formValues.toMap())
-                  if (field1.type.name == "credit_card_number") {
-                    onCardNumberChanged(value)
-                  }
-                },
+                onValueChange = { key, value -> handleValueChange(leftField, key, value) },
                 cardDetails = cardDetails,
                 bffCardInfo = bffCardInfo,
                 installmentPlans = installmentPlans,
@@ -304,23 +310,16 @@ fun DynamicForm(
               )
             }
             VerticalDivider(
-              thickness = 2.dp,
+              thickness = 1.dp,
               color = appearance.colorBorder ?: MaterialTheme.colorScheme.outline
             )
             Box(modifier = Modifier.weight(1f)) {
               FormFieldItem(
-                field = field2,
+                field = rightField,
                 allFields = filteredFields,
                 values = formValues,
                 errors = formErrors,
-                onValueChange = { key, value ->
-                  formValues[key] = value
-                  formErrors[key] = validateField(field2, value)
-                  onValuesChanged(formValues.toMap())
-                  if (field2.type.name == "credit_card_number") {
-                    onCardNumberChanged(value)
-                  }
-                },
+                onValueChange = { key, value -> handleValueChange(rightField, key, value) },
                 cardDetails = cardDetails,
                 bffCardInfo = bffCardInfo,
                 installmentPlans = installmentPlans,
@@ -328,26 +327,20 @@ fun DynamicForm(
               )
             }
           }
-          i += 2
+
+          fieldIndex += 2
         } else {
           FormFieldItem(
-            field = field,
+            field = startField,
             allFields = filteredFields,
             values = formValues,
             errors = formErrors,
-            onValueChange = { key, value ->
-              formValues[key] = value
-              formErrors[key] = validateField(field, value)
-              onValuesChanged(formValues.toMap())
-              if (field.type.name == "credit_card_number") {
-                onCardNumberChanged(value)
-              }
-            },
+            onValueChange = { key, value -> handleValueChange(startField, key, value) },
             cardDetails = cardDetails,
             bffCardInfo = bffCardInfo,
             installmentPlans = installmentPlans
           )
-          i++
+          fieldIndex++
         }
       }
     }
@@ -597,5 +590,4 @@ private fun getBestCountryForProvinceField(
   }
   return null
 }
-
 

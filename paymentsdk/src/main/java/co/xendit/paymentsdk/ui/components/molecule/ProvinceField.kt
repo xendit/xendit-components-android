@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -92,7 +93,7 @@ fun ProvinceField(
       enabled = false,
       trailingIcon = {
         Icon(
-          imageVector = Icons.Default.ArrowDropDown,
+          imageVector = Icons.Default.KeyboardArrowDown,
           contentDescription = null,
           tint = appearance.colorTextSecondary ?: MaterialTheme.colorScheme.onSurfaceVariant
         )

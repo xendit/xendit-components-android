@@ -50,7 +50,7 @@ fun XenditTextField(
   val appearance = xenditAppearance
 
   Column(modifier = Modifier.fillMaxWidth().then(modifier)) {
-    if (label != null && labelPlacement == XenditTextFieldLabelPlacement.Above) {
+    if (label != null && labelPlacement == XenditTextFieldLabelPlacement.Above && !noBorder) {
       Text(
         text = label,
         style = MaterialTheme.typography.titleSmall,
