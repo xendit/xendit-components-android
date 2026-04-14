@@ -35,6 +35,8 @@ import co.xendit.paymentsdk.ui.components.molecule.XenditTextField
 import co.xendit.paymentsdk.ui.helper.FormChecker.validateField
 import co.xendit.paymentsdk.ui.helper.toLabelDisplay
 import co.xendit.paymentsdk.ui.style.xenditAppearance
+import co.xendit.paymentsdk.ui.ui_util.CustomShape.customCornersShapeLeft
+import co.xendit.paymentsdk.ui.ui_util.CustomShape.customCornersShapeRight
 
 @Composable
 fun DynamicForm(
@@ -51,20 +53,6 @@ fun DynamicForm(
 
   val formValues = remember { mutableStateMapOf<String, String>() }
   val formErrors = remember { mutableStateMapOf<String, String?>() }
-
-  val customCornersShapeLeft = RoundedCornerShape(
-    topStart = 12.dp,
-    topEnd = 0.dp,
-    bottomEnd = 0.dp,
-    bottomStart = 12.dp
-  )
-
-  val customCornersShapeRight = RoundedCornerShape(
-    topStart = 0.dp,
-    topEnd = 12.dp,
-    bottomEnd = 12.dp,
-    bottomStart = 0.dp
-  )
 
   LaunchedEffect(mockData) {
     formValues.clear()

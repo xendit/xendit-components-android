@@ -25,15 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Outline
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.unit.Density
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import co.xendit.paymentsdk.data.model.BffChannel
 import co.xendit.paymentsdk.data.model.BffSession
@@ -43,37 +35,9 @@ import co.xendit.paymentsdk.data.model.InstallmentPlan
 import co.xendit.paymentsdk.ui.card.CardPaymentUI
 import co.xendit.paymentsdk.ui.qrcode.QrPaymentUI
 import co.xendit.paymentsdk.ui.style.xenditAppearance
+import co.xendit.paymentsdk.ui.ui_util.CustomShape.createTopRoundedOpenShape
 
 val SUPPORTED_PAYMENT_METHOD = listOf("cards", "qr_code")
-
-fun createTopRoundedOpenShape(radius: Dp) = object : Shape {
-  override fun createOutline(
-    size: Size,
-    layoutDirection: LayoutDirection,
-    density: Density
-  ): Outline {
-    val rPx = with(density) { radius.toPx() }
-    val path = Path().apply {
-      moveTo(0f, size.height)
-      lineTo(0f, rPx)
-      arcTo(
-        rect = Rect(0f, 0f, rPx * 2, rPx * 2),
-        startAngleDegrees = 180f,
-        sweepAngleDegrees = 90f,
-        forceMoveTo = false
-      )
-      lineTo(size.width - rPx, 0f)
-      arcTo(
-        rect = Rect(size.width - rPx * 2, 0f, size.width, rPx * 2),
-        startAngleDegrees = 270f,
-        sweepAngleDegrees = 90f,
-        forceMoveTo = false
-      )
-      lineTo(size.width, size.height)
-    }
-    return Outline.Generic(path)
-  }
-}
 
 @Composable
 fun PaymentMethodsUI(
