@@ -159,9 +159,14 @@ fun PaymentMethodsUI(
               verticalAlignment = Alignment.CenterVertically
             ) {
               // Your Icon, Text, and Arrow here...
-              Icon(Icons.Default.Menu, contentDescription = null)
+              Icon(
+                Icons.Default.Menu,
+                contentDescription = null,
+                tint = appearance.colorPrimary ?: MaterialTheme.colorScheme.onSurface
+              )
               Text(
                 text = displayName,
+                color = appearance.colorPrimary ?: MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier
                   .weight(1f)
                   .padding(start = 16.dp)
@@ -225,51 +230,6 @@ fun PaymentMethodsUI(
           }
 
         }
-//      Surface(
-//        modifier = Modifier
-//          .fillMaxWidth()
-//          .padding(vertical = 6.dp),
-//        shape = RoundedCornerShape(12.dp),
-//        color = appearance.colorBackground ?: MaterialTheme.colorScheme.surface,
-//        tonalElevation = 0.dp,
-//        shadowElevation = 0.dp
-//      ) {
-//        Column(
-//          modifier = Modifier
-//            .fillMaxWidth()
-//            .background(
-//              (appearance.colorBorder ?: MaterialTheme.colorScheme.outline)
-//            )
-//            .padding(1.dp)
-//            .background(
-//              appearance.colorBackground ?: MaterialTheme.colorScheme.surface,
-//              RoundedCornerShape(12.dp)
-//            )
-//        ) {
-//          Row(
-//            modifier = Modifier
-//              .fillMaxWidth()
-//              .clickable { onToggleGroup(uiGroup) }
-//              .padding(horizontal = 16.dp, vertical = 14.dp),
-//            verticalAlignment = Alignment.CenterVertically
-//          ) {
-//            Text(
-//              text = displayName,
-//              style = MaterialTheme.typography.titleMedium,
-//              color = appearance.colorText ?: MaterialTheme.colorScheme.onSurface,
-//              modifier = Modifier.weight(1f)
-//            )
-//            Icon(
-//              imageVector = Icons.Filled.ArrowDropDown,
-//              contentDescription = null,
-//              tint = appearance.colorTextSecondary ?: MaterialTheme.colorScheme.onSurfaceVariant,
-//              modifier = Modifier.rotate(if (isExpanded) 180f else 0f)
-//            )
-//          }
-//
-//
-//        }
-//      }
       }
     }
   }

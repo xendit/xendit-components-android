@@ -3,6 +3,7 @@ package co.xendit.paymentsdk.ui.components.molecule
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.input.KeyboardType
 import co.xendit.paymentsdk.util.GroupedDigitsTransformation
 
@@ -14,7 +15,8 @@ fun ExpiryDateField(
   label: String? = null,
   onValueChange: (String) -> Unit,
   isError: Boolean = false,
-  errorMessage: String? = null
+  errorMessage: String? = null,
+  shape: Shape? = null
 ) {
   XenditTextField(
     value = value,
@@ -31,6 +33,7 @@ fun ExpiryDateField(
     singleLine = true,
     isError = isError,
     modifier = modifier,
-    errorMessage = errorMessage
+    errorMessage = errorMessage,
+    shape = shape
   )
 }

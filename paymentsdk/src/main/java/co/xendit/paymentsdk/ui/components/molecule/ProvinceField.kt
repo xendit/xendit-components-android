@@ -26,6 +26,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -40,10 +41,10 @@ fun ProvinceField(
   label: String? = null,
   onValueChange: (String) -> Unit,
   countryCode: String?,
-
   placeholder: String = "Select Province",
   isError: Boolean = false,
   errorMessage: String? = null,
+  shape: Shape? = null
 ) {
   val appearance = xenditAppearance
   val options = remember(countryCode) { Provinces.forCountry(countryCode) }
@@ -66,7 +67,8 @@ fun ProvinceField(
       modifier = modifier.fillMaxWidth(),
       isError = isError,
       errorMessage = errorMessage,
-      singleLine = true
+      singleLine = true,
+      shape = shape
     )
     return
   }
@@ -95,7 +97,8 @@ fun ProvinceField(
         )
       },
       isError = isError,
-      errorMessage = errorMessage
+      errorMessage = errorMessage,
+      shape = shape
     )
   }
 

@@ -8,6 +8,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Shape
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import co.xendit.paymentsdk.data.model.Country
 import co.xendit.paymentsdk.ui.style.XenditAppearance
@@ -25,7 +26,8 @@ fun CountryField(
   onValueChange: (String) -> Unit,
   placeholder: String = "Select Country",
   isError: Boolean = false,
-  errorMessage: String? = null
+  errorMessage: String? = null,
+  shape: Shape? = null
 ) {
   var expanded by remember { mutableStateOf(false) }
 
@@ -70,5 +72,6 @@ fun CountryField(
         )
       }
     },
+    shape = shape
   )
 }

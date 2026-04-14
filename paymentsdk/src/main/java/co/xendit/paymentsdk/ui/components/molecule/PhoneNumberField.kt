@@ -12,6 +12,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import co.xendit.paymentsdk.data.model.Country
@@ -30,6 +31,7 @@ fun PhoneNumberField(
   placeholder: String? = null,
   isError: Boolean = false,
   errorMessage: String? = null,
+  shape: Shape? = null
 ) {
   val appearance = xenditAppearance
   val phoneUtil = remember { PhoneNumberUtil.getInstance() }
@@ -90,7 +92,8 @@ fun PhoneNumberField(
             onExpandedChange = { expanded = it }
           )
         }
-      }
+      },
+      shape = shape
     )
   }
 }

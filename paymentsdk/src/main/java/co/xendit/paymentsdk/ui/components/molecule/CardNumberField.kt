@@ -8,6 +8,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -26,7 +27,8 @@ fun CardNumberField(
   onValueChange: (String) -> Unit,
   isError: Boolean = false,
   errorMessage: String? = null,
-  logoUrl: String? = null
+  logoUrl: String? = null,
+  shape: Shape? = null
 ) {
   val context = LocalContext.current
   val imageLoader = remember { SdkImageLoader.get(context) }
@@ -63,5 +65,6 @@ fun CardNumberField(
           )
         }
       } else null,
+    shape = shape
   )
 }
