@@ -70,7 +70,8 @@ fun ProvinceField(
       isError = isError,
       errorMessage = errorMessage,
       singleLine = true,
-      shape = shape
+      shape = shape,
+      noBorder = noBorder
     )
     return
   }

@@ -104,7 +104,7 @@ fun XenditTextField(
           focusedTextColor = appearance.colorText ?: MaterialTheme.colorScheme.onSurface,
           unfocusedTextColor = appearance.colorText ?: MaterialTheme.colorScheme.onSurface,
           disabledTextColor =
-            (appearance.colorText ?: MaterialTheme.colorScheme.onSurface).copy(alpha = 0.5f),
+            (appearance.colorText ?: MaterialTheme.colorScheme.onSurface),
           errorTextColor = appearance.colorText ?: MaterialTheme.colorScheme.onSurface,
           focusedLabelColor = appearance.colorText ?: MaterialTheme.colorScheme.onSurface,
           unfocusedLabelColor = appearance.colorText ?: MaterialTheme.colorScheme.onSurface,

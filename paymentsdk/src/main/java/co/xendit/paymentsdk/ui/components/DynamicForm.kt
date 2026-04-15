@@ -7,11 +7,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.HorizontalDivider
@@ -23,7 +21,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -44,8 +41,6 @@ import co.xendit.paymentsdk.ui.components.molecule.XenditTextField
 import co.xendit.paymentsdk.ui.helper.FormChecker.validateField
 import co.xendit.paymentsdk.ui.helper.toLabelDisplay
 import co.xendit.paymentsdk.ui.style.xenditAppearance
-import co.xendit.paymentsdk.ui.ui_util.CustomShape.customCornersShapeLeft
-import co.xendit.paymentsdk.ui.ui_util.CustomShape.customCornersShapeRight
 
 @Composable
 fun DynamicForm(
@@ -154,12 +149,12 @@ fun DynamicForm(
     }
 
     @Composable
-    fun RenderField(field: ChannelFormField, noBorder: Boolean) {
+    fun RenderField(field: ChannelFormField, noBorder: Boolean, isDisplayError: Boolean = true) {
       FormFieldItem(
         field = field,
         allFields = filteredFields,
         values = formValues,
-        errors = formErrors,
+        errors = if (isDisplayError) formErrors else mapOf(),
         onValueChange = { key, value -> handleValueChange(field, key, value) },
         cardDetails = cardDetails,
         bffCardInfo = bffCardInfo,
@@ -172,15 +167,28 @@ fun DynamicForm(
     fun RenderTwoColumnRow(
       leftField: ChannelFormField,
       rightField: ChannelFormField,
-      modifier: Modifier
+      modifier: Modifier,
+      isDisplayError: Boolean = true
     ) {
       Row(modifier = modifier) {
-        Box(modifier = Modifier.weight(1f)) { RenderField(field = leftField, noBorder = true) }
+        Box(modifier = Modifier.weight(1f)) {
+          RenderField(
+            field = leftField,
+            noBorder = true,
+            isDisplayError = isDisplayError
+          )
+        }
         VerticalDivider(
           thickness = 1.dp,
           color = appearance.colorBorder ?: MaterialTheme.colorScheme.outline
         )
-        Box(modifier = Modifier.weight(1f)) { RenderField(field = rightField, noBorder = true) }
+        Box(modifier = Modifier.weight(1f)) {
+          RenderField(
+            field = rightField,
+            noBorder = true,
+            isDisplayError = isDisplayError
+          )
+        }
       }
     }
 
@@ -193,19 +201,46 @@ fun DynamicForm(
       fields: List<ChannelFormField>,
       index: Int,
       rowModifier: Modifier,
-      singleNoBorder: Boolean
+      singleNoBorder: Boolean,
+      isDisplayError: Boolean = true
     ): Int {
       return if (canRenderAsTwoColumnRow(fields, index)) {
         RenderTwoColumnRow(
           leftField = fields[index],
           rightField = fields[index + 1],
-          modifier = rowModifier
+          modifier = rowModifier,
+          isDisplayError = isDisplayError
         )
         2 // add 2 index because can render as two column
       } else {
-        RenderField(field = fields[index], noBorder = singleNoBorder)
+        RenderField(
+          field = fields[index],
+          noBorder = singleNoBorder,
+          isDisplayError = isDisplayError
+        )
         1 // just add 1 index
       }
+    }
+
+    @Composable
+    fun ErrorDisplay(
+      modifier: Modifier = Modifier,
+      filteredFormError: Map<String, String?>
+    ) {
+      // 2. UI Loop
+      Column(modifier = modifier) {
+        filteredFormError.forEach { (key, value) ->
+          if (!value.isNullOrEmpty()) {
+            Text(
+              text = value,
+              style = MaterialTheme.typography.labelSmall,
+              color = MaterialTheme.colorScheme.error,
+              modifier = Modifier.padding(top = 2.dp)
+            )
+          }
+        }
+      }
+
     }
 
     fun collectGroupFields(groupStartIndex: Int): Pair<List<ChannelFormField>, Int> {
@@ -251,13 +286,19 @@ fun DynamicForm(
         )
 
         val (groupFields, nextFieldIndex) = collectGroupFields(fieldIndex)
+        // 1. Logic to filter error
+        val listPropertyKey = groupFields.map { it.primaryChannelPropertyKey() }
+        val filteredFormError = formErrors.filterKeys { it in listPropertyKey }
+        val groupHaveError = filteredFormError.any { !it.value.isNullOrEmpty() }
 
         Column(
           modifier = Modifier
             .fillMaxWidth()
             .border(
               width = 1.dp,
-              color = appearance.colorBorder ?: MaterialTheme.colorScheme.outline,
+              color = if (groupHaveError) appearance.colorDanger
+                ?: MaterialTheme.colorScheme.error else appearance.colorBorder
+                ?: MaterialTheme.colorScheme.outline,
               shape = RoundedCornerShape(10.dp)
             )
             .background(appearance.colorBackground ?: MaterialTheme.colorScheme.surface)
@@ -271,7 +312,8 @@ fun DynamicForm(
                 rowModifier = Modifier
                   .fillMaxWidth()
                   .height(IntrinsicSize.Min),
-                singleNoBorder = true
+                singleNoBorder = true,
+                isDisplayError = false
               )
 
             if (groupFieldIndex < groupFields.size) {
@@ -282,7 +324,10 @@ fun DynamicForm(
             }
           }
         }
-
+        ErrorDisplay(
+          modifier = Modifier.padding(start = 8.dp),
+          filteredFormError = filteredFormError
+        )
         fieldIndex = nextFieldIndex
       } else {
         fieldIndex +=
