@@ -1,6 +1,8 @@
 package co.xendit.paymentsdk.ui.method
 
+import android.R.attr.type
 import android.util.Log
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -26,7 +28,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import co.xendit.paymentsdk.R
 import co.xendit.paymentsdk.data.model.BffChannel
 import co.xendit.paymentsdk.data.model.BffSession
 import co.xendit.paymentsdk.data.model.CardDetails
@@ -86,7 +92,7 @@ fun PaymentMethodsUI(
     ) {
       filteredUiGroup.forEachIndexed { index, uiGroup ->
         val isExpanded = expandedUiGroup == uiGroup
-        val displayName = displayNameForUiGroup(uiGroup)
+        val displayNameIcon = displayNameIconForUiGroup(uiGroup)
         val groupChannels = groups[uiGroup].orEmpty()
         val currentSelected =
           selectedChannel?.takeIf { it.uiGroup == uiGroup } ?: groupChannels.firstOrNull()
@@ -108,34 +114,15 @@ fun PaymentMethodsUI(
             )
         ) {
           Column() {
-            Row(
-              modifier = Modifier
-                .fillMaxWidth()
-                .clickable {
-                  onToggleGroup(uiGroup)
-                }
-                .padding(horizontal = 16.dp, vertical = 14.dp),
-              verticalAlignment = Alignment.CenterVertically
-            ) {
-              // Your Icon, Text, and Arrow here...
-              Icon(
-                Icons.Default.Menu,
-                contentDescription = null,
-                tint = appearance.colorPrimary ?: MaterialTheme.colorScheme.onSurface
-              )
-              Text(
-                text = displayName,
-                color = appearance.colorPrimary ?: MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier
-                  .weight(1f)
-                  .padding(start = 16.dp)
-              )
-              Icon(
-                Icons.Default.KeyboardArrowDown,
-                modifier = Modifier.rotate(if (isExpanded) 180f else 0f),
-                contentDescription = null
-              )
-            }
+            SelectableHeaderItem(
+              text = displayNameIcon.first,
+              leftIcon = displayNameIcon.second,
+              isExpanded = isExpanded,
+              isSelected = isExpanded,
+              onToggle = {
+                onToggleGroup(uiGroup)
+              }
+            )
 
             // expanded content here
             if (isExpanded) {
@@ -194,11 +181,62 @@ fun PaymentMethodsUI(
   }
 }
 
-private fun displayNameForUiGroup(uiGroup: String): String {
+@Composable
+fun SelectableHeaderItem(
+  text: String,
+  @DrawableRes leftIcon: Int,
+  isExpanded: Boolean,
+  isSelected: Boolean,
+  onToggle: () -> Unit,
+  modifier: Modifier = Modifier
+) {
+  val appearance = xenditAppearance
+  // 1. Define the dynamic styles based on selection state
+  val activeColor = appearance.colorPrimary ?: MaterialTheme.colorScheme.primary
+  val inactiveColor = MaterialTheme.colorScheme.onSurface
+
+  val contentColor = if (isSelected) activeColor else inactiveColor
+  val fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+
+  Row(
+    modifier = modifier
+      .fillMaxWidth()
+      .clickable { onToggle() }
+      .padding(horizontal = 16.dp, vertical = 14.dp),
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    // Left Icon
+    Icon(
+      painter = painterResource(id = leftIcon),
+      contentDescription = null,
+      tint = contentColor
+    )
+
+    // Title Text
+    Text(
+      text = text,
+      color = contentColor,
+      fontWeight = fontWeight,
+      modifier = Modifier
+        .weight(1f)
+        .padding(start = 16.dp)
+    )
+
+    // Trailing Arrow
+    Icon(
+      imageVector = Icons.Default.KeyboardArrowDown,
+      contentDescription = null,
+      tint = contentColor, // Usually arrow follows the theme color
+      modifier = Modifier.rotate(if (isExpanded) 180f else 0f)
+    )
+  }
+}
+
+private fun displayNameIconForUiGroup(uiGroup: String): Pair<String, Int> {
   return when (uiGroup.lowercase()) {
-    "cards" -> "Cards"
-    "ewallet", "e-wallet" -> "E-Wallet"
-    "qrcode", "qr_code", "qr" -> "QR Code"
-    else -> uiGroup.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+    "cards" -> "Cards" to R.drawable.ic_cards
+    "ewallet", "e-wallet" -> "E-Wallet" to R.drawable.ic_e_wallet
+    "qrcode", "qr_code", "qr" -> "QR Code" to R.drawable.ic_qris
+    else -> "Payment" to R.drawable.ic_cards // Fallback icon
   }
 }

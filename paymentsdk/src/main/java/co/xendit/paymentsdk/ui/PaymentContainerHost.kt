@@ -240,7 +240,6 @@ internal fun PaymentContainerHost(
               .background(Color(0xFFF7F7F7))
               .padding(horizontal = 12.dp, vertical = 6.dp)
               .clickable {
-//                https://checkout-ui-gateway-prod-dev\.xendit\.co/api/sessions/.*/card_info(\?.*)? //use this for regex
                 context.startActivity(OkHttpProfilerSettingsActivity.getIntent(context))
               }
           ) {
