@@ -102,7 +102,7 @@ internal fun CountryPicker(
     ) {
       FlagIcon(countryCode = selectedCountry.code)
       Text(
-        text = selectedCountry.dialCode,
+        text = "+${selectedCountry.dialCode}",
         style = MaterialTheme.typography.bodyMedium,
         color = appearance.colorText ?: MaterialTheme.colorScheme.onSurface
       )

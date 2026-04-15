@@ -12,6 +12,7 @@ import co.xendit.paymentsdk.util.GroupedDigitsTransformation
 fun ExpiryDateField(
   modifier: Modifier = Modifier,
   value: String,
+  placeholder: String?,
   label: String? = null,
   onValueChange: (String) -> Unit,
   isError: Boolean = false,
@@ -28,7 +29,7 @@ fun ExpiryDateField(
       }
     },
     label = label,
-    placeholder = "MM/YY",
+    placeholder = placeholder ?: "MM/YY",
     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
     visualTransformation = GroupedDigitsTransformation(groupSize = 2, separator = '/'),
     singleLine = true,

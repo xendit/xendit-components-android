@@ -450,6 +450,7 @@ fun FormFieldItem(
       ExpiryDateField(
         value = currentValue,
         label = labelDisplay,
+        placeholder = field.placeholder,
         onValueChange = { onValueChange(propertyKey, it) },
         isError = isError,
         errorMessage = errorMessage,
