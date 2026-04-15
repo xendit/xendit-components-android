@@ -54,6 +54,7 @@ import co.xendit.paymentsdk.ui.action.ActionQrUI
 import co.xendit.paymentsdk.ui.action.ActionWebViewUI
 import co.xendit.paymentsdk.ui.card.CardIntent
 import co.xendit.paymentsdk.ui.card.CardViewModel
+import co.xendit.paymentsdk.ui.components.molecule.GenericHeader
 import co.xendit.paymentsdk.ui.helper.FormChecker.validateAllField
 import co.xendit.paymentsdk.ui.method.PaymentMethodsUI
 import co.xendit.paymentsdk.ui.style.XenditAppearance
@@ -257,7 +258,10 @@ internal fun PaymentContainerHost(
             }
           }
         }
-
+        GenericHeader(
+          title = "Select Payment Method",
+          onLeftClick = dismiss
+        )
         val showFooter =
           mviState.actionRedirectUrl == null &&
               mviState.presentToCustomerPaymentAction == null &&

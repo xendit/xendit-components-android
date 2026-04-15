@@ -14,10 +14,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Search
@@ -25,7 +24,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
@@ -142,26 +140,24 @@ internal fun CountryPicker(
           color = appearance.colorBackground ?: MaterialTheme.colorScheme.surface
         ) {
           Column(modifier = Modifier.fillMaxWidth()) {
-            Column (
+            Column(
               modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             ) {
-              IconButton(
-                onClick = {
+              Icon(
+                modifier = Modifier.clickable {
                   onExpandedChange(false)
                   searchQuery = ""
-                }
-              ) {
-                Icon(
-                  imageVector = Icons.Default.Close,
-                  contentDescription = null,
-                  tint = appearance.colorTextSecondary ?: MaterialTheme.colorScheme.onSurfaceVariant
-                )
-              }
+                },
+                imageVector = Icons.Default.Close,
+                contentDescription = null,
+                tint = appearance.colorTextSecondary ?: MaterialTheme.colorScheme.onSurfaceVariant
+              )
+
               Text(
                 text = "Select Country",
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.headlineSmall,
                 color = appearance.colorText ?: MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(top = 4.dp)
               )
@@ -173,7 +169,8 @@ internal fun CountryPicker(
               placeholder = {
                 Text(
                   "Search country code",
-                  color = appearance.colorTextPlaceholder ?: MaterialTheme.colorScheme.onSurfaceVariant
+                  color = appearance.colorTextPlaceholder
+                    ?: MaterialTheme.colorScheme.onSurfaceVariant
                 )
               },
               modifier = Modifier
@@ -192,8 +189,10 @@ internal fun CountryPicker(
                 OutlinedTextFieldDefaults.colors(
                   focusedContainerColor = Color.White,
                   unfocusedContainerColor = Color(0xFFF2F2F2),
-                  focusedBorderColor = (appearance.colorBorder ?: MaterialTheme.colorScheme.outline).copy(alpha = 0.25f),
-                  unfocusedBorderColor = (appearance.colorBorder ?: MaterialTheme.colorScheme.outline).copy(alpha = 0.15f),
+                  focusedBorderColor = (appearance.colorBorder
+                    ?: MaterialTheme.colorScheme.outline).copy(alpha = 0.25f),
+                  unfocusedBorderColor = (appearance.colorBorder
+                    ?: MaterialTheme.colorScheme.outline).copy(alpha = 0.15f),
                   focusedTextColor = appearance.colorText ?: MaterialTheme.colorScheme.onSurface,
                   unfocusedTextColor = appearance.colorText ?: MaterialTheme.colorScheme.onSurface,
                   focusedLabelColor = appearance.colorText ?: MaterialTheme.colorScheme.onSurface,
@@ -252,7 +251,9 @@ internal fun CountryPicker(
                     }
                     HorizontalDivider(
                       modifier = Modifier.padding(start = 52.dp),
-                      color = (appearance.colorBorder ?: MaterialTheme.colorScheme.outline).copy(alpha = 0.25f)
+                      color = (appearance.colorBorder ?: MaterialTheme.colorScheme.outline).copy(
+                        alpha = 0.25f
+                      )
                     )
                   }
                 }
@@ -266,7 +267,8 @@ internal fun CountryPicker(
                         .fillMaxWidth(),
                       textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                       style = MaterialTheme.typography.bodyMedium,
-                      color = appearance.colorTextSecondary ?: MaterialTheme.colorScheme.onSurfaceVariant
+                      color = appearance.colorTextSecondary
+                        ?: MaterialTheme.colorScheme.onSurfaceVariant
                     )
                   }
                 }

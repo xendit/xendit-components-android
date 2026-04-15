@@ -33,6 +33,7 @@ import co.xendit.paymentsdk.data.model.CardDetails
 import co.xendit.paymentsdk.data.model.ChannelFormField
 import co.xendit.paymentsdk.data.model.InstallmentPlan
 import co.xendit.paymentsdk.ui.card.CardPaymentUI
+import co.xendit.paymentsdk.ui.components.molecule.GenericHeader
 import co.xendit.paymentsdk.ui.qrcode.QrPaymentUI
 import co.xendit.paymentsdk.ui.style.xenditAppearance
 import co.xendit.paymentsdk.ui.ui_util.CustomShape.createTopRoundedOpenShape
@@ -70,12 +71,6 @@ fun PaymentMethodsUI(
   }
 
   Column() {
-    Text(
-      text = "Payment Method",
-      style = MaterialTheme.typography.headlineSmall,
-      color = appearance.colorText ?: MaterialTheme.colorScheme.onSurface,
-      modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)
-    )
     Column(
       modifier = Modifier
         .fillMaxWidth()
