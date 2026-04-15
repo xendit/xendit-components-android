@@ -49,4 +49,4 @@ interface XenditRepository {
   ): Response<PaymentOptionsResponse>
 }
 
-const val COMPONENT_VERSION = "v0.0.18"
+const val COMPONENT_VERSION = "v0.0.16"

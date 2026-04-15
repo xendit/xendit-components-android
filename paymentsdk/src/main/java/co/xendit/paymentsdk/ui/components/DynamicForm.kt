@@ -218,7 +218,14 @@ fun DynamicForm(
         val candidate = filteredFields[scanIndex]
         if (scanIndex > groupStartIndex) {
           val startsNewGroup = candidate.groupLabel != null && candidate.groupLabel != groupLabel
-          val isJoinContinuation = candidate.join == true
+
+          val prevIndex = scanIndex - 1
+          val isFollowPrevField = if (prevIndex > 0) {
+            candidate.span == 1 && filteredFields[prevIndex].groupLabel != null
+          } else false
+
+          val isJoinContinuation = candidate.join == true || isFollowPrevField
+
           if (startsNewGroup || (!isJoinContinuation && candidate.groupLabel == null)) {
             break
           }
