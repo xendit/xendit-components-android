@@ -1,5 +1,6 @@
 package co.xendit.paymentsdk.ui.components.molecule
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -7,18 +8,23 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -27,10 +33,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
 import co.xendit.paymentsdk.data.model.ProvinceOption
 import co.xendit.paymentsdk.data.model.Provinces
 import co.xendit.paymentsdk.ui.style.xenditAppearance
@@ -109,7 +116,7 @@ fun ProvinceField(
   if (expanded) {
     ProvincePickerDialog(
       options = options,
-      onDismiss = { expanded = false },
+      onDismiss = {},
       onSelected = {
         onValueChange(it.value)
         expanded = false
@@ -118,6 +125,7 @@ fun ProvinceField(
   }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ProvincePickerDialog(
   options: List<ProvinceOption>,
@@ -125,6 +133,7 @@ private fun ProvincePickerDialog(
   onSelected: (ProvinceOption) -> Unit
 ) {
   val appearance = xenditAppearance
+  val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
   var searchQuery by remember { mutableStateOf("") }
   val filteredOptions by
   remember(searchQuery, options) {
@@ -137,13 +146,52 @@ private fun ProvincePickerDialog(
     }
   }
 
-  Dialog(onDismissRequest = onDismiss) {
+  ModalBottomSheet(
+    onDismissRequest = {
+      onDismiss()
+      searchQuery = ""
+    },
+    sheetState = sheetState,
+    shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
+    dragHandle = {
+      Box(
+        modifier = Modifier
+          .padding(top = 8.dp, bottom = 6.dp)
+          .size(width = 36.dp, height = 4.dp)
+          .clip(RoundedCornerShape(100.dp))
+          .background(Color(0xFFD0D0D0))
+      )
+    },
+    containerColor = appearance.colorBackground ?: MaterialTheme.colorScheme.surface
+  ) {
     Surface(
       modifier = Modifier.fillMaxWidth(),
       shape = MaterialTheme.shapes.medium,
       color = appearance.colorBackground ?: MaterialTheme.colorScheme.surface
     ) {
       Column(modifier = Modifier.padding(16.dp)) {
+        Column(
+          modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        ) {
+          Icon(
+            modifier = Modifier.clickable {
+              onDismiss()
+              searchQuery = ""
+            },
+            imageVector = Icons.Default.Close,
+            contentDescription = null,
+            tint = appearance.colorTextSecondary ?: MaterialTheme.colorScheme.onSurfaceVariant
+          )
+
+          Text(
+            text = "Select Province",
+            style = MaterialTheme.typography.headlineSmall,
+            color = appearance.colorText ?: MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(top = 4.dp)
+          )
+        }
         OutlinedTextField(
           value = searchQuery,
           onValueChange = { searchQuery = it },
