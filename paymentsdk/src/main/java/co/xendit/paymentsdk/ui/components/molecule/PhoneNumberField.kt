@@ -77,12 +77,14 @@ fun PhoneNumberField(
     }
 
   Column() {
-    Text(
-      text = label ?: "",
-      style = MaterialTheme.typography.titleSmall,
-      color = appearance.colorText ?: MaterialTheme.colorScheme.onSurface
-    )
-    Spacer(modifier = Modifier.height(8.dp))
+    label?.let {
+      Text(
+        text = it,
+        style = MaterialTheme.typography.titleSmall,
+        color = appearance.colorText ?: MaterialTheme.colorScheme.onSurface
+      )
+      Spacer(modifier = Modifier.height(8.dp))
+    }
 
     Row(
       modifier = modifier.fillMaxWidth(),
@@ -134,7 +136,7 @@ fun PhoneNumberField(
       Text(
         text = it,
         style = MaterialTheme.typography.labelSmall,
-        color = MaterialTheme.colorScheme.error,
+        color = appearance.colorDanger ?: MaterialTheme.colorScheme.error,
         modifier = Modifier.padding(top = 2.dp)
       )
     }

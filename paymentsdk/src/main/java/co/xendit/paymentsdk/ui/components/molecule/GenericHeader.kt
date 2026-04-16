@@ -20,6 +20,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import co.xendit.paymentsdk.ui.style.xenditAppearance
 
 @Composable
 fun GenericHeader(
@@ -30,6 +31,7 @@ fun GenericHeader(
   onRightClick: (() -> Unit)? = null,
   modifier: Modifier = Modifier
 ) {
+  val appearance = xenditAppearance
   Row(
     modifier = modifier
       .fillMaxWidth()
@@ -60,7 +62,7 @@ fun GenericHeader(
       modifier = Modifier
         .weight(1f)
         .padding(start = 8.dp),
-      color = Color(0xFF1A1C1E) // Near black color from image
+      color = appearance.colorText ?: MaterialTheme.colorScheme.onSurface
     )
 
     // Right Icon Slot

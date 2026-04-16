@@ -253,7 +253,7 @@ fun DynamicForm(
           val startsNewGroup = candidate.groupLabel != null && candidate.groupLabel != groupLabel
 
           val prevIndex = scanIndex - 1
-          val isFollowPrevField = if (prevIndex > 0) {
+          val isFollowPrevField = if (prevIndex >= 0) {
             candidate.span == 1 && filteredFields[prevIndex].groupLabel != null
           } else false
 

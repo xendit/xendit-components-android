@@ -1,6 +1,5 @@
 package co.xendit.paymentsdk.ui.method
 
-import android.R.attr.type
 import android.util.Log
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
@@ -17,7 +16,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -28,7 +26,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -39,7 +36,6 @@ import co.xendit.paymentsdk.data.model.CardDetails
 import co.xendit.paymentsdk.data.model.ChannelFormField
 import co.xendit.paymentsdk.data.model.InstallmentPlan
 import co.xendit.paymentsdk.ui.card.CardPaymentUI
-import co.xendit.paymentsdk.ui.components.molecule.GenericHeader
 import co.xendit.paymentsdk.ui.qrcode.QrPaymentUI
 import co.xendit.paymentsdk.ui.style.xenditAppearance
 import co.xendit.paymentsdk.ui.ui_util.CustomShape.createTopRoundedOpenShape
@@ -237,6 +233,6 @@ private fun displayNameIconForUiGroup(uiGroup: String): Pair<String, Int> {
     "cards" -> "Cards" to R.drawable.ic_cards
     "ewallet", "e-wallet" -> "E-Wallet" to R.drawable.ic_e_wallet
     "qrcode", "qr_code", "qr" -> "QR Code" to R.drawable.ic_qris
-    else -> "Payment" to R.drawable.ic_cards // Fallback icon
+    else -> uiGroup.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() } to R.drawable.ic_cards // Fallback icon
   }
 }
