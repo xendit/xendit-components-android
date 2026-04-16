@@ -22,6 +22,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.SheetState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -30,6 +32,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -41,7 +44,9 @@ import androidx.compose.ui.unit.dp
 import co.xendit.paymentsdk.data.model.ProvinceOption
 import co.xendit.paymentsdk.data.model.Provinces
 import co.xendit.paymentsdk.ui.style.xenditAppearance
+import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProvinceField(
   modifier: Modifier = Modifier,
@@ -57,7 +62,8 @@ fun ProvinceField(
 ) {
   val appearance = xenditAppearance
   val options = remember(countryCode) { Provinces.forCountry(countryCode) }
-  var expanded by remember { mutableStateOf(false) }
+  val scope = rememberCoroutineScope()
+  var showSheet by remember { mutableStateOf(false) }
 
   var previousCountryCode by remember { mutableStateOf(countryCode) }
   if (previousCountryCode != countryCode) {
@@ -90,7 +96,7 @@ fun ProvinceField(
     modifier =
       modifier
         .fillMaxWidth()
-        .clickable { expanded = true }
+        .clickable { showSheet = true }
   ) {
     XenditTextField(
       value = selectedTitle,
@@ -113,27 +119,38 @@ fun ProvinceField(
     )
   }
 
-  if (expanded) {
-    ProvincePickerDialog(
+  if (showSheet) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ProvincePickerSheet(
       options = options,
-      onDismiss = {},
-      onSelected = {
-        onValueChange(it.value)
-        expanded = false
+      sheetState = sheetState,
+      onDismiss = {
+        scope.launch {
+          sheetState.hide()
+          showSheet = false
+        }
+      },
+      onSelected = { option ->
+        scope.launch {
+          sheetState.hide()
+          showSheet = false
+          onValueChange(option.value)
+        }
       }
     )
   }
+
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ProvincePickerDialog(
+private fun ProvincePickerSheet(
   options: List<ProvinceOption>,
+  sheetState: SheetState,
   onDismiss: () -> Unit,
   onSelected: (ProvinceOption) -> Unit
 ) {
   val appearance = xenditAppearance
-  val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
   var searchQuery by remember { mutableStateOf("") }
   val filteredOptions by
   remember(searchQuery, options) {
@@ -173,7 +190,7 @@ private fun ProvincePickerDialog(
         Column(
           modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(vertical = 12.dp),
         ) {
           Icon(
             modifier = Modifier.clickable {
@@ -211,9 +228,13 @@ private fun ProvincePickerDialog(
           },
           singleLine = true,
           colors =
-            androidx.compose.material3.OutlinedTextFieldDefaults.colors(
-              focusedBorderColor = appearance.colorBorder ?: MaterialTheme.colorScheme.primary,
-              unfocusedBorderColor = appearance.colorBorder ?: MaterialTheme.colorScheme.outline,
+            OutlinedTextFieldDefaults.colors(
+              focusedContainerColor = Color.White,
+              unfocusedContainerColor = Color(0xFFF2F2F2),
+              focusedBorderColor = (appearance.colorBorder
+                ?: MaterialTheme.colorScheme.outline).copy(alpha = 0.25f),
+              unfocusedBorderColor = (appearance.colorBorder
+                ?: MaterialTheme.colorScheme.outline).copy(alpha = 0.15f),
               focusedTextColor = appearance.colorText ?: MaterialTheme.colorScheme.onSurface,
               unfocusedTextColor = appearance.colorText ?: MaterialTheme.colorScheme.onSurface,
               focusedLabelColor = appearance.colorText ?: MaterialTheme.colorScheme.onSurface,

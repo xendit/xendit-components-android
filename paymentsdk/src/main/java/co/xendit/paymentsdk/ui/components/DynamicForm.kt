@@ -227,17 +227,15 @@ fun DynamicForm(
       modifier: Modifier = Modifier,
       filteredFormError: Map<String, String?>
     ) {
-      // 2. UI Loop
       Column(modifier = modifier) {
-        filteredFormError.forEach { (key, value) ->
-          if (!value.isNullOrEmpty()) {
-            Text(
-              text = value,
-              style = MaterialTheme.typography.labelSmall,
-              color = MaterialTheme.colorScheme.error,
-              modifier = Modifier.padding(top = 2.dp)
-            )
-          }
+        val firstError = filteredFormError.values.firstOrNull { !it.isNullOrEmpty() }
+        if (firstError != null) {
+          Text(
+            text = firstError,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.error,
+            modifier = modifier.padding(top = 2.dp)
+          )
         }
       }
 
