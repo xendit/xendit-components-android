@@ -187,7 +187,6 @@ fun SelectableHeaderItem(
   modifier: Modifier = Modifier
 ) {
   val appearance = xenditAppearance
-  // 1. Define the dynamic styles based on selection state
   val activeColor = appearance.colorPrimary ?: MaterialTheme.colorScheme.primary
   val inactiveColor = MaterialTheme.colorScheme.onSurface
 
