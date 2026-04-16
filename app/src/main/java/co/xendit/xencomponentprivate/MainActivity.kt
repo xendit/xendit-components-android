@@ -71,9 +71,9 @@ class MainActivity : ComponentActivity() {
       colorTextSecondary = Color(0xFF44474E),
       colorTextPlaceholder = Color(0xFFAAAAAA),
       colorDisabled = Color(0xFFCCCCCC),
-//      colorDanger = Color(0xFFFF0000),
-//      colorBorder = Color(0xFF0A7F8D),
-//      colorBackground = Color(0xFFFFFFFF),
+      colorDanger = Color(0xFFFF0000),
+      colorBorder = Color(0xFF0A7F8D),
+      colorBackground = Color(0xFFCCE3E5),
 //      qrForegroundColor = Color(0xFF000000),
 //      qrBackgroundColor = Color(0xFFFFFFFF),
     )

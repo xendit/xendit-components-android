@@ -84,7 +84,7 @@ fun PaymentMethodsUI(
           RoundedCornerShape(appearance.borderRadius)
         )
         .clip(RoundedCornerShape(appearance.borderRadius))
-        .background(Color.White)
+        .background(appearance.colorBackground)
     ) {
       filteredUiGroup.forEachIndexed { index, uiGroup ->
         val isExpanded = expandedUiGroup == uiGroup

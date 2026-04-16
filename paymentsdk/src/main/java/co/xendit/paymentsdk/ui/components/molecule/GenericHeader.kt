@@ -41,8 +41,8 @@ fun GenericHeader(
   ) {
     // Left Icon Slot
     Box(modifier = Modifier.size(48.dp), contentAlignment = Alignment.Center) {
-      if (leftIcon != null) {
-        IconButton(onClick = { onLeftClick?.invoke() }) {
+      if (leftIcon != null && onLeftClick != null) {
+        IconButton(onClick = { onLeftClick.invoke() }) {
           Icon(
             imageVector = leftIcon,
             contentDescription = "Back",
