@@ -123,11 +123,19 @@ fun PhoneNumberField(
         placeholder = dynamicPlaceholder,
         modifier = Modifier.fillMaxWidth(),
         isError = isError,
-        errorMessage = errorMessage,
+        errorMessage = null,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
         singleLine = true,
         shape = shape,
         noBorder = noBorder
+      )
+    }
+    errorMessage?.let {
+      Text(
+        text = it,
+        style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.error,
+        modifier = Modifier.padding(top = 2.dp)
       )
     }
   }

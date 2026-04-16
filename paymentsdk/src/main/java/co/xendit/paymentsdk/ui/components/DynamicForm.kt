@@ -295,7 +295,7 @@ fun DynamicForm(
           modifier = Modifier
             .fillMaxWidth()
             .border(
-              width = 1.dp,
+              width = if (groupHaveError) 2.dp else 1.dp,
               color = if (groupHaveError) appearance.colorDanger
                 ?: MaterialTheme.colorScheme.error else appearance.colorBorder
                 ?: MaterialTheme.colorScheme.outline,
