@@ -55,7 +55,7 @@ fun QrPaymentUI(
     Text(
       text = "Pay with",
       style = MaterialTheme.typography.titleSmall,
-      color = appearance.colorTextSecondary ?: MaterialTheme.colorScheme.onSurfaceVariant
+      color = appearance.colorTextSecondary
     )
     Spacer(modifier = Modifier.height(8.dp))
 
@@ -71,11 +71,11 @@ fun QrPaymentUI(
         placeholder = { Text("Select a QR method") },
         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
         colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(
-          focusedBorderColor = appearance.colorBorder ?: MaterialTheme.colorScheme.outline,
-          unfocusedBorderColor = appearance.colorBorder ?: MaterialTheme.colorScheme.outline,
-          focusedTextColor = appearance.colorText ?: MaterialTheme.colorScheme.onSurface,
-          unfocusedTextColor = appearance.colorText ?: MaterialTheme.colorScheme.onSurface,
-          cursorColor = appearance.colorPrimary ?: MaterialTheme.colorScheme.primary
+          focusedBorderColor = appearance.colorBorder,
+          unfocusedBorderColor = appearance.colorBorder,
+          focusedTextColor = appearance.colorText,
+          unfocusedTextColor = appearance.colorText,
+          cursorColor = appearance.colorPrimary
         ),
         modifier = Modifier.menuAnchor().fillMaxWidth()
       )
@@ -103,7 +103,7 @@ fun QrPaymentUI(
       Text(
         text = instruction,
         style = MaterialTheme.typography.bodySmall,
-        color = appearance.colorTextSecondary ?: MaterialTheme.colorScheme.onSurfaceVariant
+        color = appearance.colorTextSecondary
       )
     }
 

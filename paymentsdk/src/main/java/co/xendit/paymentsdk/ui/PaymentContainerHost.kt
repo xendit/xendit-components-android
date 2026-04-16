@@ -58,6 +58,7 @@ import co.xendit.paymentsdk.ui.components.molecule.GenericHeader
 import co.xendit.paymentsdk.ui.helper.FormChecker.validateAllField
 import co.xendit.paymentsdk.ui.method.PaymentMethodsUI
 import co.xendit.paymentsdk.ui.style.XenditAppearance
+import co.xendit.paymentsdk.ui.style.xenditAppearance
 import io.nerdythings.okhttp.modifier.settings.OkHttpProfilerSettingsActivity
 import kotlinx.coroutines.launch
 
@@ -86,6 +87,7 @@ internal fun PaymentContainerHost(
   val context = LocalContext.current
   val snackbarHostState = remember { SnackbarHostState() }
   val scope = rememberCoroutineScope()
+  val appearance = xenditAppearance
 
   val sheetState =
     if (presentation == PaymentContainerPresentation.BottomSheet) {
@@ -236,7 +238,7 @@ internal fun PaymentContainerHost(
           Box(
             modifier = Modifier
               .fillMaxWidth()
-              .clip(RoundedCornerShape(4.dp))
+              .clip(RoundedCornerShape(appearance.borderRadius))
               .background(Color(0xFFF7F7F7))
               .padding(horizontal = 12.dp, vertical = 6.dp)
               .clickable {
@@ -368,8 +370,8 @@ internal fun PaymentContainerHost(
               },
               modifier = Modifier.fillMaxWidth(),
               colors = ButtonDefaults.buttonColors(
-                containerColor = style.colorPrimary ?: MaterialTheme.colorScheme.primary,
-                contentColor = style.colorBackground ?: MaterialTheme.colorScheme.onPrimary
+                containerColor = style.colorPrimary,
+                contentColor = style.colorBackground
               )
             ) {
               Text(payText)
@@ -381,7 +383,7 @@ internal fun PaymentContainerHost(
             ) {
               Text(
                 text = "Cancel",
-                color = style.colorPrimary ?: MaterialTheme.colorScheme.primary
+                color = style.colorPrimary
               )
             }
           }

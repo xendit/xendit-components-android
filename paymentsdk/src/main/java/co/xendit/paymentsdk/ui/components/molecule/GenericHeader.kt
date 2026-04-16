@@ -62,7 +62,7 @@ fun GenericHeader(
       modifier = Modifier
         .weight(1f)
         .padding(start = 8.dp),
-      color = appearance.colorText ?: MaterialTheme.colorScheme.onSurface
+      color = appearance.colorText
     )
 
     // Right Icon Slot

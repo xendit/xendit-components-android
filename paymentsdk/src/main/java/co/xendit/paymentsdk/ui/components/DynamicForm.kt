@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.HorizontalDivider
@@ -180,7 +181,7 @@ fun DynamicForm(
         }
         VerticalDivider(
           thickness = 1.dp,
-          color = appearance.colorBorder ?: MaterialTheme.colorScheme.outline
+          color = appearance.colorBorder
         )
         Box(modifier = Modifier.weight(1f)) {
           RenderField(
@@ -279,7 +280,7 @@ fun DynamicForm(
         Text(
           text = startField.groupLabel,
           style = MaterialTheme.typography.titleMedium,
-          color = appearance.colorText ?: MaterialTheme.colorScheme.onSurfaceVariant,
+          color = appearance.colorText,
           modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
         )
 
@@ -294,12 +295,10 @@ fun DynamicForm(
             .fillMaxWidth()
             .border(
               width = if (groupHaveError) 2.dp else 1.dp,
-              color = if (groupHaveError) appearance.colorDanger
-                ?: MaterialTheme.colorScheme.error else appearance.colorBorder
-                ?: MaterialTheme.colorScheme.outline,
-              shape = RoundedCornerShape(10.dp)
+              color = if (groupHaveError) appearance.colorDanger else appearance.colorBorder,
+              shape = RoundedCornerShape(appearance.borderRadius)
             )
-            .background(appearance.colorBackground ?: MaterialTheme.colorScheme.surface)
+            .background(appearance.colorBackground)
         ) {
           var groupFieldIndex = 0
           while (groupFieldIndex < groupFields.size) {
@@ -317,7 +316,7 @@ fun DynamicForm(
             if (groupFieldIndex < groupFields.size) {
               HorizontalDivider(
                 thickness = 1.dp,
-                color = appearance.colorBorder ?: MaterialTheme.colorScheme.outline
+                color = appearance.colorBorder
               )
             }
           }
@@ -337,8 +336,8 @@ fun DynamicForm(
               .height(IntrinsicSize.Min)
               .border(
                 width = 1.dp,
-                color = appearance.colorBorder ?: MaterialTheme.colorScheme.outline,
-                shape = RoundedCornerShape(10.dp)
+                color = appearance.colorBorder,
+                shape = RoundedCornerShape(appearance.borderRadius)
               ),
             singleNoBorder = false
           )

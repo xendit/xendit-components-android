@@ -109,7 +109,7 @@ fun ProvinceField(
         Icon(
           imageVector = Icons.Default.KeyboardArrowDown,
           contentDescription = null,
-          tint = appearance.colorTextSecondary ?: MaterialTheme.colorScheme.onSurfaceVariant
+          tint = appearance.colorTextSecondary
         )
       },
       isError = isError,
@@ -179,12 +179,12 @@ private fun ProvincePickerSheet(
           .background(Color(0xFFD0D0D0))
       )
     },
-    containerColor = appearance.colorBackground ?: MaterialTheme.colorScheme.surface
+    containerColor = appearance.colorBackground
   ) {
     Surface(
       modifier = Modifier.fillMaxWidth(),
       shape = MaterialTheme.shapes.medium,
-      color = appearance.colorBackground ?: MaterialTheme.colorScheme.surface
+      color = appearance.colorBackground
     ) {
       Column(modifier = Modifier.padding(16.dp)) {
         Column(
@@ -199,13 +199,13 @@ private fun ProvincePickerSheet(
             },
             imageVector = Icons.Default.Close,
             contentDescription = null,
-            tint = appearance.colorTextSecondary ?: MaterialTheme.colorScheme.onSurfaceVariant
+            tint = appearance.colorTextSecondary
           )
 
           Text(
             text = "Select Province",
             style = MaterialTheme.typography.headlineSmall,
-            color = appearance.colorText ?: MaterialTheme.colorScheme.onSurface,
+            color = appearance.colorText,
             modifier = Modifier.padding(top = 4.dp)
           )
         }
@@ -216,14 +216,14 @@ private fun ProvincePickerSheet(
           placeholder = {
             Text(
               "Search",
-              color = appearance.colorTextPlaceholder ?: MaterialTheme.colorScheme.onSurfaceVariant
+              color = appearance.colorTextPlaceholder
             )
           },
           leadingIcon = {
             Icon(
               imageVector = Icons.Default.Search,
               contentDescription = null,
-              tint = appearance.colorTextSecondary ?: MaterialTheme.colorScheme.onSurfaceVariant
+              tint = appearance.colorTextSecondary
             )
           },
           singleLine = true,
@@ -231,21 +231,19 @@ private fun ProvincePickerSheet(
             OutlinedTextFieldDefaults.colors(
               focusedContainerColor = Color.White,
               unfocusedContainerColor = Color(0xFFF2F2F2),
-              focusedBorderColor = (appearance.colorBorder
-                ?: MaterialTheme.colorScheme.outline).copy(alpha = 0.25f),
-              unfocusedBorderColor = (appearance.colorBorder
-                ?: MaterialTheme.colorScheme.outline).copy(alpha = 0.15f),
-              focusedTextColor = appearance.colorText ?: MaterialTheme.colorScheme.onSurface,
-              unfocusedTextColor = appearance.colorText ?: MaterialTheme.colorScheme.onSurface,
-              focusedLabelColor = appearance.colorText ?: MaterialTheme.colorScheme.onSurface,
-              unfocusedLabelColor = appearance.colorText ?: MaterialTheme.colorScheme.onSurface,
-              cursorColor = appearance.colorPrimary ?: MaterialTheme.colorScheme.primary
+              focusedBorderColor = (appearance.colorBorder).copy(alpha = 0.25f),
+              unfocusedBorderColor = (appearance.colorBorder).copy(alpha = 0.15f),
+              focusedTextColor = appearance.colorText,
+              unfocusedTextColor = appearance.colorText,
+              focusedLabelColor = appearance.colorText,
+              unfocusedLabelColor = appearance.colorText,
+              cursorColor = appearance.colorPrimary
             )
         )
 
         HorizontalDivider(
           modifier = Modifier.padding(vertical = 12.dp),
-          color = appearance.colorBorder ?: MaterialTheme.colorScheme.outline
+          color = appearance.colorBorder
         )
 
         if (filteredOptions.isEmpty()) {
@@ -256,7 +254,7 @@ private fun ProvincePickerSheet(
               .fillMaxWidth(),
             textAlign = TextAlign.Center,
             style = MaterialTheme.typography.bodyMedium,
-            color = appearance.colorTextSecondary ?: MaterialTheme.colorScheme.onSurfaceVariant
+            color = appearance.colorTextSecondary
           )
         } else {
           LazyColumn(modifier = Modifier.fillMaxWidth()) {
@@ -273,7 +271,7 @@ private fun ProvincePickerSheet(
                   Text(
                     text = option.title,
                     style = MaterialTheme.typography.bodyLarge,
-                    color = appearance.colorText ?: MaterialTheme.colorScheme.onSurface
+                    color = appearance.colorText
                   )
                 }
               }

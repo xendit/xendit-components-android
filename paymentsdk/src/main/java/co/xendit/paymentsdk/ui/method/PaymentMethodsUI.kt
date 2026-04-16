@@ -80,10 +80,10 @@ fun PaymentMethodsUI(
         // Main container border
         .border(
           1.dp,
-          appearance.colorBorder ?: MaterialTheme.colorScheme.outline,
-          RoundedCornerShape(12.dp)
+          appearance.colorBorder,
+          RoundedCornerShape(appearance.borderRadius)
         )
-        .clip(RoundedCornerShape(12.dp))
+        .clip(RoundedCornerShape(appearance.borderRadius))
         .background(Color.White)
     ) {
       filteredUiGroup.forEachIndexed { index, uiGroup ->
@@ -103,8 +103,8 @@ fun PaymentMethodsUI(
               if (index > 0) {
                 Modifier.border(
                   width = 1.dp,
-                  color = appearance.colorBorder ?: MaterialTheme.colorScheme.outline,
-                  shape = createTopRoundedOpenShape(12.dp)
+                  color = appearance.colorBorder,
+                  shape = createTopRoundedOpenShape(appearance.borderRadius)
                 )
               } else Modifier
             )
@@ -162,8 +162,7 @@ fun PaymentMethodsUI(
                   Text(
                     text = "This payment method is not supported yet.",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = appearance.colorTextSecondary
-                      ?: MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = appearance.colorTextSecondary,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
                   )
                 }
@@ -187,7 +186,7 @@ fun SelectableHeaderItem(
   modifier: Modifier = Modifier
 ) {
   val appearance = xenditAppearance
-  val activeColor = appearance.colorPrimary ?: MaterialTheme.colorScheme.primary
+  val activeColor = appearance.colorPrimary
   val inactiveColor = MaterialTheme.colorScheme.onSurface
 
   val contentColor = if (isSelected) activeColor else inactiveColor

@@ -61,7 +61,7 @@ fun CardPaymentUI(
       Text(
         text = instruction,
         style = MaterialTheme.typography.headlineMedium,
-        color = appearance.colorText ?: MaterialTheme.colorScheme.onSurfaceVariant,
+        color = appearance.colorText,
         modifier = Modifier.padding(bottom = 8.dp)
       )
       Spacer(modifier = Modifier.height(8.dp))
@@ -111,7 +111,7 @@ fun CardPaymentUI(
         Text(
           text = "Save for faster payments",
           style = MaterialTheme.typography.bodyMedium,
-          color = appearance.colorText ?: MaterialTheme.colorScheme.onSurface,
+          color = appearance.colorText,
           modifier = Modifier.padding(start = 8.dp)
         )
       }

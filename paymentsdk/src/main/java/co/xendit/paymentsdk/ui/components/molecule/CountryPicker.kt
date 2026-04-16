@@ -104,12 +104,12 @@ internal fun CountryPicker(
       Text(
         text = "+${selectedCountry.dialCode}",
         style = MaterialTheme.typography.bodyMedium,
-        color = appearance.colorText ?: MaterialTheme.colorScheme.onSurface
+        color = appearance.colorText
       )
       Icon(
         imageVector = Icons.Default.KeyboardArrowDown,
         contentDescription = "Select Country",
-        tint = appearance.colorTextSecondary ?: MaterialTheme.colorScheme.onSurfaceVariant
+        tint = appearance.colorTextSecondary
       )
     }
 
@@ -131,13 +131,13 @@ internal fun CountryPicker(
               .background(Color(0xFFD0D0D0))
           )
         },
-        containerColor = appearance.colorBackground ?: MaterialTheme.colorScheme.surface
+        containerColor = appearance.colorBackground
       ) {
         Surface(
           modifier = Modifier
             .fillMaxWidth()
             .fillMaxHeight(0.9f),
-          color = appearance.colorBackground ?: MaterialTheme.colorScheme.surface
+          color = appearance.colorBackground
         ) {
           Column(modifier = Modifier.fillMaxWidth()) {
             Column(
@@ -152,13 +152,13 @@ internal fun CountryPicker(
                 },
                 imageVector = Icons.Default.Close,
                 contentDescription = null,
-                tint = appearance.colorTextSecondary ?: MaterialTheme.colorScheme.onSurfaceVariant
+                tint = appearance.colorTextSecondary
               )
 
               Text(
                 text = "Select Country",
                 style = MaterialTheme.typography.headlineSmall,
-                color = appearance.colorText ?: MaterialTheme.colorScheme.onSurface,
+                color = appearance.colorText,
                 modifier = Modifier.padding(top = 4.dp)
               )
             }
@@ -170,7 +170,6 @@ internal fun CountryPicker(
                 Text(
                   "Search country code",
                   color = appearance.colorTextPlaceholder
-                    ?: MaterialTheme.colorScheme.onSurfaceVariant
                 )
               },
               modifier = Modifier
@@ -180,7 +179,7 @@ internal fun CountryPicker(
                 Icon(
                   Icons.Default.Search,
                   contentDescription = null,
-                  tint = appearance.colorTextSecondary ?: MaterialTheme.colorScheme.onSurfaceVariant
+                  tint = appearance.colorTextSecondary
                 )
               },
               singleLine = true,
@@ -189,15 +188,13 @@ internal fun CountryPicker(
                 OutlinedTextFieldDefaults.colors(
                   focusedContainerColor = Color.White,
                   unfocusedContainerColor = Color(0xFFF2F2F2),
-                  focusedBorderColor = (appearance.colorBorder
-                    ?: MaterialTheme.colorScheme.outline).copy(alpha = 0.25f),
-                  unfocusedBorderColor = (appearance.colorBorder
-                    ?: MaterialTheme.colorScheme.outline).copy(alpha = 0.15f),
-                  focusedTextColor = appearance.colorText ?: MaterialTheme.colorScheme.onSurface,
-                  unfocusedTextColor = appearance.colorText ?: MaterialTheme.colorScheme.onSurface,
-                  focusedLabelColor = appearance.colorText ?: MaterialTheme.colorScheme.onSurface,
-                  unfocusedLabelColor = appearance.colorText ?: MaterialTheme.colorScheme.onSurface,
-                  cursorColor = appearance.colorPrimary ?: MaterialTheme.colorScheme.primary
+                  focusedBorderColor = (appearance.colorBorder).copy(alpha = 0.25f),
+                  unfocusedBorderColor = (appearance.colorBorder).copy(alpha = 0.15f),
+                  focusedTextColor = appearance.colorText,
+                  unfocusedTextColor = appearance.colorText,
+                  focusedLabelColor = appearance.colorText,
+                  unfocusedLabelColor = appearance.colorText,
+                  cursorColor = appearance.colorPrimary
                 )
             )
 
@@ -205,7 +202,7 @@ internal fun CountryPicker(
             Text(
               text = "All Countries",
               style = MaterialTheme.typography.bodySmall,
-              color = appearance.colorTextSecondary ?: MaterialTheme.colorScheme.onSurfaceVariant,
+              color = appearance.colorTextSecondary,
               modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
             )
 
@@ -218,7 +215,7 @@ internal fun CountryPicker(
               ) {
                 CircularProgressIndicator(
                   modifier = Modifier.size(24.dp),
-                  color = appearance.colorPrimary ?: MaterialTheme.colorScheme.primary
+                  color = appearance.colorPrimary
                 )
               }
             } else {
@@ -245,13 +242,13 @@ internal fun CountryPicker(
                       Text(
                         text = "${country.name} +${country.dialCode}",
                         style = MaterialTheme.typography.bodyLarge,
-                        color = appearance.colorText ?: MaterialTheme.colorScheme.onSurface,
+                        color = appearance.colorText,
                         modifier = Modifier.weight(1f)
                       )
                     }
                     HorizontalDivider(
                       modifier = Modifier.padding(start = 52.dp),
-                      color = (appearance.colorBorder ?: MaterialTheme.colorScheme.outline).copy(
+                      color = (appearance.colorBorder).copy(
                         alpha = 0.25f
                       )
                     )
@@ -268,7 +265,6 @@ internal fun CountryPicker(
                       textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                       style = MaterialTheme.typography.bodyMedium,
                       color = appearance.colorTextSecondary
-                        ?: MaterialTheme.colorScheme.onSurfaceVariant
                     )
                   }
                 }

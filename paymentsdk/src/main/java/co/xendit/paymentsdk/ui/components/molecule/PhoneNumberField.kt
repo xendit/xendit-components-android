@@ -81,7 +81,7 @@ fun PhoneNumberField(
       Text(
         text = it,
         style = MaterialTheme.typography.titleSmall,
-        color = appearance.colorText ?: MaterialTheme.colorScheme.onSurface
+        color = appearance.colorText
       )
       Spacer(modifier = Modifier.height(8.dp))
     }
@@ -96,8 +96,8 @@ fun PhoneNumberField(
         Box(
           modifier = Modifier.border(
             width = 1.dp,
-            color = appearance.colorBorder ?: MaterialTheme.colorScheme.outline,
-            shape = RoundedCornerShape(10.dp)
+            color = appearance.colorBorder,
+            shape = RoundedCornerShape(xenditAppearance.borderRadius)
           )
         ) {
           CountryPicker(
@@ -136,7 +136,7 @@ fun PhoneNumberField(
       Text(
         text = it,
         style = MaterialTheme.typography.labelSmall,
-        color = appearance.colorDanger ?: MaterialTheme.colorScheme.error,
+        color = appearance.colorDanger,
         modifier = Modifier.padding(top = 2.dp)
       )
     }

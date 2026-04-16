@@ -61,7 +61,7 @@ fun InstallmentPlanField(
     ) {
       plans.forEach { plan ->
         DropdownMenuItem(
-          text = { Text(plan.toLabelDisplay().asString(), color = appearance.colorText ?: MaterialTheme.colorScheme.onSurface) },
+          text = { Text(plan.toLabelDisplay().asString(), color = appearance.colorText) },
           onClick = {
             onPlanSelected(plan)
             expanded = false
