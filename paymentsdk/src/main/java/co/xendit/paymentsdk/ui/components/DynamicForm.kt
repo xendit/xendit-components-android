@@ -156,6 +156,19 @@ fun DynamicForm(
           }
         }
       }
+    val renderContext =
+      remember(filteredFields, cardDetails, bffCardInfo, installmentPlans, appearance, handleValueChange) {
+        DynamicFormRenderContext(
+          allFields = filteredFields,
+          values = formValues,
+          errors = formErrors,
+          cardDetails = cardDetails,
+          bffCardInfo = bffCardInfo,
+          installmentPlans = installmentPlans,
+          appearance = appearance,
+          onFieldValueChange = handleValueChange
+        )
+      }
 
     var fieldIndex = 0
     while (fieldIndex < filteredFields.size) {
@@ -196,14 +209,7 @@ fun DynamicForm(
                   .height(IntrinsicSize.Min),
                 singleNoBorder = true,
                 isDisplayError = false,
-                appearance = appearance,
-                allFields = filteredFields,
-                values = formValues,
-                errors = formErrors,
-                cardDetails = cardDetails,
-                bffCardInfo = bffCardInfo,
-                installmentPlans = installmentPlans,
-                onFieldValueChange = handleValueChange
+                context = renderContext
               )
 
             if (groupFieldIndex < groupFields.size) {
@@ -235,14 +241,7 @@ fun DynamicForm(
               ),
             singleNoBorder = false,
             isDisplayError = true,
-            appearance = appearance,
-            allFields = filteredFields,
-            values = formValues,
-            errors = formErrors,
-            cardDetails = cardDetails,
-            bffCardInfo = bffCardInfo,
-            installmentPlans = installmentPlans,
-            onFieldValueChange = handleValueChange
+            context = renderContext
           )
       }
     }
@@ -252,6 +251,17 @@ fun DynamicForm(
 private fun canRenderDynamicFormAsTwoColumnRow(fields: List<ChannelFormField>, index: Int): Boolean {
   return fields[index].span == 1 && index + 1 < fields.size && fields[index + 1].span == 1
 }
+
+private data class DynamicFormRenderContext(
+  val allFields: List<ChannelFormField>,
+  val values: Map<String, String>,
+  val errors: Map<String, String?>,
+  val cardDetails: CardDetails?,
+  val bffCardInfo: BffCardInfo?,
+  val installmentPlans: List<InstallmentPlan>?,
+  val appearance: co.xendit.paymentsdk.ui.style.XenditAppearance,
+  val onFieldValueChange: (ChannelFormField, String, String) -> Unit
+)
 
 private fun collectDynamicFormGroupFields(
   allFields: List<ChannelFormField>,
@@ -307,25 +317,19 @@ private fun DynamicFormErrorDisplay(
 @Composable
 private fun DynamicFormFieldItem(
   field: ChannelFormField,
-  allFields: List<ChannelFormField>,
-  values: Map<String, String>,
-  errors: Map<String, String?>,
-  cardDetails: CardDetails?,
-  bffCardInfo: BffCardInfo?,
-  installmentPlans: List<InstallmentPlan>?,
+  context: DynamicFormRenderContext,
   noBorder: Boolean,
   isDisplayError: Boolean,
-  onFieldValueChange: (ChannelFormField, String, String) -> Unit
 ) {
   FormFieldItem(
     field = field,
-    allFields = allFields,
-    values = values,
-    errors = if (isDisplayError) errors else emptyMap(),
-    onValueChange = { key, value -> onFieldValueChange(field, key, value) },
-    cardDetails = cardDetails,
-    bffCardInfo = bffCardInfo,
-    installmentPlans = installmentPlans,
+    allFields = context.allFields,
+    values = context.values,
+    errors = if (isDisplayError) context.errors else emptyMap(),
+    onValueChange = { key, value -> context.onFieldValueChange(field, key, value) },
+    cardDetails = context.cardDetails,
+    bffCardInfo = context.bffCardInfo,
+    installmentPlans = context.installmentPlans,
     noBorder = noBorder
   )
 }
@@ -336,47 +340,28 @@ private fun DynamicFormTwoColumnRow(
   rightField: ChannelFormField,
   modifier: Modifier,
   dividerThickness: Dp,
-  appearance: co.xendit.paymentsdk.ui.style.XenditAppearance,
-  allFields: List<ChannelFormField>,
-  values: Map<String, String>,
-  errors: Map<String, String?>,
-  cardDetails: CardDetails?,
-  bffCardInfo: BffCardInfo?,
-  installmentPlans: List<InstallmentPlan>?,
+  context: DynamicFormRenderContext,
   isDisplayError: Boolean,
-  onFieldValueChange: (ChannelFormField, String, String) -> Unit
 ) {
   Row(modifier = modifier) {
     Box(modifier = Modifier.weight(1f)) {
       DynamicFormFieldItem(
         field = leftField,
-        allFields = allFields,
-        values = values,
-        errors = errors,
-        cardDetails = cardDetails,
-        bffCardInfo = bffCardInfo,
-        installmentPlans = installmentPlans,
+        context = context,
         noBorder = true,
-        isDisplayError = isDisplayError,
-        onFieldValueChange = onFieldValueChange
+        isDisplayError = isDisplayError
       )
     }
     VerticalDivider(
       thickness = dividerThickness,
-      color = appearance.colorBorder
+      color = context.appearance.colorBorder
     )
     Box(modifier = Modifier.weight(1f)) {
       DynamicFormFieldItem(
         field = rightField,
-        allFields = allFields,
-        values = values,
-        errors = errors,
-        cardDetails = cardDetails,
-        bffCardInfo = bffCardInfo,
-        installmentPlans = installmentPlans,
+        context = context,
         noBorder = true,
-        isDisplayError = isDisplayError,
-        onFieldValueChange = onFieldValueChange
+        isDisplayError = isDisplayError
       )
     }
   }
@@ -389,14 +374,7 @@ private fun renderDynamicFormFieldOrTwoColumnRow(
   rowModifier: Modifier,
   singleNoBorder: Boolean,
   isDisplayError: Boolean,
-  appearance: co.xendit.paymentsdk.ui.style.XenditAppearance,
-  allFields: List<ChannelFormField>,
-  values: Map<String, String>,
-  errors: Map<String, String?>,
-  cardDetails: CardDetails?,
-  bffCardInfo: BffCardInfo?,
-  installmentPlans: List<InstallmentPlan>?,
-  onFieldValueChange: (ChannelFormField, String, String) -> Unit
+  context: DynamicFormRenderContext
 ): Int {
   return if (canRenderDynamicFormAsTwoColumnRow(fields, index)) {
     DynamicFormTwoColumnRow(
@@ -404,29 +382,16 @@ private fun renderDynamicFormFieldOrTwoColumnRow(
       rightField = fields[index + 1],
       modifier = rowModifier,
       dividerThickness = 1.dp,
-      appearance = appearance,
-      allFields = allFields,
-      values = values,
-      errors = errors,
-      cardDetails = cardDetails,
-      bffCardInfo = bffCardInfo,
-      installmentPlans = installmentPlans,
-      isDisplayError = isDisplayError,
-      onFieldValueChange = onFieldValueChange
+      context = context,
+      isDisplayError = isDisplayError
     )
     2
   } else {
     DynamicFormFieldItem(
       field = fields[index],
-      allFields = allFields,
-      values = values,
-      errors = errors,
-      cardDetails = cardDetails,
-      bffCardInfo = bffCardInfo,
-      installmentPlans = installmentPlans,
+      context = context,
       noBorder = singleNoBorder,
-      isDisplayError = isDisplayError,
-      onFieldValueChange = onFieldValueChange
+      isDisplayError = isDisplayError
     )
     1
   }
