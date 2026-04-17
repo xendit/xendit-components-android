@@ -14,6 +14,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Shape
 import co.xendit.paymentsdk.data.model.InstallmentPlan
 import co.xendit.paymentsdk.ui.helper.toLabelDisplay
 import co.xendit.paymentsdk.ui.style.XenditAppearance
@@ -30,6 +31,8 @@ fun InstallmentPlanField(
   placeholder: String = "Select an installment plan",
   isError: Boolean = false,
   errorMessage: String? = null,
+  shape: Shape? = null,
+  noBorder: Boolean = false,
 ) {
   val appearance = xenditAppearance
   var expanded by remember { mutableStateOf(false) }
@@ -48,7 +51,9 @@ fun InstallmentPlanField(
       trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
       modifier = Modifier.menuAnchor().fillMaxWidth(),
       isError = isError,
-      errorMessage = errorMessage
+      errorMessage = errorMessage,
+      shape = shape,
+      noBorder = noBorder
     )
     ExposedDropdownMenu(
       expanded = expanded,
@@ -56,7 +61,7 @@ fun InstallmentPlanField(
     ) {
       plans.forEach { plan ->
         DropdownMenuItem(
-          text = { Text(plan.toLabelDisplay().asString(), color = appearance.colorText ?: MaterialTheme.colorScheme.onSurface) },
+          text = { Text(plan.toLabelDisplay().asString(), color = appearance.colorText) },
           onClick = {
             onPlanSelected(plan)
             expanded = false

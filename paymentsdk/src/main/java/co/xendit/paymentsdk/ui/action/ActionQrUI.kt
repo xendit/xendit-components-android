@@ -90,8 +90,8 @@ fun ActionQrUI(
       modifier = Modifier
         .fillMaxWidth()
         .padding(horizontal = 24.dp),
-      shape = RoundedCornerShape(16.dp),
-      color = appearance.colorBackground ?: MaterialTheme.colorScheme.surface,
+      shape = RoundedCornerShape(appearance.borderRadius),
+      color = appearance.colorBackground,
       tonalElevation = 0.dp
     ) {
       Column(
@@ -105,14 +105,14 @@ fun ActionQrUI(
           Text(
             text = title ?: "Complete Your Payment",
             style = MaterialTheme.typography.titleMedium,
-            color = appearance.colorText ?: MaterialTheme.colorScheme.onSurface,
+            color = appearance.colorText,
             modifier = Modifier.weight(1f)
           )
           IconButton(onClick = onClose) {
             Icon(
               imageVector = Icons.Filled.Close,
               contentDescription = null,
-              tint = appearance.colorTextSecondary ?: MaterialTheme.colorScheme.onSurfaceVariant
+              tint = appearance.colorTextSecondary
             )
           }
         }
@@ -129,7 +129,7 @@ fun ActionQrUI(
           Text(
             text = channelName,
             style = MaterialTheme.typography.titleSmall,
-            color = appearance.colorTextSecondary ?: MaterialTheme.colorScheme.onSurfaceVariant
+            color = appearance.colorTextSecondary
           )
         }
 
@@ -137,7 +137,7 @@ fun ActionQrUI(
 
         Box(
           modifier = Modifier
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(appearance.borderRadius))
             .background(customColors.qrBackgroundColor)
             .padding(16.dp),
           contentAlignment = Alignment.Center
@@ -152,7 +152,7 @@ fun ActionQrUI(
             Text(
               text = "Unable to generate QR code",
               style = MaterialTheme.typography.bodyMedium,
-              color = appearance.colorDanger ?: MaterialTheme.colorScheme.error,
+              color = appearance.colorDanger,
               textAlign = TextAlign.Center
             )
           }
@@ -163,7 +163,7 @@ fun ActionQrUI(
           Text(
             text = formattedAmount,
             style = MaterialTheme.typography.titleMedium,
-            color = appearance.colorText ?: MaterialTheme.colorScheme.onSurface
+            color = appearance.colorText
           )
         }
 
@@ -181,7 +181,7 @@ fun ActionQrUI(
               .height(52.dp),
             colors = ButtonDefaults.buttonColors(
               containerColor = Color(0xFFEDEDED),
-              contentColor = appearance.colorText ?: MaterialTheme.colorScheme.onSurface
+              contentColor = appearance.colorText
             )
           ) {
             Text("I've made this payment", style = MaterialTheme.typography.titleSmall)
@@ -189,7 +189,7 @@ fun ActionQrUI(
           Text(
             text = "Once you've paid, click the button above to get your payment confirmation.",
             style = MaterialTheme.typography.bodySmall,
-            color = appearance.colorTextSecondary ?: MaterialTheme.colorScheme.onSurfaceVariant,
+            color = appearance.colorTextSecondary,
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(horizontal = 12.dp)
           )

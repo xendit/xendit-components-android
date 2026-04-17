@@ -64,7 +64,7 @@ class MainActivity : ComponentActivity() {
       Font(R.font.open_sans_extra_bold_italic, FontWeight.ExtraBold, FontStyle.Italic)
     )
     val customStyle = XenditAppearance(
-      fontFamily = openSansFontFamily
+      fontFamily = openSansFontFamily,
 //      colorPrimary = Color(0xFF21DCCB),
 //      borderRadius = 2.dp,
 //      colorText = Color(0xFF035E6C),
@@ -72,8 +72,8 @@ class MainActivity : ComponentActivity() {
 //      colorTextPlaceholder = Color(0xFFAAAAAA),
 //      colorDisabled = Color(0xFFCCCCCC),
 //      colorDanger = Color(0xFFFF0000),
-//      colorBorder = Color(0xFFA31DDC),
-//      colorBackground = Color(0xFFFFFFFF),
+//      colorBorder = Color(0xFF0A7F8D),
+//      colorBackground = Color(0xFFCCE3E5),
 //      qrForegroundColor = Color(0xFF000000),
 //      qrBackgroundColor = Color(0xFFFFFFFF),
     )

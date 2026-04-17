@@ -61,8 +61,8 @@ data class BffCardBrand(
 
 @Keep
 data class ChannelFormField(
-  @SerializedName("label") val label: String,
   @SerializedName("group_label") val groupLabel: String? = null,
+  @SerializedName("label") val label: String,
   @SerializedName("placeholder") val placeholder: String,
   @SerializedName("type") val type: FieldType,
   @SerializedName("channel_property")

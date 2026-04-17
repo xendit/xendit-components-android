@@ -1,6 +1,7 @@
 package co.xendit.paymentsdk.ui.components.molecule
 
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -8,14 +9,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import co.xendit.paymentsdk.data.model.Country
-import co.xendit.paymentsdk.ui.style.XenditAppearance
-import co.xendit.paymentsdk.ui.style.xenditAppearance
+import co.xendit.paymentsdk.data.model.findCountryByCode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-
-import co.xendit.paymentsdk.data.model.findCountryByCode
 
 @Composable
 fun CountryField(
@@ -25,7 +25,9 @@ fun CountryField(
   onValueChange: (String) -> Unit,
   placeholder: String = "Select Country",
   isError: Boolean = false,
-  errorMessage: String? = null
+  errorMessage: String? = null,
+  shape: Shape? = null,
+  noBorder: Boolean = false,
 ) {
   var expanded by remember { mutableStateOf(false) }
 
@@ -60,6 +62,7 @@ fun CountryField(
     leadingIcon = {
       selectedCountry?.let { country ->
         CountryPicker(
+          modifier = Modifier.padding(start = 8.dp),
           selectedCountry = country,
           onCountrySelected = { selected ->
             onValueChange(selected.code) // We emit the Alpha-2 code
@@ -70,5 +73,7 @@ fun CountryField(
         )
       }
     },
+    shape = shape,
+    noBorder = noBorder
   )
 }

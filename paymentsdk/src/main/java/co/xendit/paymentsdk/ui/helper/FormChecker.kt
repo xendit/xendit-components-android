@@ -2,7 +2,8 @@ package co.xendit.paymentsdk.ui.helper
 
 import co.xendit.paymentsdk.data.model.ChannelFormField
 import co.xendit.paymentsdk.data.model.primaryChannelPropertyKey
-import co.xendit.paymentsdk.ui.helper.ValidCardChecker.isValidCreditCard
+import co.xendit.paymentsdk.ui.helper.FormCheckerUtil.isValidCardExpiry
+import co.xendit.paymentsdk.ui.helper.FormCheckerUtil.isValidCreditCard
 import kotlin.collections.forEach
 
 object FormChecker {
@@ -28,9 +29,16 @@ object FormChecker {
       }
     }
 
-    if (field.type.name == "credit_card_number") {
-      if (!isValidCreditCard(value)) {
-        return "Card number is not valid"
+    when (field.type.name) {
+      "credit_card_number" -> {
+        if (!isValidCreditCard(value)) {
+          return "Card number is not valid"
+        }
+      }
+      "credit_card_expiry" -> {
+        if (!isValidCardExpiry(value)) {
+          return "Card expiry is not valid"
+        }
       }
     }
     return null

@@ -7,7 +7,7 @@ import co.xendit.paymentsdk.data.model.CardDetails
 import co.xendit.paymentsdk.data.model.InstallmentPlan
 import co.xendit.paymentsdk.data.model.PaymentOptionsRequest
 import co.xendit.paymentsdk.data.network.repo.session.XenditRepository
-import co.xendit.paymentsdk.ui.helper.ValidCardChecker.isValidCreditCard
+import co.xendit.paymentsdk.ui.helper.FormCheckerUtil.isValidCreditCard
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow

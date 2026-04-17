@@ -15,17 +15,17 @@ import androidx.compose.ui.unit.dp
 @Keep
 data class XenditAppearance(
   val fontFamily: FontFamily? = null,
-  val colorPrimary: Color? = Color(0xFF0052FF),
-  val colorText: Color? = Color(0xFF1A1C1E),
-  val colorTextSecondary: Color? = Color(0xFF6B7280),
-  val colorTextPlaceholder: Color? = Color(0xFF9CA3AF),
-  val colorDisabled: Color? = Color(0xFFE5E7EB),
-  val colorDanger: Color? = Color(0xFFBA1A1A),
-  val colorBorder: Color? = Color(0xFFE6E6E6),
-  val colorBackground: Color? = Color(0xFFFFFFFF),
-  val qrForegroundColor: Color? = Color(0xFF000000),
-  val qrBackgroundColor: Color? = Color(0xFFFFFFFF),
-  val borderRadius: Dp? = 8.dp
+  val colorPrimary: Color = Color(0xFF0052FF),
+  val colorText: Color = Color(0xFF1A1C1E),
+  val colorTextSecondary: Color = Color(0xFF6B7280),
+  val colorTextPlaceholder: Color = Color(0xFF9CA3AF),
+  val colorDisabled: Color = Color(0xFFE5E7EB),
+  val colorDanger: Color = Color(0xFFBA1A1A),
+  val colorBorder: Color = Color(0xFFE6E6E6),
+  val colorBackground: Color = Color(0xFFFFFFFF),
+  val qrForegroundColor: Color = Color(0xFF000000),
+  val qrBackgroundColor: Color = Color(0xFFFFFFFF),
+  val borderRadius: Dp = 8.dp
 )
 
 internal val LocalXenditAppearance = staticCompositionLocalOf { XenditAppearance() }

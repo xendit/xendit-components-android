@@ -4,13 +4,15 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
@@ -25,7 +27,7 @@ enum class XenditTextFieldLabelPlacement {
 fun XenditTextField(
   modifier: Modifier = Modifier,
   value: String,
-  textStyle : TextStyle = MaterialTheme.typography.bodyLarge,
+  textStyle: TextStyle = MaterialTheme.typography.bodyLarge,
   onValueChange: (String) -> Unit,
   label: String? = null,
   labelPlacement: XenditTextFieldLabelPlacement = XenditTextFieldLabelPlacement.Above,
@@ -37,16 +39,21 @@ fun XenditTextField(
   readOnly: Boolean = false,
   enabled: Boolean = true,
   visualTransformation: VisualTransformation = VisualTransformation.None,
+  shape: Shape? = null,
+  noBorder: Boolean = false,
   leadingIcon: (@Composable (() -> Unit))? = null,
   trailingIcon: (@Composable (() -> Unit))? = null
 ) {
   val appearance = xenditAppearance
-  Column(modifier = Modifier.fillMaxWidth().then(modifier)) {
-    if (label != null && labelPlacement == XenditTextFieldLabelPlacement.Above) {
+
+  Column(modifier = Modifier
+    .fillMaxWidth()
+    .then(modifier)) {
+    if (label != null && labelPlacement == XenditTextFieldLabelPlacement.Above && !noBorder) {
       Text(
         text = label,
         style = MaterialTheme.typography.titleSmall,
-        color = appearance.colorText ?: MaterialTheme.colorScheme.onSurface
+        color = appearance.colorText
       )
       Spacer(modifier = Modifier.height(8.dp))
     }
@@ -66,7 +73,7 @@ fun XenditTextField(
       trailingIcon = trailingIcon,
       label =
         if (label != null && labelPlacement == XenditTextFieldLabelPlacement.Floating) {
-          { Text(label, color = appearance.colorText ?: MaterialTheme.colorScheme.onSurface) }
+          { Text(label, color = appearance.colorText) }
         } else {
           null
         },
@@ -75,7 +82,7 @@ fun XenditTextField(
           {
             Text(
               placeholder,
-              color = appearance.colorTextPlaceholder ?: MaterialTheme.colorScheme.onSurfaceVariant
+              color = appearance.colorTextPlaceholder
             )
           }
         } else {
@@ -83,28 +90,28 @@ fun XenditTextField(
         },
       supportingText =
         if (isError && errorMessage != null) {
-          { Text(errorMessage, color = appearance.colorDanger ?: MaterialTheme.colorScheme.error) }
+          { Text(errorMessage, color = appearance.colorDanger) }
         } else {
           null
         },
-      shape = MaterialTheme.shapes.small,
+      shape = shape ?: MaterialTheme.shapes.small,
       colors =
         OutlinedTextFieldDefaults.colors(
-          focusedBorderColor = appearance.colorBorder ?: MaterialTheme.colorScheme.outline,
-          unfocusedBorderColor = appearance.colorBorder ?: MaterialTheme.colorScheme.outline,
-          errorBorderColor = appearance.colorDanger ?: MaterialTheme.colorScheme.error,
-          focusedTextColor = appearance.colorText ?: MaterialTheme.colorScheme.onSurface,
-          unfocusedTextColor = appearance.colorText ?: MaterialTheme.colorScheme.onSurface,
-          disabledTextColor =
-            (appearance.colorText ?: MaterialTheme.colorScheme.onSurface).copy(alpha = 0.5f),
-          errorTextColor = appearance.colorText ?: MaterialTheme.colorScheme.onSurface,
-          focusedLabelColor = appearance.colorText ?: MaterialTheme.colorScheme.onSurface,
-          unfocusedLabelColor = appearance.colorText ?: MaterialTheme.colorScheme.onSurface,
+          focusedBorderColor = if (noBorder) Color.Transparent else appearance.colorBorder,
+          unfocusedBorderColor = if (noBorder) Color.Transparent else appearance.colorBorder,
+          errorBorderColor = if (noBorder) Color.Transparent else appearance.colorDanger,
+          focusedTextColor = appearance.colorText,
+          unfocusedTextColor = appearance.colorText,
+          disabledTextColor = (appearance.colorText).copy(alpha = 0.5f),
+          errorTextColor = appearance.colorText,
+          focusedLabelColor = appearance.colorText,
+          unfocusedLabelColor = appearance.colorText,
           disabledLabelColor =
-            (appearance.colorText ?: MaterialTheme.colorScheme.onSurface).copy(alpha = 0.5f),
-          errorLabelColor = appearance.colorDanger ?: MaterialTheme.colorScheme.error,
-          cursorColor = appearance.colorPrimary ?: MaterialTheme.colorScheme.primary,
-          errorCursorColor = appearance.colorDanger ?: MaterialTheme.colorScheme.error
+            (appearance.colorText).copy(alpha = 0.5f),
+          disabledBorderColor = if (noBorder) Color.Transparent else MaterialTheme.colorScheme.outline,
+          errorLabelColor = appearance.colorDanger,
+          cursorColor = appearance.colorPrimary,
+          errorCursorColor = appearance.colorDanger
         )
     )
   }
