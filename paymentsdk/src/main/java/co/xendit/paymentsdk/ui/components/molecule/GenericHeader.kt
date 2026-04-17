@@ -46,7 +46,7 @@ fun GenericHeader(
           Icon(
             imageVector = leftIcon,
             contentDescription = "Back",
-            tint = Color.Black
+            tint = appearance.colorText
           )
         }
       }
@@ -72,7 +72,7 @@ fun GenericHeader(
           Icon(
             imageVector = rightIcon,
             contentDescription = "Action",
-            tint = Color.Black
+            tint = appearance.colorText
           )
         }
       }
