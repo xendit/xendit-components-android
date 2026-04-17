@@ -313,8 +313,8 @@ class PaymentViewModel(
       viewModelScope.launch {
         _state.update { it.copy(isLoading = true) }
         try {
-          var delayMs = 500L
-          withTimeout(20_000L) { // no need timeout
+          var delayMs = 3000L
+          withTimeout(100_000L) { // no need timeout
             while (true) {
               val res = xenditRepository.pollSession(authKey, tokenReqId)
               if (res.isSuccessful && res.body() != null) {
@@ -332,13 +332,13 @@ class PaymentViewModel(
                     "Challenge",
                     "successResponse: ${poll.paymentRequest ?: poll.paymentToken}"
                   )
-                  return@withTimeout
+//                  return@withTimeout
                 }
               } else {
                 // On unauthorized or errors, just backoff and retry within timeout
               }
               delay(delayMs)
-              delayMs = minOf((delayMs * 1.5).toLong(), 3_000L)
+              delayMs = minOf((delayMs * 1.2).toLong(), 10_000L)
             }
           }
         } catch (e: TimeoutCancellationException) {
