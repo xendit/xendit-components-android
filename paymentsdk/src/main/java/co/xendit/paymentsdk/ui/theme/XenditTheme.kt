@@ -32,19 +32,19 @@ import co.xendit.paymentsdk.ui.style.XenditAppearance
 fun XenditTheme(style: XenditAppearance, content: @Composable () -> Unit) {
   val colorScheme =
     lightColorScheme(
-      primary = style.colorPrimary ?: Color(0xFF0052FF),
-      onPrimary = style.colorBackground ?: Color(0xFFFFFFFF),
-      surface = style.colorBackground ?: Color(0xFFFFFFFF),
-      onSurface = style.colorText ?: Color(0xFF1A1C1E),
-      onSurfaceVariant = style.colorTextSecondary ?: Color(0xFF6B7280),
-      error = style.colorDanger ?: Color(0xFFBA1A1A),
-      outline = style.colorBorder ?: Color(0xFFE5E7EB),
+      primary = style.colorPrimary,
+      onPrimary = style.colorBackground,
+      surface = style.colorBackground,
+      onSurface = style.colorText,
+      onSurfaceVariant = style.colorTextSecondary,
+      error = style.colorDanger,
+      outline = style.colorBorder,
       surfaceTint = Color.Transparent,
-      surfaceVariant = style.colorBackground ?: Color(0xFFFFFFFF),
-      surfaceContainer = style.colorBackground ?: Color(0xFFFFFFFF),
-      surfaceContainerLow = style.colorBackground ?: Color(0xFFFFFFFF),
-      surfaceContainerHigh = style.colorBackground ?: Color(0xFFFFFFFF),
-      surfaceContainerLowest = style.colorBackground ?: Color(0xFFFFFFFF)
+      surfaceVariant = style.colorBackground,
+      surfaceContainer = style.colorBackground,
+      surfaceContainerLow = style.colorBackground,
+      surfaceContainerHigh = style.colorBackground,
+      surfaceContainerLowest = style.colorBackground
     )
 
   val baseTypography = Typography()

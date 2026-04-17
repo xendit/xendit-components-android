@@ -234,7 +234,7 @@ fun DynamicForm(
           Text(
             text = firstError,
             style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.error,
+            color = appearance.colorDanger,
             modifier = modifier.padding(top = 2.dp)
           )
         }

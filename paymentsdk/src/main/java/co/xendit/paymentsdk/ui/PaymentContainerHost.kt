@@ -154,6 +154,7 @@ internal fun PaymentContainerHost(
       }
 
       isFailed -> {
+        viewModel.markClosed()
         onResult(
           PaymentResult.Failed(
             XenditError(
@@ -292,7 +293,7 @@ internal fun PaymentContainerHost(
                 qrString = qrAction.value.orEmpty(),
                 amount = mviState.sessionResponse?.amount,
                 currency = mviState.sessionResponse?.currency,
-                onClose = dismiss,
+                onClose = { viewModel.markClosed() },
                 onPaymentMade = { viewModel.dispatch(ActionIntent.ChallengeCompleted) }
               )
             }

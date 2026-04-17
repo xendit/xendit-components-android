@@ -102,8 +102,7 @@ fun XenditTextField(
           errorBorderColor = if (noBorder) Color.Transparent else appearance.colorDanger,
           focusedTextColor = appearance.colorText,
           unfocusedTextColor = appearance.colorText,
-          disabledTextColor =
-            (appearance.colorText),
+          disabledTextColor = (appearance.colorText).copy(alpha = 0.5f),
           errorTextColor = appearance.colorText,
           focusedLabelColor = appearance.colorText,
           unfocusedLabelColor = appearance.colorText,
