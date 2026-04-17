@@ -21,9 +21,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import co.xendit.paymentsdk.data.model.BffCardInfo
 import co.xendit.paymentsdk.data.model.CardDetails
@@ -55,6 +57,9 @@ fun DynamicForm(
   mockData: Map<String, String> = mapOf()
 ) {
   val appearance = xenditAppearance
+  val onValuesChangedRef = rememberUpdatedState(onValuesChanged)
+  val onCardNumberChangedRef = rememberUpdatedState(onCardNumberChanged)
+  val onVisibleFieldsChangedRef = rememberUpdatedState(onVisibleFieldsChanged)
 
   val formValues = remember { mutableStateMapOf<String, String>() }
   val formErrors = remember { mutableStateMapOf<String, String?>() }
@@ -84,7 +89,7 @@ fun DynamicForm(
               "country" -> {
                 // Update country if card resolves it
                 formValues[propertyKey] = resolvedCountry.code
-                onValuesChanged(formValues.toMap())
+                onValuesChangedRef.value(formValues.toMap())
               }
 
               "phone_number" -> {
@@ -97,7 +102,7 @@ fun DynamicForm(
 
                 if (isEffectivelyEmpty) {
                   formValues[countryCodeKey] = resolvedCountry.code
-                  onValuesChanged(formValues.toMap())
+                  onValuesChangedRef.value(formValues.toMap())
                 }
               }
             }
@@ -109,7 +114,7 @@ fun DynamicForm(
 
   // Initialize form values
   LaunchedEffect(filteredFields, installmentPlans) {
-    onVisibleFieldsChanged(filteredFields)
+    onVisibleFieldsChangedRef.value(filteredFields)
     filteredFields.forEach { field ->
       val propertyKey = field.primaryChannelPropertyKey()
       if (propertyKey.isNotEmpty()) {
@@ -136,140 +141,21 @@ fun DynamicForm(
       }
     }
 
-    onValuesChanged(formValues.toMap())
+    onValuesChangedRef.value(formValues.toMap())
   }
 
   Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-    fun handleValueChange(changedField: ChannelFormField, key: String, value: String) {
-      formValues[key] = value
-      formErrors[key] = validateField(changedField, value)
-      onValuesChanged(formValues.toMap())
-      if (changedField.type.name == "credit_card_number") {
-        onCardNumberChanged(value)
-      }
-    }
-
-    @Composable
-    fun RenderField(field: ChannelFormField, noBorder: Boolean, isDisplayError: Boolean = true) {
-      FormFieldItem(
-        field = field,
-        allFields = filteredFields,
-        values = formValues,
-        errors = if (isDisplayError) formErrors else mapOf(),
-        onValueChange = { key, value -> handleValueChange(field, key, value) },
-        cardDetails = cardDetails,
-        bffCardInfo = bffCardInfo,
-        installmentPlans = installmentPlans,
-        noBorder = noBorder
-      )
-    }
-
-    @Composable
-    fun RenderTwoColumnRow(
-      leftField: ChannelFormField,
-      rightField: ChannelFormField,
-      modifier: Modifier,
-      isDisplayError: Boolean = true
-    ) {
-      Row(modifier = modifier) {
-        Box(modifier = Modifier.weight(1f)) {
-          RenderField(
-            field = leftField,
-            noBorder = true,
-            isDisplayError = isDisplayError
-          )
-        }
-        VerticalDivider(
-          thickness = 1.dp,
-          color = appearance.colorBorder
-        )
-        Box(modifier = Modifier.weight(1f)) {
-          RenderField(
-            field = rightField,
-            noBorder = true,
-            isDisplayError = isDisplayError
-          )
-        }
-      }
-    }
-
-    fun canRenderAsTwoColumnRow(fields: List<ChannelFormField>, index: Int): Boolean {
-      return fields[index].span == 1 && index + 1 < fields.size && fields[index + 1].span == 1
-    }
-
-    @Composable
-    fun renderFieldOrTwoColumnRow(
-      fields: List<ChannelFormField>,
-      index: Int,
-      rowModifier: Modifier,
-      singleNoBorder: Boolean,
-      isDisplayError: Boolean = true
-    ): Int {
-      return if (canRenderAsTwoColumnRow(fields, index)) {
-        RenderTwoColumnRow(
-          leftField = fields[index],
-          rightField = fields[index + 1],
-          modifier = rowModifier,
-          isDisplayError = isDisplayError
-        )
-        2 // add 2 index because can render as two column
-      } else {
-        RenderField(
-          field = fields[index],
-          noBorder = singleNoBorder,
-          isDisplayError = isDisplayError
-        )
-        1 // just add 1 index
-      }
-    }
-
-    @Composable
-    fun ErrorDisplay(
-      modifier: Modifier = Modifier,
-      filteredFormError: Map<String, String?>
-    ) {
-      Column(modifier = modifier) {
-        val firstError = filteredFormError.values.firstOrNull { !it.isNullOrEmpty() }
-        if (firstError != null) {
-          Text(
-            text = firstError,
-            style = MaterialTheme.typography.labelSmall,
-            color = appearance.colorDanger,
-            modifier = modifier.padding(top = 2.dp)
-          )
-        }
-      }
-
-    }
-
-    fun collectGroupFields(groupStartIndex: Int): Pair<List<ChannelFormField>, Int> {
-      val startField = filteredFields[groupStartIndex]
-      val groupLabel = startField.groupLabel
-
-      val collected = mutableListOf<ChannelFormField>()
-      var scanIndex = groupStartIndex
-      while (scanIndex < filteredFields.size) {
-        val candidate = filteredFields[scanIndex]
-        if (scanIndex > groupStartIndex) {
-          val startsNewGroup = candidate.groupLabel != null && candidate.groupLabel != groupLabel
-
-          val prevIndex = scanIndex - 1
-          val isFollowPrevField = if (prevIndex >= 0) {
-            candidate.span == 1 && filteredFields[prevIndex].groupLabel != null
-          } else false
-
-          val isJoinContinuation = candidate.join == true || isFollowPrevField
-
-          if (startsNewGroup || (!isJoinContinuation && candidate.groupLabel == null)) {
-            break
+    val handleValueChange =
+      remember(formValues, formErrors, onValuesChangedRef, onCardNumberChangedRef) {
+        { changedField: ChannelFormField, key: String, value: String ->
+          formValues[key] = value
+          formErrors[key] = validateField(changedField, value)
+          onValuesChangedRef.value(formValues.toMap())
+          if (changedField.type.name == "credit_card_number") {
+            onCardNumberChangedRef.value(value)
           }
         }
-        collected.add(candidate)
-        scanIndex++
       }
-
-      return collected to scanIndex
-    }
 
     var fieldIndex = 0
     while (fieldIndex < filteredFields.size) {
@@ -278,14 +164,13 @@ fun DynamicForm(
 
       if (startsGroup) {
         Text(
-          text = startField.groupLabel,
+          text = startField.groupLabel.orEmpty(),
           style = MaterialTheme.typography.titleMedium,
           color = appearance.colorText,
           modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
         )
 
-        val (groupFields, nextFieldIndex) = collectGroupFields(fieldIndex)
-        // 1. Logic to filter error
+        val (groupFields, nextFieldIndex) = collectDynamicFormGroupFields(filteredFields, fieldIndex)
         val listPropertyKey = groupFields.map { it.primaryChannelPropertyKey() }
         val filteredFormError = formErrors.filterKeys { it in listPropertyKey }
         val groupHaveError = filteredFormError.any { !it.value.isNullOrEmpty() }
@@ -303,14 +188,22 @@ fun DynamicForm(
           var groupFieldIndex = 0
           while (groupFieldIndex < groupFields.size) {
             groupFieldIndex +=
-              renderFieldOrTwoColumnRow(
+              renderDynamicFormFieldOrTwoColumnRow(
                 fields = groupFields,
                 index = groupFieldIndex,
                 rowModifier = Modifier
                   .fillMaxWidth()
                   .height(IntrinsicSize.Min),
                 singleNoBorder = true,
-                isDisplayError = false
+                isDisplayError = false,
+                appearance = appearance,
+                allFields = filteredFields,
+                values = formValues,
+                errors = formErrors,
+                cardDetails = cardDetails,
+                bffCardInfo = bffCardInfo,
+                installmentPlans = installmentPlans,
+                onFieldValueChange = handleValueChange
               )
 
             if (groupFieldIndex < groupFields.size) {
@@ -321,14 +214,15 @@ fun DynamicForm(
             }
           }
         }
-        ErrorDisplay(
+        DynamicFormErrorDisplay(
           modifier = Modifier.padding(start = 8.dp),
-          filteredFormError = filteredFormError
+          filteredFormError = filteredFormError,
+          appearance = appearance
         )
         fieldIndex = nextFieldIndex
       } else {
         fieldIndex +=
-          renderFieldOrTwoColumnRow(
+          renderDynamicFormFieldOrTwoColumnRow(
             fields = filteredFields,
             index = fieldIndex,
             rowModifier = Modifier
@@ -339,10 +233,202 @@ fun DynamicForm(
                 color = appearance.colorBorder,
                 shape = RoundedCornerShape(appearance.borderRadius)
               ),
-            singleNoBorder = false
+            singleNoBorder = false,
+            isDisplayError = true,
+            appearance = appearance,
+            allFields = filteredFields,
+            values = formValues,
+            errors = formErrors,
+            cardDetails = cardDetails,
+            bffCardInfo = bffCardInfo,
+            installmentPlans = installmentPlans,
+            onFieldValueChange = handleValueChange
           )
       }
     }
+  }
+}
+
+private fun canRenderDynamicFormAsTwoColumnRow(fields: List<ChannelFormField>, index: Int): Boolean {
+  return fields[index].span == 1 && index + 1 < fields.size && fields[index + 1].span == 1
+}
+
+private fun collectDynamicFormGroupFields(
+  allFields: List<ChannelFormField>,
+  groupStartIndex: Int
+): Pair<List<ChannelFormField>, Int> {
+  val startField = allFields[groupStartIndex]
+  val groupLabel = startField.groupLabel
+
+  val collected = mutableListOf<ChannelFormField>()
+  var scanIndex = groupStartIndex
+  while (scanIndex < allFields.size) {
+    val candidate = allFields[scanIndex]
+    if (scanIndex > groupStartIndex) {
+      val startsNewGroup = candidate.groupLabel != null && candidate.groupLabel != groupLabel
+
+      val prevIndex = scanIndex - 1
+      val isFollowPrevField = if (prevIndex >= 0) {
+        candidate.span == 1 && allFields[prevIndex].groupLabel != null
+      } else false
+
+      val isJoinContinuation = candidate.join == true || isFollowPrevField
+
+      if (startsNewGroup || (!isJoinContinuation && candidate.groupLabel == null)) {
+        break
+      }
+    }
+    collected.add(candidate)
+    scanIndex++
+  }
+
+  return collected to scanIndex
+}
+
+@Composable
+private fun DynamicFormErrorDisplay(
+  modifier: Modifier,
+  filteredFormError: Map<String, String?>,
+  appearance: co.xendit.paymentsdk.ui.style.XenditAppearance
+) {
+  Column(modifier = modifier) {
+    val firstError = filteredFormError.values.firstOrNull { !it.isNullOrEmpty() }
+    if (firstError != null) {
+      Text(
+        text = firstError,
+        style = MaterialTheme.typography.labelSmall,
+        color = appearance.colorDanger,
+        modifier = modifier.padding(top = 2.dp)
+      )
+    }
+  }
+}
+
+@Composable
+private fun DynamicFormFieldItem(
+  field: ChannelFormField,
+  allFields: List<ChannelFormField>,
+  values: Map<String, String>,
+  errors: Map<String, String?>,
+  cardDetails: CardDetails?,
+  bffCardInfo: BffCardInfo?,
+  installmentPlans: List<InstallmentPlan>?,
+  noBorder: Boolean,
+  isDisplayError: Boolean,
+  onFieldValueChange: (ChannelFormField, String, String) -> Unit
+) {
+  FormFieldItem(
+    field = field,
+    allFields = allFields,
+    values = values,
+    errors = if (isDisplayError) errors else emptyMap(),
+    onValueChange = { key, value -> onFieldValueChange(field, key, value) },
+    cardDetails = cardDetails,
+    bffCardInfo = bffCardInfo,
+    installmentPlans = installmentPlans,
+    noBorder = noBorder
+  )
+}
+
+@Composable
+private fun DynamicFormTwoColumnRow(
+  leftField: ChannelFormField,
+  rightField: ChannelFormField,
+  modifier: Modifier,
+  dividerThickness: Dp,
+  appearance: co.xendit.paymentsdk.ui.style.XenditAppearance,
+  allFields: List<ChannelFormField>,
+  values: Map<String, String>,
+  errors: Map<String, String?>,
+  cardDetails: CardDetails?,
+  bffCardInfo: BffCardInfo?,
+  installmentPlans: List<InstallmentPlan>?,
+  isDisplayError: Boolean,
+  onFieldValueChange: (ChannelFormField, String, String) -> Unit
+) {
+  Row(modifier = modifier) {
+    Box(modifier = Modifier.weight(1f)) {
+      DynamicFormFieldItem(
+        field = leftField,
+        allFields = allFields,
+        values = values,
+        errors = errors,
+        cardDetails = cardDetails,
+        bffCardInfo = bffCardInfo,
+        installmentPlans = installmentPlans,
+        noBorder = true,
+        isDisplayError = isDisplayError,
+        onFieldValueChange = onFieldValueChange
+      )
+    }
+    VerticalDivider(
+      thickness = dividerThickness,
+      color = appearance.colorBorder
+    )
+    Box(modifier = Modifier.weight(1f)) {
+      DynamicFormFieldItem(
+        field = rightField,
+        allFields = allFields,
+        values = values,
+        errors = errors,
+        cardDetails = cardDetails,
+        bffCardInfo = bffCardInfo,
+        installmentPlans = installmentPlans,
+        noBorder = true,
+        isDisplayError = isDisplayError,
+        onFieldValueChange = onFieldValueChange
+      )
+    }
+  }
+}
+
+@Composable
+private fun renderDynamicFormFieldOrTwoColumnRow(
+  fields: List<ChannelFormField>,
+  index: Int,
+  rowModifier: Modifier,
+  singleNoBorder: Boolean,
+  isDisplayError: Boolean,
+  appearance: co.xendit.paymentsdk.ui.style.XenditAppearance,
+  allFields: List<ChannelFormField>,
+  values: Map<String, String>,
+  errors: Map<String, String?>,
+  cardDetails: CardDetails?,
+  bffCardInfo: BffCardInfo?,
+  installmentPlans: List<InstallmentPlan>?,
+  onFieldValueChange: (ChannelFormField, String, String) -> Unit
+): Int {
+  return if (canRenderDynamicFormAsTwoColumnRow(fields, index)) {
+    DynamicFormTwoColumnRow(
+      leftField = fields[index],
+      rightField = fields[index + 1],
+      modifier = rowModifier,
+      dividerThickness = 1.dp,
+      appearance = appearance,
+      allFields = allFields,
+      values = values,
+      errors = errors,
+      cardDetails = cardDetails,
+      bffCardInfo = bffCardInfo,
+      installmentPlans = installmentPlans,
+      isDisplayError = isDisplayError,
+      onFieldValueChange = onFieldValueChange
+    )
+    2
+  } else {
+    DynamicFormFieldItem(
+      field = fields[index],
+      allFields = allFields,
+      values = values,
+      errors = errors,
+      cardDetails = cardDetails,
+      bffCardInfo = bffCardInfo,
+      installmentPlans = installmentPlans,
+      noBorder = singleNoBorder,
+      isDisplayError = isDisplayError,
+      onFieldValueChange = onFieldValueChange
+    )
+    1
   }
 }
 

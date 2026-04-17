@@ -40,7 +40,10 @@ import co.xendit.paymentsdk.ui.qrcode.QrPaymentUI
 import co.xendit.paymentsdk.ui.style.xenditAppearance
 import co.xendit.paymentsdk.ui.ui_util.CustomShape.createTopRoundedOpenShape
 
-val SUPPORTED_PAYMENT_METHOD = listOf("cards", "qr_code")
+private data class PaymentMethodRenderer(
+  val uiGroup: String,
+  val content: @Composable (groupChannels: List<BffChannel>, selectedChannel: BffChannel) -> Unit
+)
 
 @Composable
 fun PaymentMethodsUI(
@@ -60,9 +63,39 @@ fun PaymentMethodsUI(
   modifier: Modifier = Modifier
 ) {
   val appearance = xenditAppearance
-  val groups = remember(channels) {
+  val rendererMap =
+    listOf(
+      PaymentMethodRenderer(uiGroup = "cards") { _, currentSelected ->
+        val showSaveCheckbox = sessionType == "PAY" && allowSavePaymentMethod == "OPTIONAL"
+        CardPaymentUI(
+          session = session,
+          channelData = currentSelected,
+          cardDetails = cardDetails,
+          installmentPlans = installmentPlans,
+          onCardNumberChanged = onCardNumberChanged,
+          onFormStateChanged = { formValues, visibleFields, isSaveChecked ->
+            onFormChanged(currentSelected.channelCode, formValues, visibleFields, isSaveChecked)
+          },
+          modifier = Modifier.padding(bottom = 8.dp),
+          showSaveCheckbox = showSaveCheckbox
+        )
+      },
+      PaymentMethodRenderer(uiGroup = "qr_code") { groupChannels, currentSelected ->
+        QrPaymentUI(
+          channels = groupChannels,
+          selectedChannel = currentSelected,
+          onSelectChannel = onSelectChannel,
+          onFormStateChanged = { formValues, visibleFields ->
+            onFormChanged(currentSelected.channelCode, formValues, visibleFields, false)
+          },
+          modifier = Modifier.padding(bottom = 8.dp)
+        )
+      }
+    ).associateBy { it.uiGroup }
+
+  val groups = remember(channels, rendererMap.keys) {
     Log.d("GROUP PAYMENT", channels.groupBy { it.uiGroup }.keys.toString())
-    channels.groupBy { it.uiGroup }.filter { it.key in SUPPORTED_PAYMENT_METHOD }
+    channels.groupBy { it.uiGroup }.filter { it.key in rendererMap.keys }
   }
   val filteredUiGroup = remember(groups.keys) {
     if (merchantPreferredPaymentMethod.isNullOrEmpty()) {
@@ -123,49 +156,16 @@ fun PaymentMethodsUI(
             // expanded content here
             if (isExpanded) {
               Spacer(modifier = Modifier.height(8.dp))
-              when {
-                uiGroup == "cards" && currentSelected != null -> {
-                  val showSaveCheckbox =
-                    sessionType == "PAY" && allowSavePaymentMethod == "OPTIONAL"
-                  CardPaymentUI(
-                    session = session,
-                    channelData = currentSelected,
-                    cardDetails = cardDetails,
-                    installmentPlans = installmentPlans,
-                    onCardNumberChanged = onCardNumberChanged,
-                    onFormStateChanged = { formValues, visibleFields, isSaveChecked ->
-                      onFormChanged(
-                        currentSelected.channelCode,
-                        formValues,
-                        visibleFields,
-                        isSaveChecked
-                      )
-                    },
-                    modifier = Modifier.padding(bottom = 8.dp),
-                    showSaveCheckbox = showSaveCheckbox
-                  )
-                }
-
-                uiGroup == "qr_code" && currentSelected != null -> {
-                  QrPaymentUI(
-                    channels = groupChannels,
-                    selectedChannel = currentSelected,
-                    onSelectChannel = onSelectChannel,
-                    onFormStateChanged = { formValues, visibleFields ->
-                      onFormChanged(currentSelected.channelCode, formValues, visibleFields, false)
-                    },
-                    modifier = Modifier.padding(bottom = 8.dp)
-                  )
-                }
-
-                else -> {
-                  Text(
-                    text = "This payment method is not supported yet.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = appearance.colorTextSecondary,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
-                  )
-                }
+              val renderer = rendererMap[uiGroup]
+              if (renderer != null && currentSelected != null) {
+                renderer.content(groupChannels, currentSelected)
+              } else {
+                Text(
+                  text = "This payment method is not supported yet.",
+                  style = MaterialTheme.typography.bodyMedium,
+                  color = appearance.colorTextSecondary,
+                  modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+                )
               }
             }
           }
