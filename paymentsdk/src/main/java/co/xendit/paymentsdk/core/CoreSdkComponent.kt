@@ -10,7 +10,6 @@ import co.xendit.paymentsdk.core.network.interceptor.BaseUrlInterceptor
 import co.xendit.paymentsdk.core.network.interceptor.ErrorInterceptor
 import co.xendit.paymentsdk.core.network.interceptor.HeaderInterceptor
 import co.xendit.paymentsdk.core.network.provider.HeaderProvider
-import co.xendit.paymentsdk.core.network.provider.SecretProvider
 import co.xendit.paymentsdk.data.network.remote.session.XenditApi
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
@@ -63,7 +62,6 @@ object CoreSdkComponent {
     Log.i("CoreSdkComponent", "Base URL set to: $baseUrl")
   }
 
-  val secretProvider: SecretProvider by lazy { SecretProvider() }
   val headerProvider: HeaderProvider by lazy { HeaderProvider() }
   val globalErrorHandler: GlobalErrorHandler by lazy { GlobalErrorHandler(appContext) }
   val globalLoadingHandler: GlobalLoadingHandler by lazy { GlobalLoadingHandler(appContext) }
@@ -88,7 +86,7 @@ object CoreSdkComponent {
   }
 
   val okHttpClient: OkHttpClient by lazy {
-    val headerInterceptor = HeaderInterceptor(secretProvider, headerProvider)
+    val headerInterceptor = HeaderInterceptor(headerProvider)
     val errorInterceptor = ErrorInterceptor(globalErrorHandler)
     val baseUrlInterceptor = BaseUrlInterceptor { baseHttpUrl }
 

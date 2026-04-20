@@ -1,7 +1,6 @@
 package co.xendit.paymentsdk.core.network.interceptor
 
 import co.xendit.paymentsdk.core.network.provider.HeaderProvider
-import co.xendit.paymentsdk.core.network.provider.SecretProvider
 import okhttp3.Interceptor
 import okhttp3.Request
 import okhttp3.Response
@@ -9,7 +8,6 @@ import okio.Buffer
 import java.nio.charset.StandardCharsets
 
 class HeaderInterceptor(
-  private val secretProvider: SecretProvider,
   private val provider: HeaderProvider,
 ) : Interceptor {
   override fun intercept(chain: Interceptor.Chain): Response {

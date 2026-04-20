@@ -28,26 +28,18 @@ object XenditComponents {
   private var xenditAppearance: XenditAppearance? = null
   private var merchantPreferredPaymentMethod: List<String>? = null
   private val scope = CoroutineScope(Dispatchers.Main)
-  private var origin: String? = null
 
   /**
    * Global configuration for the SDK appearance. Call this before show() to apply custom styles.
    */
   fun initialize(
+    activity: ComponentActivity,
     appearance: XenditAppearance? = null,
     merchantPreferredPaymentMethod: List<String>? = null
   ) {
     this.xenditAppearance = appearance
     this.merchantPreferredPaymentMethod = merchantPreferredPaymentMethod
-  }
-
-  /**
-   * Optional configuration to set the Origin header used for API requests.
-   * Use the same origin as the merchant website embedding the SDK.
-   */
-  fun setOrigin(origin: String) {
-    this.origin = origin
-    co.xendit.paymentsdk.core.CoreSdkComponent.headerProvider.setOrigin(origin)
+    CoreSdkComponent.headerProvider.setOrigin(activity.packageName)
   }
 
   /** Internal data class to holding parsed keys. */
@@ -142,9 +134,6 @@ object XenditComponents {
         setViewTreeViewModelStoreOwner(activity)
         setViewTreeSavedStateRegistryOwner(activity)
       }
-
-    // Apply origin if set
-    origin?.let { CoreSdkComponent.headerProvider.setOrigin(it) }
 
     // Set the content
     composeView?.setContent {
