@@ -1,30 +1,30 @@
 # Payment SDK
 
-A standalone Android SDK module built with Jetpack Compose for easy payment card data collection.
+A standalone Android SDK module built with Jetpack Compose for easy payment processing using Xendit Components.
 
 ## Features
 
 - **Jetpack Compose**: Built with modern UI components and Material3.
-- **Bottom Sheet UI**: Non-intrusive modal bottom sheet for card entry.
-- **Card Formatting**: Automatic formatting for card numbers (16 digits) and expiry dates (MM/YY).
+- **Dynamic Payment Methods**: Seamlessly render Cards, QR Codes, and other payment channels dynamically.
+- **Card Formatting**: Automatic formatting for card numbers and expiry dates.
 - **Validation**: Built-in Luhn algorithm check and date validation.
-- **Dynamic Input**: Pass initial values (like order ID or amount) from your app to the SDK.
+- **Customizable UI**: Configure styling to match your brand's look and feel.
+- **Action Handling**: Handles web-based authentications (like 3DS) via WebView or native components seamlessly.
 
 ## Integration
 
-## Integration
-
-To allow anyone to use your library without needing your personal credentials, they can use **JitPack**.
+To integrate the SDK into your project, you can use **Maven Central** or **JitPack**.
 
 ### 1. Configure Repository
 
-Add JitPack to your `settings.gradle.kts` (or root `build.gradle.kts`):
+Add Maven Central (or JitPack) to your `settings.gradle.kts` (or root `build.gradle.kts`):
 ```kotlin
 dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
-        maven { url = uri("https://jitpack.io") }
+        // If using JitPack:
+        // maven { url = uri("https://jitpack.io") }
     }
 }
 ```
@@ -34,26 +34,52 @@ dependencyResolutionManagement {
 Add the following to your `app/build.gradle.kts`:
 ```kotlin
 dependencies {
-    implementation("com.github.argaasasta:XenComponentPrivate:v0.0.1-alpha")
+    // Replace with the latest published version
+    implementation("com.xendit:paymentsdk:0.0.1") 
+    // Or if using JitPack:
+    // implementation("com.github.argaasasta:XenComponentPrivate:v0.0.1-alpha")
 }
 ```
-*(Note: Replace `v0.0.1-alpha` with your latest tag)*
 
-### 2. Basic Usage
+## Basic Usage
 
-Launch the SDK from any `ComponentActivity`:
+### 1. Initialization (Optional)
+
+You can optionally initialize the SDK with custom appearance settings before presenting the payment UI:
 
 ```kotlin
-PaymentSDK.show(
-    context = this, 
-    initialValue = "Order #12345", // Shown in the bottom sheet
-    callback = { result ->
+val customStyle = XenditAppearance(
+    // Customize your font, colors, border radius, etc.
+    // fontFamily = yourCustomFontFamily,
+    // colorPrimary = Color(0xFF21DCCB),
+)
+
+XenditComponents.initialize(
+    appearance = customStyle,
+    merchantPreferredPaymentMethod = listOf("cards", "qr_code") // Optional ordering
+)
+```
+
+### 2. Presenting the Payment UI
+
+Launch the SDK from any `ComponentActivity` using a Session SDK Key:
+
+```kotlin
+XenditComponents.present(
+    activity = this, 
+    componentsSdkKey = "session-123-prod-PK123-SIG123", // Your Components SDK Key
+    merchantPreferredPaymentMethod = listOf("cards", "qr_code"), // Optional: Override preferences for this session
+    onPaymentResult = { result ->
         when (result) {
-            is PaymentResult.Success -> {
-                val card = result.cardData
-                // Handle payment with card.cardNumber, card.expiryDate, card.cvc
+            is XenditPaymentResult.Success -> {
+                // Payment was successfully completed
+                val paymentMethodId = result.paymentMethodId
             }
-            is PaymentResult.Cancelled -> {
+            is XenditPaymentResult.Failed -> {
+                // Payment failed or encountered an error
+                val error = result.error
+            }
+            is XenditPaymentResult.Canceled -> {
                 // User dismissed the payment form
             }
         }
@@ -77,3 +103,4 @@ To build the SDK as a standalone AAR for distribution:
 
 The AAR will be generated at:
 `paymentsdk/build/outputs/aar/paymentsdk-release.aar`
+
