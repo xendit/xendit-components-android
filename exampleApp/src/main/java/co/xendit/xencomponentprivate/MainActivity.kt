@@ -77,9 +77,8 @@ class MainActivity : ComponentActivity() {
 //      qrForegroundColor = Color(0xFF000000),
 //      qrBackgroundColor = Color(0xFFFFFFFF),
     )
-    baseContext.findActivity()?.let { act ->
+    findActivity()?.let { act ->
       XenditComponents.initialize(
-        activity = act,
         appearance = customStyle,
 //      merchantPreferredPaymentMethod = listOf("cards")
       )

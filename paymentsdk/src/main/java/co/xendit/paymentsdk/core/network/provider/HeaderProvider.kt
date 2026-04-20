@@ -6,5 +6,8 @@ class HeaderProvider {
   fun setOrigin(origin: String) {
     this.origin = origin
   }
-  fun getOrigin() = origin
+
+  fun getOrigin(): String {
+    return origin
+  }
 }

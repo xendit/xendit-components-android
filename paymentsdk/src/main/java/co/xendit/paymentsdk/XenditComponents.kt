@@ -33,13 +33,11 @@ object XenditComponents {
    * Global configuration for the SDK appearance. Call this before show() to apply custom styles.
    */
   fun initialize(
-    activity: ComponentActivity,
     appearance: XenditAppearance? = null,
-    merchantPreferredPaymentMethod: List<String>? = null
+    merchantPreferredPaymentMethod: List<String>? = null,
   ) {
     this.xenditAppearance = appearance
     this.merchantPreferredPaymentMethod = merchantPreferredPaymentMethod
-    CoreSdkComponent.headerProvider.setOrigin(activity.packageName)
   }
 
   /** Internal data class to holding parsed keys. */
@@ -100,7 +98,7 @@ object XenditComponents {
     if (activity !is Activity) {
       throw IllegalArgumentException("Context must be an Activity to show the Payment SDK.")
     }
-
+//    CoreSdkComponent.headerProvider.setOrigin(activity.packageName ?: "") // now only use default
     this.merchantPreferredPaymentMethod = merchantPreferredPaymentMethod
 
     val keys =
