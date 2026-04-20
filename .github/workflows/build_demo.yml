@@ -31,6 +31,6 @@ jobs:
           tag_name: "demo-build"
           name: "Latest Debug Build"
           body: "This is an automated debug build from the main branch."
-          files: app/build/outputs/apk/debug/app-debug.apk
+          files: app/build/outputs/apk/*/debug/*.apk
           token: ${{ secrets.GITHUB_TOKEN }}
           overwrite: true
