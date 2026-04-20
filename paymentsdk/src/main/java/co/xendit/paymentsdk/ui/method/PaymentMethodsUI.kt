@@ -46,7 +46,7 @@ private data class PaymentMethodRenderer(
 )
 
 @Composable
-fun PaymentMethodsUI(
+internal fun PaymentMethodsUI(
   session: BffSession?,
   merchantPreferredPaymentMethod: List<String>? = null,
   channels: List<BffChannel>,
@@ -177,7 +177,7 @@ fun PaymentMethodsUI(
 }
 
 @Composable
-fun SelectableHeaderItem(
+private fun SelectableHeaderItem(
   text: String,
   @DrawableRes leftIcon: Int,
   isExpanded: Boolean,

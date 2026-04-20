@@ -2,7 +2,7 @@ package co.xendit.paymentsdk.ui.helper
 
 import java.time.YearMonth
 
-object FormCheckerUtil {
+internal object FormCheckerUtil {
   fun isValidCreditCard(cardNumber: String): Boolean {
     // Remove any spaces or dashes the user might have entered
     val digits = cardNumber.replace(Regex("\\D"), "")

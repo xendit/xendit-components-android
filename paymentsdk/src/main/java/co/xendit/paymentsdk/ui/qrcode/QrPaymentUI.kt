@@ -28,7 +28,7 @@ import co.xendit.paymentsdk.ui.style.xenditAppearance
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun QrPaymentUI(
+internal fun QrPaymentUI(
   channels: List<BffChannel>,
   selectedChannel: BffChannel,
   onSelectChannel: (String) -> Unit,

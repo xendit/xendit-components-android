@@ -5,7 +5,7 @@ import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
 import okhttp3.ResponseBody
 
-fun ResponseBody.asApiError(gson: Gson = Gson()): APIError {
+internal fun ResponseBody.asApiError(gson: Gson = Gson()): APIError {
   return try {
     gson.fromJson(string(), APIError::class.java)
   } catch (e: Exception) {
@@ -14,7 +14,7 @@ fun ResponseBody.asApiError(gson: Gson = Gson()): APIError {
 }
 
 @Keep
-data class APIError(
+internal data class APIError(
   @SerializedName("error_code")
   val errorCode: String,
   @SerializedName("message")
@@ -28,7 +28,7 @@ data class APIError(
 }
 
 @Keep
-data class ErrorContent(
+internal data class ErrorContent(
   @SerializedName("title")
   val title: String,
   @SerializedName("message_1")

@@ -7,7 +7,7 @@ import okhttp3.Response
 import okio.Buffer
 import java.nio.charset.StandardCharsets
 
-class HeaderInterceptor(
+internal class HeaderInterceptor(
   private val provider: HeaderProvider,
 ) : Interceptor {
   override fun intercept(chain: Interceptor.Chain): Response {

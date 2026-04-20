@@ -46,7 +46,7 @@ import co.xendit.paymentsdk.ui.helper.toLabelDisplay
 import co.xendit.paymentsdk.ui.style.xenditAppearance
 
 @Composable
-fun DynamicForm(
+internal fun DynamicForm(
   fields: List<ChannelFormField>,
   cardDetails: CardDetails?,
   onValuesChanged: (Map<String, String>) -> Unit,
@@ -402,7 +402,7 @@ private fun renderDynamicFormFieldOrTwoColumnRow(
  * Fields with flags.require_billing_information = true are only shown when showBillingDetailsFields is true.
  * Fields with display_if conditions are filtered based on the current form values.
  */
-fun filterFormFields(
+private fun filterFormFields(
   fields: List<ChannelFormField>,
   cardDetails: CardDetails?,
   formValues: Map<String, String>,
@@ -446,7 +446,7 @@ fun filterFormFields(
 }
 
 @Composable
-fun FormFieldItem(
+private fun FormFieldItem(
   field: ChannelFormField,
   allFields: List<ChannelFormField>,
   values: Map<String, String>,

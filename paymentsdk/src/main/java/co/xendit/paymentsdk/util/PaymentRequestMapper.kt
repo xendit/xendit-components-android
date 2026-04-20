@@ -7,7 +7,7 @@ import co.xendit.paymentsdk.data.model.primaryChannelPropertyKey
 
 import co.xendit.paymentsdk.data.model.InstallmentPlan
 
-object PaymentRequestMapper {
+internal object PaymentRequestMapper {
 
   /**
    * Maps flat form values (dot-notated keys) to a nested map structure as required by the payment

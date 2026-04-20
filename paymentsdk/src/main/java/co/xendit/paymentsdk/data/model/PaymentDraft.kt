@@ -3,7 +3,7 @@ package co.xendit.paymentsdk.data.model
 import androidx.annotation.Keep
 
 @Keep
-data class PaymentDraft(
+internal data class PaymentDraft(
   val channelCode: String? = null,
   val formValues: Map<String, String> = emptyMap(),
   val visibleFields: List<ChannelFormField> = emptyList(),

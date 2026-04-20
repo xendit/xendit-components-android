@@ -3,12 +3,12 @@ package co.xendit.paymentsdk.data.model
 import androidx.annotation.Keep
 
 @Keep
-data class ProvinceOption(
+internal data class ProvinceOption(
   val title: String,
   val value: String
 )
 
-object Provinces {
+internal object Provinces {
   fun forCountry(countryCode: String?): List<ProvinceOption>? {
     return when (countryCode?.uppercase()) {
       "US" -> US

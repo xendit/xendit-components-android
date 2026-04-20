@@ -32,7 +32,7 @@ import co.xendit.paymentsdk.ui.style.xenditAppearance
 import com.google.i18n.phonenumbers.PhoneNumberUtil
 
 @Composable
-fun PhoneNumberField(
+internal fun PhoneNumberField(
   modifier: Modifier = Modifier,
   value: String,
   label: String? = null,

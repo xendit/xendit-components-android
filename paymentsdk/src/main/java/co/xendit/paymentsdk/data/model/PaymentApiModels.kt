@@ -4,13 +4,13 @@ import androidx.annotation.Keep
 import com.google.gson.annotations.SerializedName
 
 @Keep
-data class PaymentOptionsRequest(
+internal data class PaymentOptionsRequest(
   @SerializedName("channel_code") val channelCode: String,
   @SerializedName("channel_properties") val channelProperties: Map<String, Any>
 )
 
 @Keep
-data class PaymentRequest(
+internal data class PaymentRequest(
   @SerializedName("session_id") val sessionId: String,
   @SerializedName("channel_code") val channelCode: String,
   @SerializedName("channel_properties") val channelProperties: Map<String, Any>,
@@ -19,19 +19,19 @@ data class PaymentRequest(
 )
 
 @Keep
-data class Customer(
+internal data class Customer(
   val id: String? = null
 // Add other customer fields if needed
 )
 
 @Keep
-data class OtpUi(
+internal data class OtpUi(
   val title: String,
   val instructions: String
 )
 
 @Keep
-data class PaymentAction(
+internal data class PaymentAction(
   val type: String,
   val descriptor: String?,
   val value: String?,
@@ -44,7 +44,7 @@ data class PaymentAction(
 )
 
 @Keep
-data class PaymentResponse(
+internal data class PaymentResponse(
   @SerializedName(value = "id", alternate = ["payment_request_id", "payment_token_id"])
   val id: String,
   val status: String,
@@ -69,16 +69,16 @@ data class PaymentResponse(
 )
 
 @Keep
-data class PaymentMethod(val id: String, val status: String)
+internal data class PaymentMethod(val id: String, val status: String)
 
 @Keep
-data class SucceededChannel(
+internal data class SucceededChannel(
   @SerializedName("channel_code") val channelCode: String,
   @SerializedName("logo_url") val logoUrl: String?
 )
 
 @Keep
-data class PollResponse(
+internal data class PollResponse(
   @SerializedName("session")
   val session: BffSession?,
   @SerializedName("payment_request") val paymentRequest: PaymentResponse?,

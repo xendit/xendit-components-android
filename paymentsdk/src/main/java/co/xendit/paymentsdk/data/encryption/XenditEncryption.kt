@@ -18,7 +18,7 @@ import javax.crypto.Mac
 import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.SecretKeySpec
 
-object XenditEncryption {
+internal object XenditEncryption {
 
   private const val ECDH_ALGORITHM = "EC"
   private const val ECDH_CURVE = "secp384r1" // P-384

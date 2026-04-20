@@ -36,7 +36,7 @@ import co.xendit.paymentsdk.ui.style.xenditAppearance
 
 /** Card specific payment UI. This component specifically handles the Card payment flow. */
 @Composable
-fun CardPaymentUI(
+internal fun CardPaymentUI(
   session: BffSession?,
   channelData: BffChannel,
   cardDetails: CardDetails?,

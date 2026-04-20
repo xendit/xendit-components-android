@@ -22,7 +22,7 @@ import co.xendit.paymentsdk.ui.style.xenditAppearance
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun InstallmentPlanField(
+internal fun InstallmentPlanField(
   plans: List<InstallmentPlan>,
   selectedPlanDesc: String,
   onPlanSelected: (InstallmentPlan) -> Unit,

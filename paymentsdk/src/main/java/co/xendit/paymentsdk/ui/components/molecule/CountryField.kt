@@ -18,7 +18,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 @Composable
-fun CountryField(
+internal fun CountryField(
   modifier: Modifier = Modifier,
   value: String,
   label: String? = null,

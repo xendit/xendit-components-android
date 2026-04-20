@@ -24,7 +24,7 @@ enum class XenditTextFieldLabelPlacement {
 }
 
 @Composable
-fun XenditTextField(
+internal fun XenditTextField(
   modifier: Modifier = Modifier,
   value: String,
   textStyle: TextStyle = MaterialTheme.typography.bodyLarge,

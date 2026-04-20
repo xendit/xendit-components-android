@@ -11,7 +11,7 @@ import co.xendit.paymentsdk.data.model.RegexValidator
  * Sample BffChannel object for "Cards" based on the API response. This can be used for testing or
  * as a mock.
  */
-val SAMPLE_CARD_CHANNEL =
+internal val SAMPLE_CARD_CHANNEL =
   BffChannel(
     brandName = "Cards",
     channelCode = "CARDS",

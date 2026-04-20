@@ -4,7 +4,7 @@ import android.content.Context
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 
-class GlobalLoadingHandler(
+internal class GlobalLoadingHandler(
   val context: Context,
 ) {
 

@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import java.util.Locale
 
 @Keep
-data class Country(val name: String, val code: String, val dialCode: String) {
+internal data class Country(val name: String, val code: String, val dialCode: String) {
   val flagUrl: String
     get() = "https://assets.xendit.co/payment-session/flags/circle/${code.lowercase()}.svg"
 
@@ -52,10 +52,10 @@ data class Country(val name: String, val code: String, val dialCode: String) {
   }
 }
 
-fun List<Country>.findCountryByCode(code: String): Country? {
+internal fun List<Country>.findCountryByCode(code: String): Country? {
   return find { it.code.equals(code, ignoreCase = true) }
 }
 
-fun List<Country>.findCountryByDialCode(dialCode: String): Country? {
+internal fun List<Country>.findCountryByDialCode(dialCode: String): Country? {
   return find { it.dialCode == dialCode }
 }

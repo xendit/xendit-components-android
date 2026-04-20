@@ -35,7 +35,7 @@ import kotlin.reflect.KClass
  * Manual Dependency Injection container for the Payment SDK. This object holds all the singletons
  * needed by the SDK.
  */
-object CoreSdkComponent {
+internal object CoreSdkComponent {
 
   private lateinit var appContext: Context
   @Volatile private var baseUrl: String = "https://checkout-ui-gateway.xendit.co"

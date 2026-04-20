@@ -24,7 +24,7 @@ import co.xendit.paymentsdk.BuildConfig
 import co.xendit.paymentsdk.data.model.BffItem
 
 @Composable
-fun OrderSummaryUI(
+internal fun OrderSummaryUI(
   referenceId: String?,
   currency: String?,
   amount: Long?,

@@ -6,7 +6,7 @@ import co.xendit.paymentsdk.ui.helper.FormCheckerUtil.isValidCardExpiry
 import co.xendit.paymentsdk.ui.helper.FormCheckerUtil.isValidCreditCard
 import kotlin.collections.forEach
 
-object FormChecker {
+internal object FormChecker {
 
   fun validateAllField(fields: List<ChannelFormField>, values: Map<String, String>): Boolean {
     fields.forEach { field ->

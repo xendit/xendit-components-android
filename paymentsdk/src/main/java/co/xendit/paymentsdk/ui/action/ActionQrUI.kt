@@ -41,7 +41,7 @@ import java.text.NumberFormat
 import java.util.Locale
 
 @Composable
-fun ActionQrUI(
+internal fun ActionQrUI(
   title: String?,
   channelName: String,
   channelLogoUrl: String?,

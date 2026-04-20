@@ -29,7 +29,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
 
-data class PaymentState(
+internal data class PaymentState(
   val isLoading: Boolean = false,
   val channels: List<BffChannel> = emptyList(),
   val expandedUiGroup: String? = null,
@@ -47,7 +47,7 @@ data class PaymentState(
   val paymentDraft: PaymentDraft = PaymentDraft()
 )
 
-sealed interface ActionIntent {
+internal sealed interface ActionIntent {
   data class Initialize(val sessionAuthKey: String, val publicKey: String) : ActionIntent
   data class FetchSession(val sessionAuthKey: String) : ActionIntent
   data class ToggleUiGroup(val uiGroup: String) : ActionIntent
@@ -64,7 +64,7 @@ sealed interface ActionIntent {
   data object ChallengeCompleted : ActionIntent
 }
 
-class PaymentViewModel(
+internal class PaymentViewModel(
   private val xenditRepository: XenditRepository,
   private val globalErrorHandler: GlobalErrorHandler
 ) : ViewModel() {

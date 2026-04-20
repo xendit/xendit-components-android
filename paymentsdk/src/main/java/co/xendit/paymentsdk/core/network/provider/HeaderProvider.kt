@@ -1,6 +1,6 @@
 package co.xendit.paymentsdk.core.network.provider
 
-class HeaderProvider {
+internal class HeaderProvider {
   private var origin: String = "https://demo-store.xendit.co"
 
   fun setOrigin(origin: String) {

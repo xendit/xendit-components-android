@@ -6,7 +6,7 @@ import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 
-class GlobalErrorHandler(
+internal class GlobalErrorHandler(
   val context: Context,
 ) {
   private val _apiErrorFlow = MutableSharedFlow<Pair<String?, UiText?>>(

@@ -29,7 +29,7 @@ import co.xendit.paymentsdk.ui.style.XenditAppearance
 
 /** A custom MaterialTheme that applies the partner's [XenditAppearance]. */
 @Composable
-fun XenditTheme(style: XenditAppearance, content: @Composable () -> Unit) {
+internal fun XenditTheme(style: XenditAppearance, content: @Composable () -> Unit) {
   val colorScheme =
     lightColorScheme(
       primary = style.colorPrimary,

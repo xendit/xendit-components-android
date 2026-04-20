@@ -3,7 +3,7 @@ package co.xendit.paymentsdk.core.network.interceptor
 import okhttp3.HttpUrl
 import okhttp3.Interceptor
 
-class BaseUrlInterceptor(
+internal class BaseUrlInterceptor(
   private val baseUrlProvider: () -> HttpUrl
 ) : Interceptor {
   override fun intercept(chain: Interceptor.Chain): okhttp3.Response {

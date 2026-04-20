@@ -8,7 +8,7 @@ import retrofit2.Response
 import java.io.IOException
 
 val TAG = "SafeApiCall"
-class SafeApiCall(val loadingHandler: GlobalLoadingHandler) {
+internal class SafeApiCall(val loadingHandler: GlobalLoadingHandler) {
   suspend fun <T> call(apiCall: suspend () -> Response<T>): Response<T> {
     loadingHandler.setLoading()
     try {

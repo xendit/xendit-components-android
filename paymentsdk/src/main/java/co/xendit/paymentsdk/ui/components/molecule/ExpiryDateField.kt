@@ -9,7 +9,7 @@ import co.xendit.paymentsdk.util.GroupedDigitsTransformation
 
 /** Expiry date input field with visual transformation */
 @Composable
-fun ExpiryDateField(
+internal fun ExpiryDateField(
   modifier: Modifier = Modifier,
   value: String,
   placeholder: String?,

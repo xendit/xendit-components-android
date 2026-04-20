@@ -48,7 +48,7 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProvinceField(
+internal fun ProvinceField(
   modifier: Modifier = Modifier,
   value: String,
   label: String? = null,

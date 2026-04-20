@@ -7,7 +7,7 @@ import co.xendit.paymentsdk.core.CoreSdkComponent.globalErrorHandler
 import co.xendit.paymentsdk.data.DataSdkComponent.xenditRepository
 import co.xendit.paymentsdk.ui.PaymentViewModel
 
-class PaymentViewModelFactory(private val context: Context) : ViewModelProvider.Factory {
+internal class PaymentViewModelFactory(private val context: Context) : ViewModelProvider.Factory {
   @Suppress("UNCHECKED_CAST")
   override fun <T : ViewModel> create(modelClass: Class<T>): T {
     co.xendit.paymentsdk.core.CoreSdkComponent.init(context)

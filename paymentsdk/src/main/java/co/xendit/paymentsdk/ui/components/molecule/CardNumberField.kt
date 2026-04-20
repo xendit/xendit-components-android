@@ -20,7 +20,7 @@ import coil.compose.AsyncImage
 
 /** Card number input field with visual transformation */
 @Composable
-fun CardNumberField(
+internal fun CardNumberField(
   modifier: Modifier = Modifier,
   value: String,
   label: String? = null,

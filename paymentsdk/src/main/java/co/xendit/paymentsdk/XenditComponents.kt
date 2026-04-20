@@ -41,7 +41,7 @@ object XenditComponents {
   }
 
   /** Internal data class to holding parsed keys. */
-  internal data class Keys(
+  private data class Keys(
     val sessionAuthKey: String,
     val hostId: String,
     val publicKey: String,
@@ -53,7 +53,7 @@ object XenditComponents {
    * Parse the component SDK key. Format: session_auth_key-host_id-public_key-signature Example:
    * session-123-prod-PK123-SIG123
    */
-  internal fun parseSdkKey(sdkKey: String): Keys {
+  private fun parseSdkKey(sdkKey: String): Keys {
     val parts = sdkKey.split("-")
     if (parts.size < 5) {
       throw IllegalArgumentException("Invalid SDK Key format")
@@ -70,7 +70,7 @@ object XenditComponents {
     return Keys(sessionAuthKey, hostId, publicKey, signature)
   }
 
-  internal fun resolveBaseUrlForHostId(hostId: String): String {
+  private fun resolveBaseUrlForHostId(hostId: String): String {
     return when (hostId.lowercase()) {
       "pl" -> "https://checkout-ui-gateway.xendit.co"
       "pd" -> "https://checkout-ui-gateway-prod-dev.xendit.co"

@@ -11,7 +11,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 
-object CustomShape {
+internal object CustomShape {
 
   fun createTopRoundedOpenShape(radius: Dp) = object : Shape {
     override fun createOutline(

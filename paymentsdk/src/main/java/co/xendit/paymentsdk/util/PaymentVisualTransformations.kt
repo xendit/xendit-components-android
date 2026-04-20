@@ -6,7 +6,7 @@ import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
 
 /** Visual transformation for card number (XXXX XXXX XXXX XXXX) */
-class GroupedDigitsTransformation(
+internal class GroupedDigitsTransformation(
   private val groupSize: Int = 4,
   private val separator: Char = ' ',
   private val maxDigits: Int? = null
@@ -69,7 +69,7 @@ class GroupedDigitsTransformation(
 }
 
 /** Visual transformation for expiry date (MM/YY) */
-class ExpiryDateTransformation : VisualTransformation {
+internal class ExpiryDateTransformation : VisualTransformation {
   override fun filter(text: AnnotatedString): TransformedText {
     val trimmed = if (text.text.length >= 4) text.text.substring(0..3) else text.text
     var out = ""

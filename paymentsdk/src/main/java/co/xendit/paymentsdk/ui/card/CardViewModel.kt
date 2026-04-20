@@ -18,12 +18,12 @@ import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.util.Locale
 
-data class CardState(
+internal data class CardState(
   val cardDetails: CardDetails? = null,
   val installmentPlans: List<InstallmentPlan>? = null
 )
 
-sealed interface CardIntent {
+internal sealed interface CardIntent {
   data class ConfigureSession(
     val sessionAuthKey: String,
     val publicKey: String,
@@ -34,7 +34,7 @@ sealed interface CardIntent {
   data object Reset : CardIntent
 }
 
-class CardViewModel(
+internal class CardViewModel(
   private val xenditRepository: XenditRepository
 ) : ViewModel() {
   private val _state = MutableStateFlow(CardState())

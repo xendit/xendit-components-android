@@ -30,5 +30,5 @@ data class XenditAppearance(
 
 internal val LocalXenditAppearance = staticCompositionLocalOf { XenditAppearance() }
 
-val xenditAppearance: XenditAppearance
+internal val xenditAppearance: XenditAppearance
   @Composable get() = LocalXenditAppearance.current
