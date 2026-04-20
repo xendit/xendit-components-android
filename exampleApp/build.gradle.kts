@@ -17,24 +17,7 @@ android {
     versionName = "1.0"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-  }
-
-  flavorDimensions.add("server")
-  productFlavors {
-    create("qa") {
-      dimension = "server"
-      applicationIdSuffix = ".qa" // Makes the ID: co.xendit.xencomponentprivate.qa
-      manifestPlaceholders["appName"] = "Demo SDK (QA)"
-    }
-    create("stage") {
-      dimension = "server"
-      applicationIdSuffix = ".stage" // Makes the ID: co.xendit.xencomponentprivate.stage
-      manifestPlaceholders["appName"] = "Demo SDK (Stage)"
-    }
-    create("prod") {
-      dimension = "server"
-      manifestPlaceholders["appName"] = "Demo SDK"
-    }
+    manifestPlaceholders["appName"] = "Demo SDK"
   }
 
   buildTypes {

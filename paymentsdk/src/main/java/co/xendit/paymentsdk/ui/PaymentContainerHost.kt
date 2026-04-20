@@ -250,7 +250,7 @@ internal fun PaymentContainerHost(
           ) {
             Column {
               Text(
-                text = "Flavor = ${BuildConfig.FLAVOR} " + "Debug = ${BuildConfig.DEBUG}",
+                text = "Debug = ${BuildConfig.DEBUG}",
                 style = MaterialTheme.typography.bodySmall,
                 color = Color.Gray
               )
