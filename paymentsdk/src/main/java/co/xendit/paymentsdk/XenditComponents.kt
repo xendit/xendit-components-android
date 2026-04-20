@@ -11,7 +11,7 @@ import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.lifecycle.setViewTreeViewModelStoreOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import co.xendit.paymentsdk.core.CoreSdkComponent
-import co.xendit.paymentsdk.data.model.PaymentResult
+import co.xendit.paymentsdk.data.model.XenditPaymentResult
 import co.xendit.paymentsdk.data.model.XenditError
 import co.xendit.paymentsdk.ui.PaymentContainerHost
 import co.xendit.paymentsdk.ui.PaymentContainerPresentation
@@ -24,7 +24,7 @@ import kotlinx.coroutines.Dispatchers
 object XenditComponents {
 
   private var composeView: ComposeView? = null
-  private var currentCallback: ((PaymentResult) -> Unit)? = null
+  private var currentCallback: ((XenditPaymentResult) -> Unit)? = null
   private var xenditAppearance: XenditAppearance? = null
   private var merchantPreferredPaymentMethod: List<String>? = null
   private val scope = CoroutineScope(Dispatchers.Main)
@@ -103,7 +103,7 @@ object XenditComponents {
     activity: ComponentActivity,
     componentsSdkKey: String,
     merchantPreferredPaymentMethod: List<String>? = null,
-    onPaymentResult: (PaymentResult) -> Unit
+    onPaymentResult: (XenditPaymentResult) -> Unit
   ) {
     if (activity !is Activity) {
       throw IllegalArgumentException("Context must be an Activity to show the Payment SDK.")
@@ -117,7 +117,7 @@ object XenditComponents {
       } catch (e: Exception) {
         Log.e("PaymentSDK", "Failed to parse SDK Key", e)
         onPaymentResult.invoke(
-          PaymentResult.Failed(
+          XenditPaymentResult.Failed(
             XenditError(
               code = "111",
               message = e.toString(),
@@ -175,7 +175,7 @@ object XenditComponents {
 
   /** Dismiss the payment bottom sheet manually */
   fun dismiss() {
-    currentCallback?.invoke(PaymentResult.Canceled)
+    currentCallback?.invoke(XenditPaymentResult.Canceled)
     cleanup()
   }
 

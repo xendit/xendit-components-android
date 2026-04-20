@@ -3,12 +3,15 @@ package co.xendit.paymentsdk.data.model
 import androidx.annotation.Keep
 
 /** Sealed class representing the result of a payment interaction */
-sealed class PaymentResult {
-  data class Success(val result: String) : PaymentResult()
-  data class Failed(val throwable: XenditError) : PaymentResult()
-  data object Canceled : PaymentResult()
-  data object Expired : PaymentResult()
-  data object Dismissed : PaymentResult()
+sealed class XenditPaymentResult {
+  data class Success(
+    val paymentRequestId: String?,
+    val channelCode: String?
+  ) : XenditPaymentResult()
+  data class Failed(val error: XenditError) : XenditPaymentResult()
+  data object Canceled : XenditPaymentResult()
+  data object Expired : XenditPaymentResult()
+  data object Dismissed : XenditPaymentResult()
 }
 
 @Keep
