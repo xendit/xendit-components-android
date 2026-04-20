@@ -23,15 +23,4 @@ internal class HeaderInterceptor(
       throw e
     }
   }
-
-  /** Safely reads the request body into a string without consuming it. */
-  private fun bodyToString(request: Request): String {
-    return try {
-      val buffer = Buffer()
-      request.body?.writeTo(buffer)
-      buffer.readString(StandardCharsets.UTF_8)
-    } catch (e: Exception) {
-      "" // Return empty string if body is absent or can't be read
-    }
-  }
 }

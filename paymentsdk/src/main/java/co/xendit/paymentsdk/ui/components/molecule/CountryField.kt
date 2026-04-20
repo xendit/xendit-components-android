@@ -31,7 +31,6 @@ internal fun CountryField(
 ) {
   var expanded by remember { mutableStateOf(false) }
 
-  // Resolve selected country from value (code or name)
   val countries by Country.countriesFlow.collectAsStateWithLifecycle()
   val selectedCountry =
     remember(value, countries) {
@@ -43,7 +42,6 @@ internal fun CountryField(
       }
     }
 
-  // Ensure warm-up is triggered if not already
   LaunchedEffect(Unit) {
     if (countries.isEmpty()) {
       withContext(Dispatchers.Default) { Country.warmUp() }
@@ -65,7 +63,7 @@ internal fun CountryField(
           modifier = Modifier.padding(start = 8.dp),
           selectedCountry = country,
           onCountrySelected = { selected ->
-            onValueChange(selected.code) // We emit the Alpha-2 code
+            onValueChange(selected.code)
             expanded = false
           },
           expanded = expanded,

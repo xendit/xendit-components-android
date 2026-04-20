@@ -31,10 +31,6 @@ import java.util.concurrent.TimeUnit
 import kotlin.jvm.internal.Reflection
 import kotlin.reflect.KClass
 
-/**
- * Manual Dependency Injection container for the Payment SDK. This object holds all the singletons
- * needed by the SDK.
- */
 internal object CoreSdkComponent {
 
   private lateinit var appContext: Context
@@ -43,10 +39,6 @@ internal object CoreSdkComponent {
   @Volatile private var retrofitInstance: Retrofit? = null
   @Volatile private var apiInstance: XenditApi? = null
 
-  /**
-   * Initialize the SDK component with application context. This should be called by
-   * [co.xendit.paymentsdk.XenditComponents.present].
-   */
   fun init(context: Context) {
     if (!::appContext.isInitialized) {
       appContext = context.applicationContext
@@ -132,8 +124,8 @@ internal object CoreSdkComponent {
 
 class SealedClassTypeAdapter<T : Any>(val kclass: KClass<Any>, val gson: Gson) : TypeAdapter<T>() {
   override fun read(jsonReader: JsonReader): T? {
-    jsonReader.beginObject() // start reading the object
-    val nextName = jsonReader.nextName() // get the name on the object
+    jsonReader.beginObject()
+    val nextName = jsonReader.nextName()
     val innerClass =
       kclass.sealedSubclasses.firstOrNull { it.simpleName!!.contains(nextName) }
         ?: throw Exception(
@@ -141,7 +133,6 @@ class SealedClassTypeAdapter<T : Any>(val kclass: KClass<Any>, val gson: Gson) :
         )
     val x = gson.fromJson<T>(jsonReader, innerClass.javaObjectType)
     jsonReader.endObject()
-    // if there a static object, actually return that back to ensure equality and such!
     return (innerClass.objectInstance as? T) ?: x
   }
 

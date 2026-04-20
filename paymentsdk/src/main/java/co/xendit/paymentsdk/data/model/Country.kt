@@ -9,9 +9,6 @@ import java.util.Locale
 
 @Keep
 internal data class Country(val name: String, val code: String, val dialCode: String) {
-  val flagUrl: String
-    get() = "https://assets.xendit.co/payment-session/flags/circle/${code.lowercase()}.svg"
-
   companion object {
     private val phoneUtil = PhoneNumberUtil.getInstance()
 
@@ -19,7 +16,6 @@ internal data class Country(val name: String, val code: String, val dialCode: St
     val countriesFlow: StateFlow<List<Country>> = _countriesFlow.asStateFlow()
 
     val countries: List<Country> by lazy {
-      // Priority countries to show immediately
 
       val allRegions = phoneUtil.supportedRegions
       val list = allRegions
@@ -36,17 +32,14 @@ internal data class Country(val name: String, val code: String, val dialCode: St
     }
 
     fun warmUp() {
-      // Accessing countries property triggers lazy initialization
       countries
     }
 
     fun fromCode(code: String): Country? {
-      // Access property safely, might block if not ready
       return countries.find { it.code.equals(code, ignoreCase = true) }
     }
 
     fun fromDialCode(dialCode: String): Country? {
-      // Access property safely, might block if not ready
       return countries.find { it.dialCode == dialCode }
     }
   }

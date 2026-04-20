@@ -21,11 +21,7 @@ internal data class APIError(
   var message: String = "",
   @SerializedName("error_content")
   val errorContent: ErrorContent? = null
-) {
-//  fun isHandledError(): Boolean {
-//    return listOf("4000003", "4000004", "4000005").contains(errorCode)
-//  }
-}
+)
 
 @Keep
 internal data class ErrorContent(

@@ -16,7 +16,7 @@ sealed class XenditPaymentResult {
 
 @Keep
 data class XenditError(
-  val code: String,           // e.g. "INSUFFICIENT_FUNDS", "NETWORK_ERROR"
-  val message: String,           // localised, safe to display to the user
-  val cause: Throwable? = null // original exception, for logging
+  val code: String,
+  val message: String,
+  val cause: Throwable? = null
 )

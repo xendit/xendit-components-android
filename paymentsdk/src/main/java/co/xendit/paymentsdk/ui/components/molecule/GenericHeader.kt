@@ -26,7 +26,7 @@ import co.xendit.paymentsdk.ui.style.xenditAppearance
 internal fun GenericHeader(
   title: String,
   onLeftClick: (() -> Unit)? = null,
-  leftIcon: ImageVector? = Icons.AutoMirrored.Default.ArrowBack, // Default back arrow
+  leftIcon: ImageVector? = Icons.AutoMirrored.Default.ArrowBack,
   rightIcon: ImageVector? = null,
   onRightClick: (() -> Unit)? = null,
   modifier: Modifier = Modifier

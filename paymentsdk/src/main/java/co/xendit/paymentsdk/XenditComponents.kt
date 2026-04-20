@@ -30,7 +30,7 @@ object XenditComponents {
   private val scope = CoroutineScope(Dispatchers.Main)
 
   /**
-   * Global configuration for the SDK appearance. Call this before show() to apply custom styles.
+   * Global configuration for the SDK appearance. This is called before show() to apply custom styles.
    */
   fun initialize(
     appearance: XenditAppearance? = null,
@@ -50,7 +50,7 @@ object XenditComponents {
   )
 
   /**
-   * Parse the component SDK key. Format: session_auth_key-host_id-public_key-signature Example:
+   * Parses the component SDK key. Format: session_auth_key-host_id-public_key-signature Example:
    * session-123-prod-PK123-SIG123
    */
   private fun parseSdkKey(sdkKey: String): Keys {
@@ -120,12 +120,10 @@ object XenditComponents {
 
     CoreSdkComponent.setBaseUrl(resolveBaseUrlForHostId(keys.hostId))
 
-    // Clear previous if any
     cleanup()
 
     currentCallback = onPaymentResult
 
-    // Create a new ComposeView for this session
     composeView =
       ComposeView(activity).apply {
         setViewTreeLifecycleOwner(activity)
@@ -133,7 +131,6 @@ object XenditComponents {
         setViewTreeSavedStateRegistryOwner(activity)
       }
 
-    // Set the content
     composeView?.setContent {
       XenditTheme(style = this.xenditAppearance ?: XenditAppearance()) {
         PaymentContainerHost(
@@ -148,7 +145,6 @@ object XenditComponents {
       }
     }
 
-    // Add view to activity's content
     composeView?.let { view ->
       activity.addContentView(
         view,
@@ -160,20 +156,18 @@ object XenditComponents {
     }
   }
 
-  /** Dismiss the payment bottom sheet manually */
+  /** Dismisses the payment bottom sheet manually */
   fun dismiss() {
     currentCallback?.invoke(XenditPaymentResult.Canceled)
     cleanup()
   }
 
-  /** Internal cleanup to remove the view from hierarchy */
   private fun cleanup() {
     composeView?.let { view -> (view.parent as? ViewGroup)?.removeView(view) }
     composeView = null
     currentCallback = null
   }
 
-  /** Find the ComponentActivity from the context */
   private fun Context.findActivity(): ComponentActivity? {
     var context = this
     while (context is ContextWrapper) {

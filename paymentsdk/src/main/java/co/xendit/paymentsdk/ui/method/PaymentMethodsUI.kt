@@ -110,7 +110,6 @@ internal fun PaymentMethodsUI(
       modifier = Modifier
         .fillMaxWidth()
         .padding(16.dp)
-        // Main container border
         .border(
           1.dp,
           appearance.colorBorder,
@@ -129,8 +128,6 @@ internal fun PaymentMethodsUI(
         Box(
           modifier = Modifier
             .fillMaxWidth()
-            // Apply a top border to every item EXCEPT the first one
-            // to create the "stacked" effect
             .offset(y = if (index > 0) (-1).dp else 0.dp)
             .then(
               if (index > 0) {
@@ -199,14 +196,12 @@ private fun SelectableHeaderItem(
       .padding(horizontal = 16.dp, vertical = 14.dp),
     verticalAlignment = Alignment.CenterVertically
   ) {
-    // Left Icon
     Icon(
       painter = painterResource(id = leftIcon),
       contentDescription = null,
       tint = contentColor
     )
 
-    // Title Text
     Text(
       text = text,
       color = contentColor,
@@ -216,11 +211,10 @@ private fun SelectableHeaderItem(
         .padding(start = 16.dp)
     )
 
-    // Trailing Arrow
     Icon(
       imageVector = Icons.Default.KeyboardArrowDown,
       contentDescription = null,
-      tint = contentColor, // Usually arrow follows the theme color
+      tint = contentColor,
       modifier = Modifier.rotate(if (isExpanded) 180f else 0f)
     )
   }
