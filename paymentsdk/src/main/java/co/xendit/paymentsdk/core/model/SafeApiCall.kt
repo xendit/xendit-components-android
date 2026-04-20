@@ -1,11 +1,13 @@
 package co.xendit.paymentsdk.core.model
 
+import android.util.Log
 import com.google.gson.JsonSyntaxException
 import okhttp3.ResponseBody.Companion.toResponseBody
 import retrofit2.HttpException
 import retrofit2.Response
 import java.io.IOException
 
+val TAG = "SafeApiCall"
 class SafeApiCall(val loadingHandler: GlobalLoadingHandler) {
   suspend fun <T> call(apiCall: suspend () -> Response<T>): Response<T> {
     loadingHandler.setLoading()
@@ -16,12 +18,12 @@ class SafeApiCall(val loadingHandler: GlobalLoadingHandler) {
     } catch (e: HttpException) {
       // This is the most important block. It catches API errors (4xx, 5xx).
       // The HttpException contains the original response with the error body.
-      println("safeApiCall caught HttpException for code: ${e.code()}")
+      Log.d(TAG, "safeApiCall caught HttpException for code: ${e.code()}")
       val errorBody = e.response()?.errorBody()?.string() ?: "{}"
       return Response.error(e.code(), errorBody.toResponseBody(null))
     } catch (e: IOException) {
       // Handles network failures (timeouts, no internet)
-      println("safeApiCall caught IOException: ${e.message}")
+      Log.d(TAG,"safeApiCall caught IOException: ${e.message}")
       return Response.error(
         503,
         "{\"responseMessage\":\"Network error. Please check your connection.\"}".toResponseBody(
@@ -30,7 +32,7 @@ class SafeApiCall(val loadingHandler: GlobalLoadingHandler) {
       )
     } catch (e: JsonSyntaxException) {
       // This is a data mismatch error, not a server error.
-      println("safeApiCall caught JsonSyntaxException: ${e.message}")
+      Log.d(TAG,"safeApiCall caught JsonSyntaxException: ${e.message}")
       return Response.error(
         // Use a custom error code or 500, but log it differently.
         500,
@@ -38,7 +40,7 @@ class SafeApiCall(val loadingHandler: GlobalLoadingHandler) {
       )
     } catch (e: Exception) {
       // Handles any other unexpected crashes (like JSON parsing on a 200 response)
-      println("safeApiCall caught unexpected Exception: ${e.javaClass.simpleName}")
+      Log.d(TAG,"safeApiCall caught unexpected Exception: ${e.javaClass.simpleName}")
       return Response.error(
         500,
         "{\"responseMessage\":\"An unexpected error occurred: ${e.message}\"}".toResponseBody(
