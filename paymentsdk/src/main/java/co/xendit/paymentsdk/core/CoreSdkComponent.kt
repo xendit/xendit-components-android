@@ -1,10 +1,12 @@
 package co.xendit.paymentsdk.core
 
 import android.content.Context
+import android.util.Log
 import co.xendit.paymentsdk.BuildConfig
 import co.xendit.paymentsdk.core.model.GlobalErrorHandler
 import co.xendit.paymentsdk.core.model.GlobalLoadingHandler
 import co.xendit.paymentsdk.core.model.SafeApiCall
+import co.xendit.paymentsdk.core.network.interceptor.BaseUrlInterceptor
 import co.xendit.paymentsdk.core.network.interceptor.ErrorInterceptor
 import co.xendit.paymentsdk.core.network.interceptor.HeaderInterceptor
 import co.xendit.paymentsdk.core.network.provider.HeaderProvider
@@ -20,6 +22,8 @@ import com.google.gson.stream.JsonReader
 import com.google.gson.stream.JsonWriter
 import io.nerdythings.okhttp.modifier.interceptor.OkHttpRequestModifierInterceptor
 import io.nerdythings.okhttp.profiler.OkHttpProfilerInterceptor
+import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -35,6 +39,10 @@ import kotlin.reflect.KClass
 object CoreSdkComponent {
 
   private lateinit var appContext: Context
+  @Volatile private var baseUrl: String = "https://checkout-ui-gateway.xendit.co"
+  @Volatile private var baseHttpUrl: HttpUrl = baseUrl.toHttpUrl()
+  @Volatile private var retrofitInstance: Retrofit? = null
+  @Volatile private var apiInstance: XenditApi? = null
 
   /**
    * Initialize the SDK component with application context. This should be called by
@@ -44,6 +52,15 @@ object CoreSdkComponent {
     if (!::appContext.isInitialized) {
       appContext = context.applicationContext
     }
+  }
+
+  fun setBaseUrl(url: String) {
+    if (baseUrl == url) return
+    baseUrl = url
+    baseHttpUrl = baseUrl.toHttpUrl()
+    retrofitInstance = null
+    apiInstance = null
+    Log.i("CoreSdkComponent", "Base URL set to: $baseUrl")
   }
 
   val secretProvider: SecretProvider by lazy { SecretProvider() }
@@ -73,12 +90,14 @@ object CoreSdkComponent {
   val okHttpClient: OkHttpClient by lazy {
     val headerInterceptor = HeaderInterceptor(secretProvider, headerProvider)
     val errorInterceptor = ErrorInterceptor(globalErrorHandler)
+    val baseUrlInterceptor = BaseUrlInterceptor { baseHttpUrl }
 
     OkHttpClient.Builder()
       .apply {
         readTimeout(30, TimeUnit.SECONDS)
         connectTimeout(30, TimeUnit.SECONDS)
         writeTimeout(30, TimeUnit.SECONDS)
+        addInterceptor(baseUrlInterceptor)
         addInterceptor(headerInterceptor)
         addInterceptor(errorInterceptor)
         if (BuildConfig.DEBUG) {
@@ -89,22 +108,26 @@ object CoreSdkComponent {
       .build()
   }
 
-  val retrofit: Retrofit by lazy {
-    val url: String =
-      when (BuildConfig.FLAVOR) {
-        "qa", "stage" -> "https://checkout-ui-gateway-prod-dev.xendit.co/"
-        else -> "https://checkout-ui-gateway-prod-dev.xendit.co/"
-      }
+  val retrofit: Retrofit
+    get() =
+      retrofitInstance
+        ?: synchronized(this) {
+          retrofitInstance
+            ?: Retrofit.Builder()
+              .baseUrl(baseUrl)
+              .client(okHttpClient)
+              .addConverterFactory(GsonConverterFactory.create(gson))
+              .addConverterFactory(ScalarsConverterFactory.create())
+              .build()
+              .also { retrofitInstance = it }
+        }
 
-    Retrofit.Builder()
-      .baseUrl(url)
-      .client(okHttpClient)
-      .addConverterFactory(GsonConverterFactory.create(gson))
-      .addConverterFactory(ScalarsConverterFactory.create())
-      .build()
-  }
-
-  val xenditApi: XenditApi by lazy { retrofit.create(XenditApi::class.java) }
+  val xenditApi: XenditApi
+    get() =
+      apiInstance
+        ?: synchronized(this) {
+          apiInstance ?: retrofit.create(XenditApi::class.java).also { apiInstance = it }
+        }
 
   val safeApiCall: SafeApiCall by lazy { SafeApiCall(globalLoadingHandler) }
 }

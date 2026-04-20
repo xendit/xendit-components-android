@@ -10,6 +10,7 @@ import androidx.compose.ui.platform.ComposeView
 import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.lifecycle.setViewTreeViewModelStoreOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
+import co.xendit.paymentsdk.core.CoreSdkComponent
 import co.xendit.paymentsdk.data.model.PaymentResult
 import co.xendit.paymentsdk.data.model.XenditError
 import co.xendit.paymentsdk.ui.PaymentContainerHost
@@ -52,6 +53,7 @@ object XenditComponents {
   /** Internal data class to holding parsed keys. */
   internal data class Keys(
     val sessionAuthKey: String,
+    val hostId: String,
     val publicKey: String,
     val signature: String,
     val terminalId: String? = null
@@ -66,13 +68,26 @@ object XenditComponents {
     if (parts.size < 5) {
       throw IllegalArgumentException("Invalid SDK Key format")
     }
-    // Reconstruct session auth key (session-id)
     val sessionAuthKey = "${parts[0]}-${parts[1]}"
     val hostId = parts[2] // used for host selection, stored if needed
     val publicKey = parts[3]
     val signature = parts[4]
 
-    return Keys(sessionAuthKey, publicKey, signature)
+    if (sessionAuthKey.isBlank()) {
+      throw IllegalArgumentException("Invalid SDK Key format")
+    }
+
+    return Keys(sessionAuthKey, hostId, publicKey, signature)
+  }
+
+  internal fun resolveBaseUrlForHostId(hostId: String): String {
+    return when (hostId.lowercase()) {
+      "pl" -> "https://checkout-ui-gateway.xendit.co"
+      "pd" -> "https://checkout-ui-gateway-prod-dev.xendit.co"
+      "sl" -> "https://checkout-ui-gateway-live.stg.tidnex.dev"
+      "sd" -> "https://checkout-ui-gateway-dev.stg.tidnex.dev"
+      else -> "https://checkout-ui-gateway-prod-dev.xendit.co"
+    }
   }
 
   /**
@@ -113,6 +128,8 @@ object XenditComponents {
         return
       }
 
+    CoreSdkComponent.setBaseUrl(resolveBaseUrlForHostId(keys.hostId))
+
     // Clear previous if any
     cleanup()
 
@@ -127,7 +144,7 @@ object XenditComponents {
       }
 
     // Apply origin if set
-    origin?.let { co.xendit.paymentsdk.core.CoreSdkComponent.headerProvider.setOrigin(it) }
+    origin?.let { CoreSdkComponent.headerProvider.setOrigin(it) }
 
     // Set the content
     composeView?.setContent {
