@@ -14,10 +14,6 @@ internal class HeaderInterceptor(
     requestBuilder.header("Content-Type", "application/json")
     requestBuilder.header("Origin", provider.getOrigin())
 
-    try {
-      return chain.proceed(requestBuilder.build())
-    } catch (e: Exception) {
-      throw e
-    }
+    return chain.proceed(requestBuilder.build())
   }
 }
