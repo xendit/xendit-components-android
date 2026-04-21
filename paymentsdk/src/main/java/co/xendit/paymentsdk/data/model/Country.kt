@@ -8,10 +8,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import java.util.Locale
 
 @Keep
-data class Country(val name: String, val code: String, val dialCode: String) {
-  val flagUrl: String
-    get() = "https://assets.xendit.co/payment-session/flags/circle/${code.lowercase()}.svg"
-
+internal data class Country(val name: String, val code: String, val dialCode: String) {
   companion object {
     private val phoneUtil = PhoneNumberUtil.getInstance()
 
@@ -19,7 +16,6 @@ data class Country(val name: String, val code: String, val dialCode: String) {
     val countriesFlow: StateFlow<List<Country>> = _countriesFlow.asStateFlow()
 
     val countries: List<Country> by lazy {
-      // Priority countries to show immediately
 
       val allRegions = phoneUtil.supportedRegions
       val list = allRegions
@@ -36,26 +32,23 @@ data class Country(val name: String, val code: String, val dialCode: String) {
     }
 
     fun warmUp() {
-      // Accessing countries property triggers lazy initialization
       countries
     }
 
     fun fromCode(code: String): Country? {
-      // Access property safely, might block if not ready
       return countries.find { it.code.equals(code, ignoreCase = true) }
     }
 
     fun fromDialCode(dialCode: String): Country? {
-      // Access property safely, might block if not ready
       return countries.find { it.dialCode == dialCode }
     }
   }
 }
 
-fun List<Country>.findCountryByCode(code: String): Country? {
+internal fun List<Country>.findCountryByCode(code: String): Country? {
   return find { it.code.equals(code, ignoreCase = true) }
 }
 
-fun List<Country>.findCountryByDialCode(dialCode: String): Country? {
+internal fun List<Country>.findCountryByDialCode(dialCode: String): Country? {
   return find { it.dialCode == dialCode }
 }

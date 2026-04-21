@@ -4,7 +4,7 @@ import androidx.annotation.Keep
 import com.google.gson.annotations.SerializedName
 
 @Keep
-data class PaymentOptionsResponse(
+internal data class PaymentOptionsResponse(
   @SerializedName("channel_code") val channelCode: String?,
   @SerializedName("country") val country: String?,
   @SerializedName("amount") val amount: Long?,
@@ -13,7 +13,7 @@ data class PaymentOptionsResponse(
 )
 
 @Keep
-data class InstallmentPlan(
+internal data class InstallmentPlan(
   @SerializedName("interval") val interval: String?,
   @SerializedName("interval_count") val intervalCount: Int?,
   @SerializedName("terms") val terms: Int?,

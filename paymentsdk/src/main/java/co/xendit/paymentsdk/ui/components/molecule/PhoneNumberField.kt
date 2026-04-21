@@ -32,7 +32,7 @@ import co.xendit.paymentsdk.ui.style.xenditAppearance
 import com.google.i18n.phonenumbers.PhoneNumberUtil
 
 @Composable
-fun PhoneNumberField(
+internal fun PhoneNumberField(
   modifier: Modifier = Modifier,
   value: String,
   label: String? = null,
@@ -49,10 +49,8 @@ fun PhoneNumberField(
   val phoneUtil = remember { PhoneNumberUtil.getInstance() }
   var expanded by remember { mutableStateOf(false) }
 
-  // Use the pre-warmed countries flow from the model
   val countries by Country.countriesFlow.collectAsStateWithLifecycle()
 
-  // Resolve selected country based on the countryCode prop
   val selectedCountry =
     remember(countryCode, countries) {
       if (countries.isEmpty()) null
@@ -60,8 +58,6 @@ fun PhoneNumberField(
         countries.findCountryByCode(countryCode) ?: countries.first()
       }
     }
-
-  // Use the placeholder logic as recently edited by the user
   val dynamicPlaceholder =
     remember(selectedCountry) {
       if (selectedCountry == null) placeholder ?: ""

@@ -77,10 +77,13 @@ class MainActivity : ComponentActivity() {
 //      qrForegroundColor = Color(0xFF000000),
 //      qrBackgroundColor = Color(0xFFFFFFFF),
     )
-    XenditComponents.initialize(
-      appearance = customStyle,
+    findActivity()?.let { act ->
+      XenditComponents.initialize(
+        appearance = customStyle,
 //      merchantPreferredPaymentMethod = listOf("cards")
-    )
+      )
+    }
+
     enableEdgeToEdge()
     setContent {
       XenComponentPrivateTheme {

@@ -12,7 +12,7 @@ import co.xendit.paymentsdk.data.model.PaymentOptionsResponse
 import co.xendit.paymentsdk.data.network.remote.session.XenditApi
 import retrofit2.Response
 
-class XenditRepositoryImpl(
+internal class XenditRepositoryImpl(
   private val safeApiCall: SafeApiCall,
   private val api: XenditApi,
 ) : XenditRepository {

@@ -32,23 +32,10 @@ android {
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
     }
   }
-  
-  flavorDimensions.add("server")
-  productFlavors {
-    create("qa") {
-      dimension = "server"
-    }
-    create("stage") {
-      dimension = "server"
-    }
-    create("prod") {
-      dimension = "server"
-    }
-  }
 
 //  FOR JITPACK
 //  publishing {
-//    singleVariant("prodRelease")
+//    singleVariant("release")
 //  }
 
   compileOptions {
@@ -110,7 +97,7 @@ mavenPublishing {
   configure(com.vanniktech.maven.publish.AndroidSingleVariantLibrary(
     javadocJar = com.vanniktech.maven.publish.JavadocJar.Empty(),
     sourcesJar = com.vanniktech.maven.publish.SourcesJar.Sources(),
-    variant = "prodRelease",
+    variant = "release",
   ))
   // Use coordinates to set group, artifact, and version
   coordinates("com.xendit", "paymentsdk", "0.0.1")
@@ -159,7 +146,7 @@ mavenPublishing {
 //  publishing {
 //    publications {
 //      register<MavenPublication>("release") {
-//        from(components["prodRelease"])
+//        from(components["release"])
 //
 //        groupId = "co.xendit"
 //        artifactId = "paymentsdk"

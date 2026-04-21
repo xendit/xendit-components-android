@@ -41,13 +41,10 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import co.xendit.paymentsdk.BuildConfig
-import co.xendit.paymentsdk.core.CoreSdkComponent
 import co.xendit.paymentsdk.core.CoreSdkComponent.globalErrorHandler
-import co.xendit.paymentsdk.data.model.ChannelFormField
 import co.xendit.paymentsdk.data.model.PaymentDraft
-import co.xendit.paymentsdk.data.model.PaymentResult
 import co.xendit.paymentsdk.data.model.XenditError
-import co.xendit.paymentsdk.data.model.primaryChannelPropertyKey
+import co.xendit.paymentsdk.data.model.XenditPaymentResult
 import co.xendit.paymentsdk.internal_entry_point.CardViewModelFactory
 import co.xendit.paymentsdk.internal_entry_point.PaymentViewModelFactory
 import co.xendit.paymentsdk.ui.action.ActionQrUI
@@ -75,7 +72,7 @@ internal fun PaymentContainerHost(
   publicKey: String,
   merchantPreferredPaymentMethod: List<String>?,
   style: XenditAppearance,
-  onResult: (PaymentResult) -> Unit,
+  onResult: (XenditPaymentResult) -> Unit,
   onCleanup: () -> Unit
 ) {
   val viewModel: PaymentViewModel =
@@ -101,12 +98,12 @@ internal fun PaymentContainerHost(
       scope.launch {
         sheetState.hide()
         viewModel.markClosed()
-        onResult(PaymentResult.Canceled)
+        onResult(XenditPaymentResult.Canceled)
         onCleanup()
       }
     } else {
       viewModel.markClosed()
-      onResult(PaymentResult.Canceled)
+      onResult(XenditPaymentResult.Canceled)
       onCleanup()
     }
   }
@@ -119,7 +116,7 @@ internal fun PaymentContainerHost(
     globalErrorHandler.apiErrorFlow.collect { (_, message) ->
       message?.let { snackbarHostState.showSnackbar(it.asString(context)) }
       onResult(
-        PaymentResult.Failed(
+        XenditPaymentResult.Failed(
           XenditError(
             code = "001",
             message = message.toString(),
@@ -142,13 +139,18 @@ internal fun PaymentContainerHost(
 
     when {
       isSuccess -> {
-        onResult(PaymentResult.Success(poll.toString()))
+        onResult(
+          XenditPaymentResult.Success(
+            paymentRequestId = poll.paymentRequest?.id,
+            channelCode = poll.succeededChannel?.channelCode
+          )
+        )
         viewModel.markClosed()
         onCleanup()
       }
 
       isCanceled -> {
-        onResult(PaymentResult.Canceled)
+        onResult(XenditPaymentResult.Canceled)
         viewModel.markClosed()
         onCleanup()
       }
@@ -156,7 +158,7 @@ internal fun PaymentContainerHost(
       isFailed -> {
         viewModel.markClosed()
         onResult(
-          PaymentResult.Failed(
+          XenditPaymentResult.Failed(
             XenditError(
               code = "123",
               message = "Payment failed or expired. Session: $sessionStatus, PR: $prStatus",
@@ -248,7 +250,7 @@ internal fun PaymentContainerHost(
           ) {
             Column {
               Text(
-                text = "Flavor = ${BuildConfig.FLAVOR} " + "Debug = ${BuildConfig.DEBUG}",
+                text = "Debug = ${BuildConfig.DEBUG}",
                 style = MaterialTheme.typography.bodySmall,
                 color = Color.Gray
               )
@@ -342,7 +344,8 @@ internal fun PaymentContainerHost(
             mviState.expandedUiGroup != null && mviState.selectedChannel != null
           val isFormFilled = mviState.paymentDraft.visibleFields
           val formValue = mviState.paymentDraft.formValues
-          val isPayEnabled = isPaymentSelected && !mviState.isLoading && validateAllField(isFormFilled, formValue)
+          val isPayEnabled =
+            isPaymentSelected && !mviState.isLoading && validateAllField(isFormFilled, formValue)
           val payText =
             if (mviState.sessionType == "SAVE") {
               "Save Payment Method"

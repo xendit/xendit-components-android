@@ -4,7 +4,7 @@ import androidx.annotation.Keep
 import com.google.gson.annotations.SerializedName
 
 @Keep
-data class CardDetails(
+internal data class CardDetails(
   @SerializedName("require_billing_information") val requireBillingInformation: Boolean,
   @SerializedName("country_codes") val countryCodes: List<String>,
   @SerializedName("schemes") val schemes: List<String>

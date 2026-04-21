@@ -46,7 +46,7 @@ import co.xendit.paymentsdk.ui.helper.toLabelDisplay
 import co.xendit.paymentsdk.ui.style.xenditAppearance
 
 @Composable
-fun DynamicForm(
+internal fun DynamicForm(
   fields: List<ChannelFormField>,
   cardDetails: CardDetails?,
   onValuesChanged: (Map<String, String>) -> Unit,
@@ -68,13 +68,12 @@ fun DynamicForm(
     formValues.clear()
     formValues.putAll(mockData)
   }
-  // Filter fields based on card details and form values
+
   val filteredFields =
     remember(fields, cardDetails, formValues.toMap(), installmentPlans) {
       filterFormFields(fields, cardDetails, formValues, installmentPlans)
     }
 
-  // Handle cardDetails changes to update country and phone number
   LaunchedEffect(cardDetails) {
     if (cardDetails != null && cardDetails.countryCodes.isNotEmpty()) {
       val resolvedCountryCode = cardDetails.countryCodes.first()
@@ -87,17 +86,14 @@ fun DynamicForm(
           if (propertyKey.isNotEmpty()) {
             when (field.type.name) {
               "country" -> {
-                // Update country if card resolves it
                 formValues[propertyKey] = resolvedCountry.code
                 onValuesChangedRef.value(formValues.toMap())
               }
 
               "phone_number" -> {
-                // Update phone number country code ONLY if user hasn't typed local number yet
                 val currentPhone = formValues[propertyKey] ?: ""
                 val countryCodeKey = "${propertyKey}_country_code"
 
-                // Check if current phone is empty
                 val isEffectivelyEmpty = currentPhone.isBlank()
 
                 if (isEffectivelyEmpty) {
@@ -400,9 +396,8 @@ private fun renderDynamicFormFieldOrTwoColumnRow(
 /**
  * Filters form fields based on card details and form values.
  * Fields with flags.require_billing_information = true are only shown when showBillingDetailsFields is true.
- * Fields with display_if conditions are filtered based on the current form values.
  */
-fun filterFormFields(
+private fun filterFormFields(
   fields: List<ChannelFormField>,
   cardDetails: CardDetails?,
   formValues: Map<String, String>,
@@ -446,7 +441,7 @@ fun filterFormFields(
 }
 
 @Composable
-fun FormFieldItem(
+private fun FormFieldItem(
   field: ChannelFormField,
   allFields: List<ChannelFormField>,
   values: Map<String, String>,

@@ -15,7 +15,7 @@ import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Query
 
-interface XenditApi {
+internal interface XenditApi {
   @GET("api/sessions/{session_id}")
   suspend fun getSession(
     @Path("session_id") sessionId: String,

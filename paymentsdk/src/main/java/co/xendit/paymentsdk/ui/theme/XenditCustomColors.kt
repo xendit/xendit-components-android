@@ -7,7 +7,7 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 
 @Immutable
-data class XenditCustomColors(
+internal data class XenditCustomColors(
   val colorTextPlaceholder: Color,
   val colorDisabled: Color,
   val colorBorder: Color,
@@ -25,6 +25,6 @@ internal val LocalXenditCustomColors = staticCompositionLocalOf {
   )
 }
 
-val MaterialTheme.xenditCustomColors: XenditCustomColors
+internal val MaterialTheme.xenditCustomColors: XenditCustomColors
   @Composable
   get() = LocalXenditCustomColors.current

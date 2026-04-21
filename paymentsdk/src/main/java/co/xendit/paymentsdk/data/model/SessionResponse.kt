@@ -4,13 +4,13 @@ import androidx.annotation.Keep
 import com.google.gson.annotations.SerializedName
 
 @Keep
-data class SessionResponse(
+internal data class SessionResponse(
   @SerializedName("session") val session: BffSession?,
   @SerializedName("channels") val paymentChannels: List<BffChannel>?
 )
 
 @Keep
-data class BffSession(
+internal data class BffSession(
   @SerializedName("id") val id: String?,
   @SerializedName("payment_session_id") val paymentSessionId: String?,
   @SerializedName("status") val status: String?,
@@ -23,7 +23,7 @@ data class BffSession(
 )
 
 @Keep
-data class BffItem(
+internal data class BffItem(
   @SerializedName("reference_id") val referenceId: String?,
   @SerializedName("type") val type: String?,
   @SerializedName("name") val name: String?,
@@ -33,7 +33,7 @@ data class BffItem(
 )
 
 @Keep
-data class BffChannel(
+internal data class BffChannel(
   @SerializedName("brand_name") val brandName: String,
   @SerializedName("brand_logo_url") val brandLogoUrl: String,
   @SerializedName("brand_color") val brandColor: String,
@@ -51,16 +51,16 @@ data class BffChannel(
 )
 
 @Keep
-data class BffCardInfo(@SerializedName("brands") val brands: List<BffCardBrand>)
+internal data class BffCardInfo(@SerializedName("brands") val brands: List<BffCardBrand>)
 
 @Keep
-data class BffCardBrand(
+internal data class BffCardBrand(
   @SerializedName("name") val name: String,
   @SerializedName("logo_url") val logoUrl: String
 )
 
 @Keep
-data class ChannelFormField(
+internal data class ChannelFormField(
   @SerializedName("group_label") val groupLabel: String? = null,
   @SerializedName("label") val label: String,
   @SerializedName("placeholder") val placeholder: String,
@@ -77,7 +77,7 @@ data class ChannelFormField(
 )
 
 @Keep
-data class FieldType(
+internal data class FieldType(
   @SerializedName("name") val name: String,
   @SerializedName("min_length") val minLength: Int?,
   @SerializedName("max_length") val maxLength: Int?,
@@ -86,12 +86,12 @@ data class FieldType(
   @SerializedName("regex_validators") val regexValidators: List<RegexValidator>?
 )
 
-data class RegexValidator(
+internal data class RegexValidator(
   @SerializedName("regex") val regex: String,
   @SerializedName("message") val message: String
 )
 
-fun ChannelFormField.primaryChannelPropertyKey(): String {
+internal fun ChannelFormField.primaryChannelPropertyKey(): String {
   return when (val prop = channelProperty) {
     is String -> prop
     is List<*> -> prop.firstOrNull()?.toString().orEmpty()

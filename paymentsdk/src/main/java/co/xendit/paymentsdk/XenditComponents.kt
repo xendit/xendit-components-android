@@ -10,7 +10,8 @@ import androidx.compose.ui.platform.ComposeView
 import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.lifecycle.setViewTreeViewModelStoreOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
-import co.xendit.paymentsdk.data.model.PaymentResult
+import co.xendit.paymentsdk.core.CoreSdkComponent
+import co.xendit.paymentsdk.data.model.XenditPaymentResult
 import co.xendit.paymentsdk.data.model.XenditError
 import co.xendit.paymentsdk.ui.PaymentContainerHost
 import co.xendit.paymentsdk.ui.PaymentContainerPresentation
@@ -23,56 +24,60 @@ import kotlinx.coroutines.Dispatchers
 object XenditComponents {
 
   private var composeView: ComposeView? = null
-  private var currentCallback: ((PaymentResult) -> Unit)? = null
+  private var currentCallback: ((XenditPaymentResult) -> Unit)? = null
   private var xenditAppearance: XenditAppearance? = null
   private var merchantPreferredPaymentMethod: List<String>? = null
   private val scope = CoroutineScope(Dispatchers.Main)
-  private var origin: String? = null
 
   /**
-   * Global configuration for the SDK appearance. Call this before show() to apply custom styles.
+   * Global configuration for the SDK appearance. This is called before show() to apply custom styles.
    */
   fun initialize(
     appearance: XenditAppearance? = null,
-    merchantPreferredPaymentMethod: List<String>? = null
+    merchantPreferredPaymentMethod: List<String>? = null,
   ) {
     this.xenditAppearance = appearance
     this.merchantPreferredPaymentMethod = merchantPreferredPaymentMethod
   }
 
-  /**
-   * Optional configuration to set the Origin header used for API requests.
-   * Use the same origin as the merchant website embedding the SDK.
-   */
-  fun setOrigin(origin: String) {
-    this.origin = origin
-    co.xendit.paymentsdk.core.CoreSdkComponent.headerProvider.setOrigin(origin)
-  }
-
   /** Internal data class to holding parsed keys. */
-  internal data class Keys(
+  private data class Keys(
     val sessionAuthKey: String,
+    val hostId: String,
     val publicKey: String,
     val signature: String,
     val terminalId: String? = null
   )
 
   /**
-   * Parse the component SDK key. Format: session_auth_key-host_id-public_key-signature Example:
+   * Parses the component SDK key. Format: session_auth_key-host_id-public_key-signature Example:
    * session-123-prod-PK123-SIG123
    */
-  internal fun parseSdkKey(sdkKey: String): Keys {
+  private fun parseSdkKey(sdkKey: String): Keys {
     val parts = sdkKey.split("-")
     if (parts.size < 5) {
       throw IllegalArgumentException("Invalid SDK Key format")
     }
-    // Reconstruct session auth key (session-id)
     val sessionAuthKey = "${parts[0]}-${parts[1]}"
     val hostId = parts[2] // used for host selection, stored if needed
     val publicKey = parts[3]
     val signature = parts[4]
 
-    return Keys(sessionAuthKey, publicKey, signature)
+    if (sessionAuthKey.isBlank()) {
+      throw IllegalArgumentException("Invalid SDK Key format")
+    }
+
+    return Keys(sessionAuthKey, hostId, publicKey, signature)
+  }
+
+  private fun resolveBaseUrlForHostId(hostId: String): String {
+    return when (hostId.lowercase()) {
+      "pl" -> "https://checkout-ui-gateway.xendit.co"
+      "pd" -> "https://checkout-ui-gateway-prod-dev.xendit.co"
+      "sl" -> "https://checkout-ui-gateway-live.stg.tidnex.dev"
+      "sd" -> "https://checkout-ui-gateway-dev.stg.tidnex.dev"
+      else -> "https://checkout-ui-gateway-prod-dev.xendit.co"
+    }
   }
 
   /**
@@ -88,12 +93,12 @@ object XenditComponents {
     activity: ComponentActivity,
     componentsSdkKey: String,
     merchantPreferredPaymentMethod: List<String>? = null,
-    onPaymentResult: (PaymentResult) -> Unit
+    onPaymentResult: (XenditPaymentResult) -> Unit
   ) {
     if (activity !is Activity) {
       throw IllegalArgumentException("Context must be an Activity to show the Payment SDK.")
     }
-
+//    CoreSdkComponent.headerProvider.setOrigin(activity.packageName ?: "") // now only use default
     this.merchantPreferredPaymentMethod = merchantPreferredPaymentMethod
 
     val keys =
@@ -102,7 +107,7 @@ object XenditComponents {
       } catch (e: Exception) {
         Log.e("PaymentSDK", "Failed to parse SDK Key", e)
         onPaymentResult.invoke(
-          PaymentResult.Failed(
+          XenditPaymentResult.Failed(
             XenditError(
               code = "111",
               message = e.toString(),
@@ -113,12 +118,12 @@ object XenditComponents {
         return
       }
 
-    // Clear previous if any
+    CoreSdkComponent.setBaseUrl(resolveBaseUrlForHostId(keys.hostId))
+
     cleanup()
 
     currentCallback = onPaymentResult
 
-    // Create a new ComposeView for this session
     composeView =
       ComposeView(activity).apply {
         setViewTreeLifecycleOwner(activity)
@@ -126,10 +131,6 @@ object XenditComponents {
         setViewTreeSavedStateRegistryOwner(activity)
       }
 
-    // Apply origin if set
-    origin?.let { co.xendit.paymentsdk.core.CoreSdkComponent.headerProvider.setOrigin(it) }
-
-    // Set the content
     composeView?.setContent {
       XenditTheme(style = this.xenditAppearance ?: XenditAppearance()) {
         PaymentContainerHost(
@@ -144,7 +145,6 @@ object XenditComponents {
       }
     }
 
-    // Add view to activity's content
     composeView?.let { view ->
       activity.addContentView(
         view,
@@ -156,20 +156,18 @@ object XenditComponents {
     }
   }
 
-  /** Dismiss the payment bottom sheet manually */
+  /** Dismisses the payment bottom sheet manually */
   fun dismiss() {
-    currentCallback?.invoke(PaymentResult.Canceled)
+    currentCallback?.invoke(XenditPaymentResult.Canceled)
     cleanup()
   }
 
-  /** Internal cleanup to remove the view from hierarchy */
   private fun cleanup() {
     composeView?.let { view -> (view.parent as? ViewGroup)?.removeView(view) }
     composeView = null
     currentCallback = null
   }
 
-  /** Find the ComponentActivity from the context */
   private fun Context.findActivity(): ComponentActivity? {
     var context = this
     while (context is ContextWrapper) {

@@ -66,17 +66,13 @@ internal fun CountryPicker(
   val appearance = xenditAppearance
   var searchQuery by remember { mutableStateOf("") }
 
-  // Use the pre-warmed countries flow from the model
   val countries by Country.countriesFlow.collectAsStateWithLifecycle()
 
-  // Ensure warm-up is triggered if not already
   LaunchedEffect(Unit) {
     if (countries.isEmpty()) {
       withContext(Dispatchers.Default) { Country.warmUp() }
     }
   }
-
-  // Memoize filtered list on background thread when searchQuery or countries changes
   val filteredCountries by
   remember(searchQuery, countries) {
     derivedStateOf {

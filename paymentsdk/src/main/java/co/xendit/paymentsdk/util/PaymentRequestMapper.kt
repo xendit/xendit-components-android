@@ -7,7 +7,7 @@ import co.xendit.paymentsdk.data.model.primaryChannelPropertyKey
 
 import co.xendit.paymentsdk.data.model.InstallmentPlan
 
-object PaymentRequestMapper {
+internal object PaymentRequestMapper {
 
   /**
    * Maps flat form values (dot-notated keys) to a nested map structure as required by the payment
@@ -41,7 +41,6 @@ object PaymentRequestMapper {
         }
 
         is List<*> -> {
-          // Handle list properties, specifically credit card expiry split
           if (field.type.name == "credit_card_expiry" && prop.size >= 2) {
             val monthKey = prop[0].toString()
             val yearKey = prop[1].toString()
@@ -62,7 +61,6 @@ object PaymentRequestMapper {
               }
             }
           } else {
-            // Default to using the first key if not specially handled
             val key = prop.firstOrNull()?.toString() ?: ""
             if (key.isNotEmpty()) {
               flatMap[key] = if (isSensitive) encrypt(value, publicKey, sessionId) else value
@@ -76,7 +74,6 @@ object PaymentRequestMapper {
   }
 
   private fun isSensitiveField(field: ChannelFormField): Boolean {
-    // Currently designating card sensitive fields for encryption
     return field.type.name in listOf("credit_card_number", "credit_card_expiry", "credit_card_cvn")
   }
 
@@ -94,29 +91,6 @@ object PaymentRequestMapper {
     }
   }
 
-  //  Converts a flat map with dot-notated keys into a nested map structure.
-  //  Imagine you are processing card_details.card_number.
-  //
-  //  Loop 1 (Handling "card_details"):
-  //  Target Key: card_details.
-  //  current: Starts as the empty root {}.
-  //  Action: getOrPut("card_details") doesn't find anything. It creates an empty map {} and puts it
-  // under the key "card_details".
-  //  Result: Your root map is now {"card_details": {}}.
-  //  Variable next: Becomes that inner empty map. We move inside it for the next part of the loop.
-  //
-  //  Loop 2 (Handling "card_number"):
-  //  Target Key: card_number.
-  //  current: Is now the map we just found/created {"card_details": -> HERE }.
-  //  Action: This is the last part of the dot-string, so the function skips the getOrPut loop and
-  // simply sets the value: current["card_number"] = "1234...".
-  //  RESULT
-  // {
-  //  "card_details": {
-  //    "card_number": "1234..."
-  //  }
-  // }
-
   private fun unflatten(flatMap: Map<String, Any>): Map<String, Any> {
     val result = mutableMapOf<String, Any>()
     for ((key, value) in flatMap) {
@@ -126,12 +100,6 @@ object PaymentRequestMapper {
         val part = parts[i]
 
         @Suppress("UNCHECKED_CAST")
-        //        NORMAL MODE
-        //        var next = current[part]
-        //        if (next == null) {
-        //          next = mutableMapOf<String, Any>()
-        //          current[part] = next
-        //        }
         val next = current.getOrPut(part) { mutableMapOf<String, Any>() } as MutableMap<String, Any>
         current = next
       }

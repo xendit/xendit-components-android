@@ -36,7 +36,7 @@ import co.xendit.paymentsdk.ui.style.xenditAppearance
 
 /** Card specific payment UI. This component specifically handles the Card payment flow. */
 @Composable
-fun CardPaymentUI(
+internal fun CardPaymentUI(
   session: BffSession?,
   channelData: BffChannel,
   cardDetails: CardDetails?,
@@ -82,14 +82,7 @@ fun CardPaymentUI(
           visibleFields.value = it
           onFormStateChanged(formValues.toMap(), visibleFields.value, isSaveChecked.value)
         },
-        bffCardInfo = channelData.card,
-        mockData = mapOf(
-          "card_details.card_number" to "4000000000002503", //4000000000002503 4111111111111111
-          "card_details.cardholder_first_name" to "arga",
-          "card_details.cardholder_last_name" to "argaar",
-          "card_details.cardholder_email" to "arga@gmail.com",
-          "card_details.cardholder_phone_number" to "81342532569"
-        )
+        bffCardInfo = channelData.card
       )
     }
 

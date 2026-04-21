@@ -9,7 +9,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 
 /** CVC input field (3-4 digits) */
 @Composable
-fun CVCField(
+internal fun CVCField(
   modifier: Modifier = Modifier,
   value: String,
   label: String? = null,

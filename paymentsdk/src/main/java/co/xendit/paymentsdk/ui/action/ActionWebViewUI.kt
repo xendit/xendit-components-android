@@ -22,7 +22,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import java.util.concurrent.atomic.AtomicBoolean
 
 @Composable
-fun ActionWebViewUI(
+internal fun ActionWebViewUI(
   url: String,
   onClose: () -> Unit,
   onChallengeCompleted: () -> Unit,

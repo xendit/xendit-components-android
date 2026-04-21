@@ -9,7 +9,7 @@ import co.xendit.paymentsdk.data.model.PollResponse
 import co.xendit.paymentsdk.data.model.PaymentOptionsResponse
 import retrofit2.Response
 
-interface XenditRepository {
+internal interface XenditRepository {
   suspend fun getSession(
     sessionId: String,
     componentsVersion: String = COMPONENT_VERSION
