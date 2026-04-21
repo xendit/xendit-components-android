@@ -5,6 +5,7 @@ import co.xendit.paymentsdk.data.model.ChannelFormField
 import co.xendit.paymentsdk.data.model.Country
 import co.xendit.paymentsdk.data.model.primaryChannelPropertyKey
 
+import co.xendit.paymentsdk.data.model.FieldType
 import co.xendit.paymentsdk.data.model.InstallmentPlan
 
 internal object PaymentRequestMapper {
@@ -31,7 +32,7 @@ internal object PaymentRequestMapper {
       when (val prop = field.channelProperty) {
         is String -> {
           var finalValue = if (isSensitive) encrypt(value, publicKey, sessionId) else value
-          if (field.type.name == "phone_number") {
+          if (field.type is FieldType.PhoneNumber) {
             val countryCodeKey = "${propertyKey}_country_code"
             val countryCode = formValues[countryCodeKey] ?: "ID"
             val dialCode = Country.fromCode(countryCode)?.dialCode ?: "62"
@@ -41,14 +42,14 @@ internal object PaymentRequestMapper {
         }
 
         is List<*> -> {
-          if (field.type.name == "credit_card_expiry" && prop.size >= 2) {
+          if (field.type is FieldType.CreditCardExpiry && prop.size >= 2) {
             val monthKey = prop[0].toString()
             val yearKey = prop[1].toString()
             val (month, year) = splitExpiry(value)
 
             flatMap[monthKey] = if (isSensitive) encrypt(month, publicKey, sessionId) else month
             flatMap[yearKey] = if (isSensitive) encrypt(year, publicKey, sessionId) else year
-          } else if (field.type.name == "installment_plan" && prop.size >= 2) {
+          } else if (field.type is FieldType.InstallmentPlan && prop.size >= 2) {
             val termsKey = prop[0].toString()
             val intervalKey = prop[1].toString()
             val termsNum = value.toIntOrNull()
@@ -74,7 +75,9 @@ internal object PaymentRequestMapper {
   }
 
   private fun isSensitiveField(field: ChannelFormField): Boolean {
-    return field.type.name in listOf("credit_card_number", "credit_card_expiry", "credit_card_cvn")
+    return field.type is FieldType.CreditCardNumber || 
+           field.type is FieldType.CreditCardExpiry || 
+           field.type is FieldType.CreditCardCvn
   }
 
   private fun encrypt(value: String, publicKey: String, sessionId: String): String {

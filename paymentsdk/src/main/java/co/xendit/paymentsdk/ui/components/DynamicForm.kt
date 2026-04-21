@@ -31,6 +31,7 @@ import co.xendit.paymentsdk.data.model.BffCardInfo
 import co.xendit.paymentsdk.data.model.CardDetails
 import co.xendit.paymentsdk.data.model.ChannelFormField
 import co.xendit.paymentsdk.data.model.Country
+import co.xendit.paymentsdk.data.model.FieldType
 import co.xendit.paymentsdk.data.model.InstallmentPlan
 import co.xendit.paymentsdk.data.model.primaryChannelPropertyKey
 import co.xendit.paymentsdk.ui.components.molecule.CVCField
@@ -412,7 +413,7 @@ private fun filterFormFields(
     }
 
     // Check installment plan logic
-    if (field.type.name == "installment_plan") {
+    if (field.type is FieldType.InstallmentPlan) {
       if (installmentPlans.isNullOrEmpty()) {
         return@filter false
       }
@@ -465,8 +466,8 @@ private fun FormFieldItem(
     null
   }
 
-  when (field.type.name) {
-    "credit_card_number" -> {
+  when (val fieldType = field.type) {
+    is FieldType.CreditCardNumber -> {
       val selectedScheme = cardDetails?.schemes?.firstOrNull()
       val logoUrl = if (selectedScheme != null) {
         bffCardInfo?.brands?.firstOrNull {
@@ -489,12 +490,12 @@ private fun FormFieldItem(
       )
     }
 
-    "credit_card_expiry" -> {
+    is FieldType.CreditCardExpiry -> {
       ExpiryDateField(
         value = currentValue,
-        label = labelDisplay,
         placeholder = field.placeholder,
         onValueChange = { onValueChange(propertyKey, it) },
+        label = labelDisplay,
         isError = isError,
         errorMessage = errorMessage,
         modifier = Modifier.fillMaxWidth(),
@@ -503,11 +504,11 @@ private fun FormFieldItem(
       )
     }
 
-    "credit_card_cvn" -> {
+    is FieldType.CreditCardCvn -> {
       CVCField(
         value = currentValue,
-        label = labelDisplay,
         onValueChange = { onValueChange(propertyKey, it) },
+        label = labelDisplay,
         isError = isError,
         errorMessage = errorMessage,
         modifier = Modifier.fillMaxWidth(),
@@ -516,10 +517,9 @@ private fun FormFieldItem(
       )
     }
 
-    "phone_number" -> {
+    is FieldType.PhoneNumber -> {
       val countryCodeKey = "${propertyKey}_country_code"
       val countryCode = values[countryCodeKey] ?: "ID" // Default fallback
-
       PhoneNumberField(
         value = currentValue,
         label = labelDisplay,
@@ -535,7 +535,7 @@ private fun FormFieldItem(
       )
     }
 
-    "country" -> {
+    is FieldType.Country -> {
       CountryField(
         value = currentValue,
         label = labelDisplay,
@@ -549,7 +549,7 @@ private fun FormFieldItem(
       )
     }
 
-    "province", "province_state", "state" -> {
+    is FieldType.Province -> {
       val countryCode =
         getBestCountryForProvinceField(
           thisField = field,
@@ -570,7 +570,7 @@ private fun FormFieldItem(
       )
     }
 
-    "installment_plan" -> {
+    is FieldType.InstallmentPlan -> {
       val selectedPlan = installmentPlans?.find { it.terms.toString() == currentValue }
 
       InstallmentPlanField(
@@ -597,14 +597,17 @@ private fun FormFieldItem(
         isError = isError,
         errorMessage = errorMessage,
         keyboardOptions =
-          when (field.type.name) {
-            "phone_number" -> KeyboardOptions(keyboardType = KeyboardType.Phone)
-            else ->
+          when (field.type) {
+            is FieldType.Text -> {
               if (field.type.numeric == true) {
                 KeyboardOptions(keyboardType = KeyboardType.Number)
               } else {
                 KeyboardOptions.Default
               }
+            }
+            else -> {
+              KeyboardOptions.Default
+            }
           },
         singleLine = true,
         shape = shape,
@@ -622,13 +625,13 @@ private fun getBestCountryForProvinceField(
   val thisIndex = allFields.indexOf(thisField)
   if (thisIndex > 0) {
     val previousField = allFields[thisIndex - 1]
-    if (previousField.type.name == "country") {
+    if (previousField.type is FieldType.Country) {
       val key = previousField.primaryChannelPropertyKey()
       val v = values[key]
       if (!v.isNullOrBlank()) return v
     }
   }
-  val anyCountryField = allFields.firstOrNull { it.type.name == "country" }
+  val anyCountryField = allFields.firstOrNull { it.type is FieldType.Country }
   if (anyCountryField != null) {
     val key = anyCountryField.primaryChannelPropertyKey()
     val v = values[key]
