@@ -67,13 +67,13 @@ Launch the SDK from any `ComponentActivity` using a Session SDK Key:
 ```kotlin
 XenditComponents.present(
     activity = this, 
-    componentsSdkKey = "session-123-prod-PK123-SIG123", // Your Components SDK Key
+    componentsSdkKey = "session-123-pd-PK123-SIG123", // Your Components SDK Key
     merchantPreferredPaymentMethod = listOf("cards", "qr_code"), // Optional: Override preferences for this session
     onPaymentResult = { result ->
         when (result) {
             is XenditPaymentResult.Success -> {
                 // Payment was successfully completed
-                val paymentMethodId = result.paymentMethodId
+                val paymentRequestId = result.paymentRequestId
             }
             is XenditPaymentResult.Failed -> {
                 // Payment failed or encountered an error

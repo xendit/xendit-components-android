@@ -7,7 +7,7 @@ import retrofit2.HttpException
 import retrofit2.Response
 import java.io.IOException
 
-val TAG = "SafeApiCall"
+private const val TAG = "SafeApiCall"
 internal class SafeApiCall(val loadingHandler: GlobalLoadingHandler) {
   suspend fun <T> call(apiCall: suspend () -> Response<T>): Response<T> {
     loadingHandler.setLoading()

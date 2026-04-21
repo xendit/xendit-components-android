@@ -122,7 +122,7 @@ internal object CoreSdkComponent {
   val safeApiCall: SafeApiCall by lazy { SafeApiCall(globalLoadingHandler) }
 }
 
-class SealedClassTypeAdapter<T : Any>(val kclass: KClass<Any>, val gson: Gson) : TypeAdapter<T>() {
+internal class SealedClassTypeAdapter<T : Any>(val kclass: KClass<Any>, val gson: Gson) : TypeAdapter<T>() {
   override fun read(jsonReader: JsonReader): T? {
     jsonReader.beginObject()
     val nextName = jsonReader.nextName()
