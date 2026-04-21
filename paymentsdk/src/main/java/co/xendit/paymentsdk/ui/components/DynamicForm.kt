@@ -85,13 +85,13 @@ internal fun DynamicForm(
           val propertyKey = field.primaryChannelPropertyKey()
 
           if (propertyKey.isNotEmpty()) {
-            when (field.type.name) {
-              "country" -> {
+            when (field.type) {
+              is FieldType.Country -> {
                 formValues[propertyKey] = resolvedCountry.code
                 onValuesChangedRef.value(formValues.toMap())
               }
 
-              "phone_number" -> {
+              is FieldType.PhoneNumber -> {
                 val currentPhone = formValues[propertyKey] ?: ""
                 val countryCodeKey = "${propertyKey}_country_code"
 
@@ -102,6 +102,8 @@ internal fun DynamicForm(
                   onValuesChangedRef.value(formValues.toMap())
                 }
               }
+
+              else -> {}
             }
           }
         }
@@ -115,7 +117,7 @@ internal fun DynamicForm(
     filteredFields.forEach { field ->
       val propertyKey = field.primaryChannelPropertyKey()
       if (propertyKey.isNotEmpty()) {
-        if (field.type.name == "installment_plan" && !installmentPlans.isNullOrEmpty()) {
+        if (field.type is FieldType.InstallmentPlan && !installmentPlans.isNullOrEmpty()) {
           val currentVal = formValues[propertyKey]
           if (currentVal.isNullOrEmpty() || installmentPlans.none { it.terms.toString() == currentVal }) {
             formValues[propertyKey] = installmentPlans.first().terms.toString()
@@ -124,7 +126,7 @@ internal fun DynamicForm(
           formValues[propertyKey] = field.initialValue ?: ""
         }
 
-        if (field.type.name == "phone_number") {
+        if (field.type is FieldType.PhoneNumber) {
           val countryCodeKey = "${propertyKey}_country_code"
           if (!formValues.containsKey(countryCodeKey)) {
             // Default to ID or first country if no initial country code
@@ -148,7 +150,7 @@ internal fun DynamicForm(
           formValues[key] = value
           formErrors[key] = validateField(changedField, value)
           onValuesChangedRef.value(formValues.toMap())
-          if (changedField.type.name == "credit_card_number") {
+          if (changedField.type is FieldType.CreditCardNumber) {
             onCardNumberChangedRef.value(value)
           }
         }
