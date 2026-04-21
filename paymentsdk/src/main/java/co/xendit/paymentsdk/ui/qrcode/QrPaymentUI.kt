@@ -20,7 +20,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import co.xendit.paymentsdk.R
 import co.xendit.paymentsdk.data.model.BffChannel
 import co.xendit.paymentsdk.data.model.ChannelFormField
 import co.xendit.paymentsdk.ui.components.DynamicForm
@@ -53,7 +55,7 @@ internal fun QrPaymentUI(
       .padding(bottom = 32.dp)
   ) {
     Text(
-      text = "Pay with",
+      text = stringResource(id = R.string.sessionpayment_methods_pay_with),
       style = MaterialTheme.typography.titleSmall,
       color = appearance.colorTextSecondary
     )
@@ -68,7 +70,10 @@ internal fun QrPaymentUI(
         value = selectedChannel.brandName,
         onValueChange = {},
         readOnly = true,
-        placeholder = { Text("Select a QR method") },
+        placeholder = {
+          // TODO: need lokalise - "Select a QR method"
+          Text("Select a QR method")
+        },
         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
         colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(
           focusedBorderColor = appearance.colorBorder,
