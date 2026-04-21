@@ -9,6 +9,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     permissions:
       contents: write # Required to allow the workflow to upload to Releases
 
@@ -26,11 +28,10 @@ jobs:
         run: ./gradlew assembleDebug
 
       - name: Upload APK to Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: "demo-build"
           name: "Latest Debug Build"
           body: "This is an automated debug build from the main branch."
-          files: app/build/outputs/apk/debug/app-debug.apk
+          files: exampleApp/build/outputs/apk/debug/exampleApp-debug.apk
           token: ${{ secrets.GITHUB_TOKEN }}
-          overwrite: true
