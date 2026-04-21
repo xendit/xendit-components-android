@@ -71,7 +71,6 @@ internal fun QrPaymentUI(
         onValueChange = {},
         readOnly = true,
         placeholder = {
-          // TODO: need lokalise - "Select a QR method"
           Text("Select a QR method")
         },
         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },

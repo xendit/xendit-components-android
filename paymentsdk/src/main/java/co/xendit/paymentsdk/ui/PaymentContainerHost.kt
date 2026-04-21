@@ -357,7 +357,6 @@ internal fun PaymentContainerHost(
               stringResource(id = R.string.sessionpayment_methods_submit_add_payment_method)
             } else {
               val channelName = mviState.selectedChannel?.brandName ?: "Payment"
-              // TODO: need lokalise - "Pay with $channelName"
               "Pay with $channelName"
             }
 
@@ -396,7 +395,7 @@ internal fun PaymentContainerHost(
                 )
                 Icon(
                   imageVector = Icons.AutoMirrored.Default.ArrowForward,
-                  contentDescription = "Back",
+                  contentDescription = null,
                   modifier = Modifier.size(16.dp),
                 )
               }
@@ -418,8 +417,7 @@ internal fun PaymentContainerHost(
               text = { Text(mviState.errorMessage ?: "") },
               confirmButton = {
                 Button(onClick = { onCleanup() }) {
-                  // TODO: need lokalise - "OK"
-                  Text("OK")
+                  Text(stringResource(R.string.sessiondialog_close))
                 }
               }
             )
