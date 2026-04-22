@@ -18,7 +18,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.viewinterop.AndroidView
+import co.xendit.paymentsdk.R
 import java.util.concurrent.atomic.AtomicBoolean
 
 @Composable
@@ -192,7 +194,7 @@ internal fun ActionWebViewUI(
     )
 
     Button(onClick = onClose, modifier = Modifier.align(Alignment.BottomCenter)) {
-      Text("Close")
+      Text(stringResource(id = R.string.sessiondialog_close))
     }
   }
 }

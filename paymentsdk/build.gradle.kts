@@ -28,8 +28,8 @@ android {
 
   buildTypes {
     release {
-      isMinifyEnabled = false
-      proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+      isMinifyEnabled = true
+      proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro", "consumer-rules.pro")
     }
   }
 
@@ -100,8 +100,8 @@ mavenPublishing {
     variant = "release",
   ))
   // Use coordinates to set group, artifact, and version
-  coordinates("com.xendit", "paymentsdk", "0.0.1")
-//  coordinates("io.github.argaasasta", "paymentsdk", "0.0.1")
+  coordinates("co.xendit", "component", "0.0.1")
+
   // Enable Maven Central and GPG signing
   publishToMavenCentral()
   val signingEnabled = (project.findProperty("signingEnabled") as String?)?.toBoolean() ?: true

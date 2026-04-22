@@ -13,7 +13,7 @@ internal data class SessionResponse(
 internal data class BffSession(
   @SerializedName("id") val id: String?,
   @SerializedName("payment_session_id") val paymentSessionId: String?,
-  @SerializedName("status") val status: String?,
+  @SerializedName("status") val status: PaymentSessionStatus?,
   @SerializedName("session_type") val sessionType: String?,
   @SerializedName("allow_save_payment_method") val allowSavePaymentMethod: String?,
   @SerializedName("reference_id") val referenceId: String?,
@@ -21,6 +21,15 @@ internal data class BffSession(
   @SerializedName("amount") val amount: Long?,
   @SerializedName("items") val items: List<BffItem>?
 )
+
+@Keep
+internal enum class PaymentSessionStatus {
+  @SerializedName("ACTIVE") ACTIVE,
+  @SerializedName("PENDING") PENDING,
+  @SerializedName("COMPLETED") COMPLETED,
+  @SerializedName("EXPIRED") EXPIRED,
+  @SerializedName("CANCELED") CANCELED
+}
 
 @Keep
 internal data class BffItem(
@@ -77,13 +86,75 @@ internal data class ChannelFormField(
 )
 
 @Keep
-internal data class FieldType(
-  @SerializedName("name") val name: String,
-  @SerializedName("min_length") val minLength: Int?,
-  @SerializedName("max_length") val maxLength: Int?,
-  @SerializedName("numeric") val numeric: Boolean?,
-  @SerializedName("autocomplete") val autocomplete: String?,
-  @SerializedName("regex_validators") val regexValidators: List<RegexValidator>?
+internal sealed class FieldType {
+  @get:SerializedName("name")
+  abstract val name: String
+
+  companion object {
+    operator fun invoke(
+      name: String,
+      minLength: Int? = null,
+      maxLength: Int? = null,
+      numeric: Boolean? = null,
+      regexValidators: List<RegexValidator>? = null,
+      autocomplete: String? = null,
+      options: List<DropdownOption>? = null
+    ): FieldType {
+      return when (name) {
+        "credit_card_number" -> CreditCardNumber()
+        "credit_card_expiry" -> CreditCardExpiry()
+        "credit_card_cvn" -> CreditCardCvn()
+        "phone_number" -> PhoneNumber()
+        "email" -> Email()
+        "postal_code" -> PostalCode()
+        "country" -> Country()
+        "province" -> Province()
+        "installment_plan" -> InstallmentPlan()
+        "dropdown" -> Dropdown(options = options ?: emptyList())
+        else ->
+          Text(
+            name = name,
+            minLength = minLength,
+            maxLength = maxLength,
+            numeric = numeric,
+            regexValidators = regexValidators,
+            autocomplete = autocomplete
+          )
+      }
+    }
+  }
+
+  data class CreditCardNumber(@SerializedName("name") override val name: String = "credit_card_number") : FieldType()
+  data class CreditCardExpiry(@SerializedName("name") override val name: String = "credit_card_expiry") : FieldType()
+  data class CreditCardCvn(@SerializedName("name") override val name: String = "credit_card_cvn") : FieldType()
+  data class PhoneNumber(@SerializedName("name") override val name: String = "phone_number") : FieldType()
+  data class Email(@SerializedName("name") override val name: String = "email") : FieldType()
+  data class PostalCode(@SerializedName("name") override val name: String = "postal_code") : FieldType()
+  data class Country(@SerializedName("name") override val name: String = "country") : FieldType()
+  data class Province(@SerializedName("name") override val name: String = "province") : FieldType()
+  data class InstallmentPlan(@SerializedName("name") override val name: String = "installment_plan") : FieldType()
+
+  data class Text(
+    @SerializedName("name") override val name: String = "text",
+    @SerializedName("min_length") val minLength: Int? = null,
+    @SerializedName("max_length") val maxLength: Int? = null,
+    @SerializedName("numeric") val numeric: Boolean? = null,
+    @SerializedName("regex_validators") val regexValidators: List<RegexValidator>? = null,
+    @SerializedName("autocomplete") val autocomplete: String? = null
+  ) : FieldType()
+
+  data class Dropdown(
+    @SerializedName("name") override val name: String = "dropdown",
+    @SerializedName("options") val options: List<DropdownOption>
+  ) : FieldType()
+}
+
+@Keep
+internal data class DropdownOption(
+  @SerializedName("label") val label: String,
+  @SerializedName("subtitle") val subtitle: String? = null,
+  @SerializedName("icon_url") val iconUrl: String? = null,
+  @SerializedName("value") val value: String
 )
 
 internal data class RegexValidator(

@@ -47,7 +47,7 @@ internal data class PaymentAction(
 internal data class PaymentResponse(
   @SerializedName(value = "id", alternate = ["payment_request_id", "payment_token_id"])
   val id: String,
-  val status: String,
+  val status: PaymentRequestStatus,
   val failure_code: String? = null,
   val channel_properties: Map<String, Any>? = null,
   val payment_method: PaymentMethod? = null,
@@ -69,7 +69,19 @@ internal data class PaymentResponse(
 )
 
 @Keep
-internal data class PaymentMethod(val id: String, val status: String)
+internal enum class PaymentRequestStatus {
+  @SerializedName("ACCEPTING_PAYMENTS") ACCEPTING_PAYMENTS,
+  @SerializedName("REQUIRES_ACTION") REQUIRES_ACTION,
+  @SerializedName("PENDING") PENDING,
+  @SerializedName("AUTHORIZED") AUTHORIZED,
+  @SerializedName("CANCELED") CANCELED,
+  @SerializedName("EXPIRED") EXPIRED,
+  @SerializedName("SUCCEEDED") SUCCEEDED,
+  @SerializedName("FAILED") FAILED
+}
+
+@Keep
+internal data class PaymentMethod(val id: String, val status: PaymentRequestStatus)
 
 @Keep
 internal data class SucceededChannel(

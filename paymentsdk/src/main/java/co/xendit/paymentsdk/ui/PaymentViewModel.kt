@@ -14,6 +14,8 @@ import co.xendit.paymentsdk.data.model.PaymentAction
 import co.xendit.paymentsdk.data.model.PaymentDraft
 import co.xendit.paymentsdk.data.model.PaymentRequest
 import co.xendit.paymentsdk.data.model.PaymentResponse
+import co.xendit.paymentsdk.data.model.PaymentRequestStatus
+import co.xendit.paymentsdk.data.model.PaymentSessionStatus
 import co.xendit.paymentsdk.data.model.PollResponse
 import co.xendit.paymentsdk.data.network.repo.session.XenditRepository
 import co.xendit.paymentsdk.ui.components.molecule.UiText
@@ -26,8 +28,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeout
 
 internal data class PaymentState(
   val isLoading: Boolean = false,
@@ -83,14 +85,12 @@ internal class PaymentViewModel(
   private var lastPaymentRequestId: String? = null
   private var lastSessionTokenRequestId: String? = null
   private var challengePollingJob: Job? = null
-  private var isActiveSession: Boolean = false
 
   fun dispatch(intent: ActionIntent) {
     when (intent) {
       is ActionIntent.Initialize -> {
         this.sessionAuthKey = intent.sessionAuthKey
         this.publicKey = intent.publicKey
-        this.isActiveSession = true
         resetForNewSession()
         dispatch(ActionIntent.FetchSession(intent.sessionAuthKey))
       }
@@ -106,6 +106,7 @@ internal class PaymentViewModel(
           intent.savePaymentMethod,
           intent.installmentPlans
         )
+
       is ActionIntent.UpdatePaymentDraft -> onUpdatePaymentDraft(intent.paymentDraft)
       is ActionIntent.ChallengeCompleted -> onChallengeCompletedInternal()
     }
@@ -265,7 +266,7 @@ internal class PaymentViewModel(
                       it.descriptor == "DEEPLINK_URL" ||
                       it.descriptor == "WEB_GOOGLE_PAYLINK")
             }
-          if (body.status == "REQUIRES_ACTION" && redirect?.value != null) {
+          if (body.status == PaymentRequestStatus.REQUIRES_ACTION && redirect?.value != null) {
             _state.update {
               it.copy(
                 isLoading = false,
@@ -273,7 +274,7 @@ internal class PaymentViewModel(
                 iframeCapable = redirect.iframeCapable ?: true
               )
             }
-          } else if (body.status == "REQUIRES_ACTION") {
+          } else if (body.status == PaymentRequestStatus.REQUIRES_ACTION) {
             val presentToCustomer =
               actions.firstOrNull { it.type == "PRESENT_TO_CUSTOMER" && it.value != null }
             if (presentToCustomer != null) {
@@ -290,6 +291,7 @@ internal class PaymentViewModel(
           } else {
             _state.update { it.copy(isLoading = false, paymentResponse = body) }
           }
+          onChallengeCompletedInternal() // start pooling here
         } else {
           val error = response.errorBody()?.asApiError()
           val errorMessage = error?.errorContent?.message1 ?: "Payment Failed"
@@ -307,39 +309,33 @@ internal class PaymentViewModel(
   private fun onChallengeCompletedInternal() {
     val authKey = sessionAuthKey ?: return
     val tokenReqId = lastSessionTokenRequestId
-    if (!isActiveSession) return
     if (challengePollingJob?.isActive == true) return
     challengePollingJob =
       viewModelScope.launch {
         _state.update { it.copy(isLoading = true) }
         try {
           var delayMs = 3000L
-          withTimeout(100_000L) { // no need timeout
-            while (true) {
-              val res = xenditRepository.pollSession(authKey, tokenReqId)
-              if (res.isSuccessful && res.body() != null) {
-                val poll = res.body()
-                if (poll != null) {
-                  _state.update {
-                    it.copy(
-                      pollResponse = poll,
-                      isLoading = false,
-                      actionRedirectUrl = null,
-                      presentToCustomerPaymentAction = null
-                    )
-                  }
-                  Log.d(
-                    "Challenge",
-                    "successResponse: ${poll.paymentRequest ?: poll.paymentToken}"
+          while (isActive) {
+            val res = xenditRepository.pollSession(authKey, tokenReqId)
+            if (res.isSuccessful && res.body() != null) {
+              val poll = res.body()
+              if (poll != null) {
+                _state.update {
+                  it.copy(
+                    pollResponse = poll,
+                    isLoading = false,
                   )
-//                  return@withTimeout
                 }
-              } else {
-                // On unauthorized or errors, just backoff and retry within timeout
+                Log.d(
+                  "Challenge",
+                  "successResponse: ${poll.paymentRequest ?: poll.paymentToken}"
+                )
               }
-              delay(delayMs)
-              delayMs = minOf((delayMs * 1.2).toLong(), 10_000L)
+            } else {
+              // On unauthorized or errors, just backoff and retry within timeout
             }
+            delay(delayMs)
+            delayMs = minOf((delayMs * 1.2).toLong(), 10_000L)
           }
         } catch (e: TimeoutCancellationException) {
           globalErrorHandler.postError(
@@ -361,7 +357,7 @@ internal class PaymentViewModel(
 
   // can use user action
   fun markClosed() {
-    isActiveSession = false
     challengePollingJob?.cancel()
+    challengePollingJob = null
   }
 }

@@ -1,10 +1,10 @@
-name: Build Debug APK
+name: Build Demo APKs
 
 on:
   push:
     branches:
       - main
-  workflow_dispatch: # This adds the manual "Run workflow" button
+  workflow_dispatch:
 
 jobs:
   build:
@@ -12,7 +12,7 @@ jobs:
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     permissions:
-      contents: write # Required to allow the workflow to upload to Releases
+      contents: write
 
     steps:
       - name: Checkout Code
@@ -24,14 +24,17 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Build Debug APK
-        run: ./gradlew assembleDebug
+      - name: Build APKs
+        run: ./gradlew :exampleApp:assembleDebug :exampleApp:assembleRelease
 
-      - name: Upload APK to Release
-        uses: softprops/action-gh-release@v3
+      - name: Upload APKs to Release
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: "demo-build"
-          name: "Latest Debug Build"
-          body: "This is an automated debug build from the main branch."
-          files: exampleApp/build/outputs/apk/debug/exampleApp-debug.apk
+          name: "Latest Demo Build"
+          body: "Automated debug and release builds from the main branch."
+          files: |
+            exampleApp/build/outputs/apk/debug/exampleApp-debug.apk
+            exampleApp/build/outputs/apk/release/exampleApp-release.apk
           token: ${{ secrets.GITHUB_TOKEN }}
+          generate_release_notes: true

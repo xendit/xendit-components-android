@@ -40,7 +40,7 @@ internal class SafeApiCall(val loadingHandler: GlobalLoadingHandler) {
       )
     } catch (e: Exception) {
       // Handles any other unexpected crashes (like JSON parsing on a 200 response)
-      Log.d(TAG,"safeApiCall caught unexpected Exception: ${e.javaClass.simpleName}")
+      Log.e(TAG, "safeApiCall caught unexpected Exception", e)
       return Response.error(
         500,
         "{\"responseMessage\":\"An unexpected error occurred: ${e.message}\"}".toResponseBody(

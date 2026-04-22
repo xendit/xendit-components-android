@@ -1,6 +1,7 @@
 package co.xendit.paymentsdk.ui.helper
 
 import co.xendit.paymentsdk.data.model.ChannelFormField
+import co.xendit.paymentsdk.data.model.FieldType
 import co.xendit.paymentsdk.data.model.primaryChannelPropertyKey
 import co.xendit.paymentsdk.ui.helper.FormCheckerUtil.isValidCardExpiry
 import co.xendit.paymentsdk.ui.helper.FormCheckerUtil.isValidCreditCard
@@ -22,22 +23,25 @@ internal object FormChecker {
       return "${field.label} is required"
     }
 
-    field.type.regexValidators?.forEach { validator ->
-      val regex = Regex(validator.regex.removeSurrounding("/"))
-      if (!regex.matches(value)) {
-        return validator.message
-      }
-    }
-
-    when (field.type.name) {
-      "credit_card_number" -> {
+    when (field.type) {
+      is FieldType.CreditCardNumber -> {
         if (!isValidCreditCard(value)) {
           return "Card number is not valid"
         }
       }
-      "credit_card_expiry" -> {
+      is FieldType.CreditCardExpiry -> {
         if (!isValidCardExpiry(value)) {
           return "Card expiry is not valid"
+        }
+      }
+      else -> {
+        if (field.type is FieldType.Text) {
+          field.type.regexValidators?.forEach { validator ->
+            val regex = Regex(validator.regex.removeSurrounding("/"))
+            if (!regex.matches(value)) {
+              return validator.message
+            }
+          }
         }
       }
     }

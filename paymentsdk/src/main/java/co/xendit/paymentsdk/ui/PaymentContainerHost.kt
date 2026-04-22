@@ -4,28 +4,33 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -35,14 +40,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import co.xendit.paymentsdk.BuildConfig
+import co.xendit.paymentsdk.R
 import co.xendit.paymentsdk.core.CoreSdkComponent.globalErrorHandler
 import co.xendit.paymentsdk.data.model.PaymentDraft
+import co.xendit.paymentsdk.data.model.PaymentRequestStatus
+import co.xendit.paymentsdk.data.model.PaymentSessionStatus
 import co.xendit.paymentsdk.data.model.XenditError
 import co.xendit.paymentsdk.data.model.XenditPaymentResult
 import co.xendit.paymentsdk.internal_entry_point.CardViewModelFactory
@@ -132,10 +141,17 @@ internal fun PaymentContainerHost(
     val sessionStatus = poll.session?.status
     val prStatus = poll.paymentRequest?.status
     val isSuccess =
-      sessionStatus == "COMPLETED" || prStatus == "SUCCEEDED" || poll.succeededChannel != null
-    val isCanceled = sessionStatus == "CANCELED" || prStatus == "CANCELED"
+      sessionStatus == PaymentSessionStatus.COMPLETED
+          || prStatus == PaymentRequestStatus.SUCCEEDED
+          || prStatus == PaymentRequestStatus.AUTHORIZED
+          || poll.succeededChannel != null
+
+    val isCanceled =
+      sessionStatus == PaymentSessionStatus.CANCELED || prStatus == PaymentRequestStatus.CANCELED
     val isFailed =
-      sessionStatus == "EXPIRED" || sessionStatus == "FAILED" || prStatus == "FAILED" || prStatus == "EXPIRED"
+      sessionStatus == PaymentSessionStatus.EXPIRED
+          || prStatus == PaymentRequestStatus.FAILED
+          || prStatus == PaymentRequestStatus.EXPIRED
 
     when {
       isSuccess -> {
@@ -188,6 +204,12 @@ internal fun PaymentContainerHost(
         paymentSessionId = paymentSessionId
       )
     )
+  }
+
+  DisposableEffect(Unit) {
+    onDispose {
+      viewModel.markClosed()
+    }
   }
 
   val container: @Composable (@Composable () -> Unit) -> Unit = { content ->
@@ -263,7 +285,7 @@ internal fun PaymentContainerHost(
           }
         }
         GenericHeader(
-          title = "Select Payment Method",
+          title = stringResource(id = R.string.sessionpayment_methods_header),
           onLeftClick = dismiss
         )
         val showFooter =
@@ -348,7 +370,7 @@ internal fun PaymentContainerHost(
             isPaymentSelected && !mviState.isLoading && validateAllField(isFormFilled, formValue)
           val payText =
             if (mviState.sessionType == "SAVE") {
-              "Save Payment Method"
+              stringResource(id = R.string.sessionpayment_methods_submit_add_payment_method)
             } else {
               val channelName = mviState.selectedChannel?.brandName ?: "Payment"
               "Pay with $channelName"
@@ -373,22 +395,26 @@ internal fun PaymentContainerHost(
                 )
               },
               modifier = Modifier.fillMaxWidth(),
+              shape = RoundedCornerShape(appearance.borderRadius),
               colors = ButtonDefaults.buttonColors(
                 containerColor = style.colorPrimary,
                 contentColor = style.colorBackground
               )
             ) {
-              Text(payText)
-            }
-
-            TextButton(
-              onClick = dismiss,
-              modifier = Modifier.fillMaxWidth()
-            ) {
-              Text(
-                text = "Cancel",
-                color = style.colorPrimary
-              )
+              Row(
+                verticalAlignment = Alignment.CenterVertically
+              ) {
+                Text(
+                  text = payText,
+                  style = MaterialTheme.typography.titleSmall,
+                  modifier = Modifier.padding(end = 8.dp)
+                )
+                Icon(
+                  imageVector = Icons.AutoMirrored.Default.ArrowForward,
+                  contentDescription = null,
+                  modifier = Modifier.size(16.dp),
+                )
+              }
             }
           }
         }
@@ -403,10 +429,12 @@ internal fun PaymentContainerHost(
           Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             AlertDialog(
               onDismissRequest = { onCleanup() },
-              title = { Text("Error") },
+              title = { Text(stringResource(id = R.string.sessiondefault_error_title)) },
               text = { Text(mviState.errorMessage ?: "") },
               confirmButton = {
-                Button(onClick = { onCleanup() }) { Text("OK") }
+                Button(onClick = { onCleanup() }) {
+                  Text(stringResource(R.string.sessiondialog_close))
+                }
               }
             )
           }

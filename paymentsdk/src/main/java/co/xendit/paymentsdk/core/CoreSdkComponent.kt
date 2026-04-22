@@ -10,15 +10,14 @@ import co.xendit.paymentsdk.core.network.interceptor.BaseUrlInterceptor
 import co.xendit.paymentsdk.core.network.interceptor.ErrorInterceptor
 import co.xendit.paymentsdk.core.network.interceptor.HeaderInterceptor
 import co.xendit.paymentsdk.core.network.provider.HeaderProvider
+import co.xendit.paymentsdk.data.model.FieldType
 import co.xendit.paymentsdk.data.network.remote.session.XenditApi
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
+import com.google.gson.JsonDeserializationContext
+import com.google.gson.JsonDeserializer
+import com.google.gson.JsonElement
 import com.google.gson.Strictness
-import com.google.gson.TypeAdapter
-import com.google.gson.TypeAdapterFactory
-import com.google.gson.reflect.TypeToken
-import com.google.gson.stream.JsonReader
-import com.google.gson.stream.JsonWriter
 import io.nerdythings.okhttp.modifier.interceptor.OkHttpRequestModifierInterceptor
 import io.nerdythings.okhttp.profiler.OkHttpProfilerInterceptor
 import okhttp3.HttpUrl
@@ -27,9 +26,8 @@ import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.converter.scalars.ScalarsConverterFactory
+import java.lang.reflect.Type
 import java.util.concurrent.TimeUnit
-import kotlin.jvm.internal.Reflection
-import kotlin.reflect.KClass
 
 internal object CoreSdkComponent {
 
@@ -61,19 +59,7 @@ internal object CoreSdkComponent {
   val gson: Gson by lazy {
     GsonBuilder()
       .setStrictness(Strictness.LENIENT)
-      .registerTypeAdapterFactory(
-        object : TypeAdapterFactory {
-          override fun <T : Any> create(
-            gson: Gson,
-            type: TypeToken<T>
-          ): TypeAdapter<T> {
-            val kclass = Reflection.getOrCreateKotlinClass(type.rawType)
-            return if (kclass.sealedSubclasses.any()) {
-              SealedClassTypeAdapter<T>(kclass as KClass<Any>, gson)
-            } else gson.getDelegateAdapter(this, type)
-          }
-        }
-      )
+      .registerTypeAdapter(FieldType::class.java, FieldTypeDeserializer())
       .create()
   }
 
@@ -122,24 +108,27 @@ internal object CoreSdkComponent {
   val safeApiCall: SafeApiCall by lazy { SafeApiCall(globalLoadingHandler) }
 }
 
-internal class SealedClassTypeAdapter<T : Any>(val kclass: KClass<Any>, val gson: Gson) : TypeAdapter<T>() {
-  override fun read(jsonReader: JsonReader): T? {
-    jsonReader.beginObject()
-    val nextName = jsonReader.nextName()
-    val innerClass =
-      kclass.sealedSubclasses.firstOrNull { it.simpleName!!.contains(nextName) }
-        ?: throw Exception(
-          "$nextName is not found to be a data class of the sealed class ${kclass.qualifiedName}"
-        )
-    val x = gson.fromJson<T>(jsonReader, innerClass.javaObjectType)
-    jsonReader.endObject()
-    return (innerClass.objectInstance as? T) ?: x
-  }
+internal class FieldTypeDeserializer : JsonDeserializer<FieldType> {
+  override fun deserialize(
+    json: JsonElement,
+    typeOfT: Type,
+    context: JsonDeserializationContext
+  ): FieldType {
+    val jsonObject = json.asJsonObject
+    val name = jsonObject.get("name")?.asString ?: "text"
 
-  override fun write(out: JsonWriter, value: T) {
-    val jsonString = gson.toJson(value)
-    out.beginObject()
-    out.name(value.javaClass.canonicalName?.split(".")?.last() ?: "unknown").jsonValue(jsonString)
-    out.endObject()
+    return when (name) {
+      "credit_card_number" -> FieldType.CreditCardNumber()
+      "credit_card_expiry" -> FieldType.CreditCardExpiry()
+      "credit_card_cvn" -> FieldType.CreditCardCvn()
+      "phone_number" -> FieldType.PhoneNumber()
+      "email" -> FieldType.Email()
+      "postal_code" -> FieldType.PostalCode()
+      "country" -> FieldType.Country()
+      "province" -> FieldType.Province()
+      "installment_plan" -> FieldType.InstallmentPlan()
+      "dropdown" -> context.deserialize(json, FieldType.Dropdown::class.java)
+      else -> context.deserialize(json, FieldType.Text::class.java)
+    }
   }
 }
