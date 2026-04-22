@@ -30,6 +30,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -194,6 +195,12 @@ internal fun PaymentContainerHost(
         paymentSessionId = paymentSessionId
       )
     )
+  }
+
+  DisposableEffect(Unit) {
+    onDispose {
+      viewModel.markClosed()
+    }
   }
 
   val container: @Composable (@Composable () -> Unit) -> Unit = { content ->
