@@ -50,6 +50,8 @@ import co.xendit.paymentsdk.BuildConfig
 import co.xendit.paymentsdk.R
 import co.xendit.paymentsdk.core.CoreSdkComponent.globalErrorHandler
 import co.xendit.paymentsdk.data.model.PaymentDraft
+import co.xendit.paymentsdk.data.model.PaymentRequestStatus
+import co.xendit.paymentsdk.data.model.PaymentSessionStatus
 import co.xendit.paymentsdk.data.model.XenditError
 import co.xendit.paymentsdk.data.model.XenditPaymentResult
 import co.xendit.paymentsdk.internal_entry_point.CardViewModelFactory
@@ -139,10 +141,17 @@ internal fun PaymentContainerHost(
     val sessionStatus = poll.session?.status
     val prStatus = poll.paymentRequest?.status
     val isSuccess =
-      sessionStatus == "COMPLETED" || prStatus == "SUCCEEDED" || poll.succeededChannel != null
-    val isCanceled = sessionStatus == "CANCELED" || prStatus == "CANCELED"
+      sessionStatus == PaymentSessionStatus.COMPLETED
+          || prStatus == PaymentRequestStatus.SUCCEEDED
+          || prStatus == PaymentRequestStatus.AUTHORIZED
+          || poll.succeededChannel != null
+
+    val isCanceled =
+      sessionStatus == PaymentSessionStatus.CANCELED || prStatus == PaymentRequestStatus.CANCELED
     val isFailed =
-      sessionStatus == "EXPIRED" || sessionStatus == "FAILED" || prStatus == "FAILED" || prStatus == "EXPIRED"
+      sessionStatus == PaymentSessionStatus.EXPIRED
+          || prStatus == PaymentRequestStatus.FAILED
+          || prStatus == PaymentRequestStatus.EXPIRED
 
     when {
       isSuccess -> {

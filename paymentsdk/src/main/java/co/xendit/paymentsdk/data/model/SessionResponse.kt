@@ -13,7 +13,7 @@ internal data class SessionResponse(
 internal data class BffSession(
   @SerializedName("id") val id: String?,
   @SerializedName("payment_session_id") val paymentSessionId: String?,
-  @SerializedName("status") val status: String?,
+  @SerializedName("status") val status: PaymentSessionStatus?,
   @SerializedName("session_type") val sessionType: String?,
   @SerializedName("allow_save_payment_method") val allowSavePaymentMethod: String?,
   @SerializedName("reference_id") val referenceId: String?,
@@ -21,6 +21,15 @@ internal data class BffSession(
   @SerializedName("amount") val amount: Long?,
   @SerializedName("items") val items: List<BffItem>?
 )
+
+@Keep
+internal enum class PaymentSessionStatus {
+  @SerializedName("ACTIVE") ACTIVE,
+  @SerializedName("PENDING") PENDING,
+  @SerializedName("COMPLETED") COMPLETED,
+  @SerializedName("EXPIRED") EXPIRED,
+  @SerializedName("CANCELED") CANCELED
+}
 
 @Keep
 internal data class BffItem(

@@ -14,6 +14,8 @@ import co.xendit.paymentsdk.data.model.PaymentAction
 import co.xendit.paymentsdk.data.model.PaymentDraft
 import co.xendit.paymentsdk.data.model.PaymentRequest
 import co.xendit.paymentsdk.data.model.PaymentResponse
+import co.xendit.paymentsdk.data.model.PaymentRequestStatus
+import co.xendit.paymentsdk.data.model.PaymentSessionStatus
 import co.xendit.paymentsdk.data.model.PollResponse
 import co.xendit.paymentsdk.data.network.repo.session.XenditRepository
 import co.xendit.paymentsdk.ui.components.molecule.UiText
@@ -264,7 +266,7 @@ internal class PaymentViewModel(
                       it.descriptor == "DEEPLINK_URL" ||
                       it.descriptor == "WEB_GOOGLE_PAYLINK")
             }
-          if (body.status == "REQUIRES_ACTION" && redirect?.value != null) {
+          if (body.status == PaymentRequestStatus.REQUIRES_ACTION && redirect?.value != null) {
             _state.update {
               it.copy(
                 isLoading = false,
@@ -272,7 +274,7 @@ internal class PaymentViewModel(
                 iframeCapable = redirect.iframeCapable ?: true
               )
             }
-          } else if (body.status == "REQUIRES_ACTION") {
+          } else if (body.status == PaymentRequestStatus.REQUIRES_ACTION) {
             val presentToCustomer =
               actions.firstOrNull { it.type == "PRESENT_TO_CUSTOMER" && it.value != null }
             if (presentToCustomer != null) {
