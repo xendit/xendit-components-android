@@ -89,6 +89,11 @@ internal sealed class ActionIntent {
    * This triggers a status check to verify the final result.
    */
   data object ChallengeCompleted : ActionIntent()
+
+  /**
+   * Close Webview
+   */
+  data object CloseWebPayment : ActionIntent()
 }
 
 internal class PaymentViewModel(
@@ -134,15 +139,11 @@ internal class PaymentViewModel(
 
       is ActionIntent.UpdatePaymentDraft -> onUpdatePaymentDraft(intent.paymentDraft)
       is ActionIntent.ChallengeCompleted -> onChallengeCompletedInternal()
+      is ActionIntent.CloseWebPayment -> {
+        _state.update { it.copy(actionRedirectUrl = null) }
+        markClosed()
+      }
     }
-  }
-
-  private fun resetForNewSession() {
-    challengePollingJob?.cancel()
-    paymentSessionId = null
-    lastPaymentRequestId = null
-    lastSessionTokenRequestId = null
-    _state.value = PaymentState()
   }
 
   private fun fetchSessionInternal(sessionAuthKey: String) {
@@ -370,17 +371,19 @@ internal class PaymentViewModel(
             it.copy(errorMessage = "Payment status polling timeout", isLoading = false)
           }
         } catch (e: Exception) {
-          globalErrorHandler.postError(
-            errorMessage = UiText.DynamicString(e.message ?: "Payment Error")
-          )
-          _state.update {
-            it.copy(errorMessage = e.message ?: "Payment Error", isLoading = false)
-          }
+          Log.d("Polling", "Error: ${e.message}")
         }
       }
   }
 
-  // can use user action
+  fun resetForNewSession() {
+    markClosed()
+    paymentSessionId = null
+    lastPaymentRequestId = null
+    lastSessionTokenRequestId = null
+    _state.value = PaymentState()
+  }
+
   fun markClosed() {
     challengePollingJob?.cancel()
     challengePollingJob = null
