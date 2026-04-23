@@ -81,17 +81,6 @@ internal fun PaymentMethodsUI(
           modifier = Modifier.padding(bottom = 8.dp),
           showSaveCheckbox = showSaveCheckbox
         )
-      },
-      PaymentMethodRenderer(uiGroup = "qr_code") { groupChannels, currentSelected ->
-        QrPaymentUI(
-          channels = groupChannels,
-          selectedChannel = currentSelected,
-          onSelectChannel = onSelectChannel,
-          onFormStateChanged = { formValues, visibleFields ->
-            onFormChanged(currentSelected.channelCode, formValues, visibleFields, false)
-          },
-          modifier = Modifier.padding(bottom = 8.dp)
-        )
       }
     ).associateBy { it.uiGroup }
 
