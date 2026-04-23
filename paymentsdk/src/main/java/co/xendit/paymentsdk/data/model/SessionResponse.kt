@@ -14,8 +14,8 @@ internal data class BffSession(
   @SerializedName("id") val id: String?,
   @SerializedName("payment_session_id") val paymentSessionId: String?,
   @SerializedName("status") val status: PaymentSessionStatus?,
-  @SerializedName("session_type") val sessionType: String?,
-  @SerializedName("allow_save_payment_method") val allowSavePaymentMethod: String?,
+  @SerializedName("session_type") val sessionType: BffSessionType?,
+  @SerializedName("allow_save_payment_method") val allowSavePaymentMethod: BffSessionAllowSavePaymentMethod?,
   @SerializedName("reference_id") val referenceId: String?,
   @SerializedName("currency") val currency: String?,
   @SerializedName("amount") val amount: Long?,
@@ -29,6 +29,21 @@ internal enum class PaymentSessionStatus {
   @SerializedName("COMPLETED") COMPLETED,
   @SerializedName("EXPIRED") EXPIRED,
   @SerializedName("CANCELED") CANCELED
+}
+
+@Keep
+internal enum class BffSessionType {
+  @SerializedName("SAVE") SAVE,
+  @SerializedName("PAY") PAY,
+  @SerializedName("AUTHORIZATION") AUTHORIZATION,
+  @SerializedName("SUBSCRIPTION") SUBSCRIPTION
+}
+
+@Keep
+internal enum class BffSessionAllowSavePaymentMethod {
+  @SerializedName("DISABLED") DISABLED,
+  @SerializedName("FORCED") FORCED,
+  @SerializedName("OPTIONAL") OPTIONAL
 }
 
 @Keep

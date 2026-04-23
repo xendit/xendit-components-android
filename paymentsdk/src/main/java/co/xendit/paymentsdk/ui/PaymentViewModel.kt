@@ -7,6 +7,8 @@ import co.xendit.paymentsdk.core.model.GlobalErrorHandler
 import co.xendit.paymentsdk.core.model.asApiError
 import co.xendit.paymentsdk.data.model.BffChannel
 import co.xendit.paymentsdk.data.model.BffSession
+import co.xendit.paymentsdk.data.model.BffSessionAllowSavePaymentMethod
+import co.xendit.paymentsdk.data.model.BffSessionType
 import co.xendit.paymentsdk.data.model.ChannelFormField
 import co.xendit.paymentsdk.data.model.Country
 import co.xendit.paymentsdk.data.model.InstallmentPlan
@@ -44,8 +46,8 @@ internal data class PaymentState(
   val paymentResponse: PaymentResponse? = null,
   val sessionResponse: BffSession? = null,
   val pollResponse: PollResponse? = null,
-  val sessionType: String? = null,
-  val allowSavePaymentMethod: String? = null,
+  val sessionType: BffSessionType? = null,
+  val allowSavePaymentMethod: BffSessionAllowSavePaymentMethod? = null,
   val paymentDraft: PaymentDraft = PaymentDraft()
 )
 
@@ -249,7 +251,7 @@ internal class PaymentViewModel(
           )
 
         val response =
-          if (_state.value.sessionType == "SAVE") {
+          if (_state.value.sessionType == BffSessionType.SAVE) {
             xenditRepository.createPaymentToken(request = request)
           } else {
             xenditRepository.createPaymentRequest(request = request)

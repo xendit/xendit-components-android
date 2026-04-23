@@ -49,6 +49,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import co.xendit.paymentsdk.BuildConfig
 import co.xendit.paymentsdk.R
 import co.xendit.paymentsdk.core.CoreSdkComponent.globalErrorHandler
+import co.xendit.paymentsdk.data.model.BffSessionType
 import co.xendit.paymentsdk.data.model.PaymentDraft
 import co.xendit.paymentsdk.data.model.PaymentRequestStatus
 import co.xendit.paymentsdk.data.model.PaymentSessionStatus
@@ -369,7 +370,7 @@ internal fun PaymentContainerHost(
           val isPayEnabled =
             isPaymentSelected && !mviState.isLoading && validateAllField(isFormFilled, formValue)
           val payText =
-            if (mviState.sessionType == "SAVE") {
+            if (mviState.sessionType == BffSessionType.SAVE) {
               stringResource(id = R.string.sessionpayment_methods_submit_add_payment_method)
             } else {
               val channelName = mviState.selectedChannel?.brandName ?: "Payment"
