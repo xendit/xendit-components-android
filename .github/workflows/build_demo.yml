@@ -25,7 +25,7 @@ jobs:
           distribution: 'temurin'
 
       - name: Build APKs
-        run: ./gradlew :exampleApp:assembleDebug :exampleApp:assembleRelease
+        run: ./gradlew :example-app:assembleDebug :example-app:assembleRelease
 
       - name: Upload APKs to Release
         uses: softprops/action-gh-release@v2
@@ -34,7 +34,7 @@ jobs:
           name: "Latest Demo Build"
           body: "Automated debug and release builds from the main branch."
           files: |
-            exampleApp/build/outputs/apk/debug/exampleApp-debug.apk
-            exampleApp/build/outputs/apk/release/exampleApp-release.apk
+            example-app/build/outputs/apk/debug/example-app-debug.apk
+            example-app/build/outputs/apk/release/example-app-release.apk
           token: ${{ secrets.GITHUB_TOKEN }}
           generate_release_notes: true

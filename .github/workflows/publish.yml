@@ -22,4 +22,4 @@ jobs:
           ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_PRIVATE_KEY }}
           ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_PASSWORD }}
         # changed to publishToMavenCentral (instead of publish*AndRelease*) to keep it in a safe, erasable Sandbox Draft
-        run: ./gradlew :paymentsdk:publishToMavenCentral --no-daemon
+        run: ./gradlew :components-sdk:publishToMavenCentral --no-daemon
