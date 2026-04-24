@@ -48,5 +48,5 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "XenditComponentsAndroid"
-include(":exampleApp")
-include(":paymentsdk") // comment this if use jitpack
+include(":example-app")
+include(":components-sdk") // comment this if use jitpack
