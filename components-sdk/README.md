@@ -1,106 +1,114 @@
-# Payment SDK
+# Xendit Components Android SDK
 
-A standalone Android SDK module built with Jetpack Compose for easy payment processing using Xendit Components.
+A modern Android SDK built with Jetpack Compose to integrate Xendit's payment components seamlessly into your Android application.
 
 ## Features
 
-- **Jetpack Compose**: Built with modern UI components and Material3.
-- **Dynamic Payment Methods**: Seamlessly render Cards, QR Codes, and other payment channels dynamically.
-- **Card Formatting**: Automatic formatting for card numbers and expiry dates.
-- **Validation**: Built-in Luhn algorithm check and date validation.
-- **Customizable UI**: Configure styling to match your brand's look and feel.
-- **Action Handling**: Handles web-based authentications (like 3DS) via WebView or native components seamlessly.
+- **Jetpack Compose Native**: Built entirely with modern UI components and Material3.
+- **Dynamic Payment Methods**: Supports Cards and other payment channels dynamically.
+- **Smart Formatting**: Automatic formatting for card numbers, expiry dates, and CVV.
+- **Robust Validation**: Built-in Luhn algorithm and date validation.
+- **Highly Customizable**: Easily configure colors, fonts, and border radius to match your brand identity.
+- **Seamless 3DS Handling**: Built-in WebView and iframe support for handling 3D Secure and other redirects.
+- **Production Ready**: Optimized logging (XLogger) and internal-only testing utilities.
 
 ## Integration
 
-To integrate the SDK into your project, you can use **Maven Central** or **JitPack**.
-
 ### 1. Configure Repository
 
-Add Maven Central (or JitPack) to your `settings.gradle.kts` (or root `build.gradle.kts`):
+Add Maven Central to your `settings.gradle.kts`:
+
 ```kotlin
 dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
-        // If using JitPack:
-        // maven { url = uri("https://jitpack.io") }
     }
 }
 ```
 
-### 2. Add dependency
+### 2. Add Dependency
 
-Add the following to your `app/build.gradle.kts`:
+Add the SDK dependency to your `app/build.gradle.kts`:
+
 ```kotlin
 dependencies {
-    // Replace with the latest published version
-    implementation("com.xendit:componentssdk:0.0.1") 
-    // Or if using JitPack:
-    // implementation("com.github.argaasasta:XenComponentPrivate:v0.0.1-alpha")
+    implementation("co.xendit:components:0.0.1")
 }
 ```
 
-## Basic Usage
+## Usage
 
-### 1. Initialization (Optional)
+### 1. Global Initialization (Optional)
 
-You can optionally initialize the SDK with custom appearance settings before presenting the payment UI:
+You can customize the SDK's appearance globally before launching the UI. This is usually done in your `Application` class or main `Activity`.
 
 ```kotlin
-val customStyle = XenditAppearance(
-    // Customize your font, colors, border radius, etc.
-    // fontFamily = yourCustomFontFamily,
-    // colorPrimary = Color(0xFF21DCCB),
+val appearance = XenditAppearance(
+    colorPrimary = Color(0xFF0052FF),
+    colorText = Color(0xFF1A1C1E),
+    borderRadius = 12.dp,
+    // fontFamily = yourCustomFontFamily
 )
 
 XenditComponents.initialize(
-    appearance = customStyle,
-    merchantPreferredPaymentMethod = listOf("cards", "qr_code") // Optional ordering
+    appearance = appearance,
+    merchantPreferredPaymentMethod = listOf("cards", "qr_code") // Default ordering
 )
 ```
 
 ### 2. Presenting the Payment UI
 
-Launch the SDK from any `ComponentActivity` using a Session SDK Key:
+Launch the payment interface from any `ComponentActivity`. The SDK handles the entire flow, including 3DS redirects and status polling.
 
 ```kotlin
 XenditComponents.present(
     activity = this, 
-    componentsSdkKey = "session-123-pd-PK123-SIG123", // Your Components SDK Key
-    merchantPreferredPaymentMethod = listOf("cards", "qr_code"), // Optional: Override preferences for this session
+    componentsSdkKey = "session-hostid-publickey-signature", // Your Components SDK Key
+    merchantPreferredPaymentMethod = listOf("cards"), // Optional: Override global preferences
     onPaymentResult = { result ->
         when (result) {
             is XenditPaymentResult.Success -> {
-                // Payment was successfully completed
+                // Payment completed successfully
                 val paymentRequestId = result.paymentRequestId
             }
             is XenditPaymentResult.Failed -> {
-                // Payment failed or encountered an error
+                // Payment failed
                 val error = result.error
+                println("Error: ${error.message}")
             }
             is XenditPaymentResult.Canceled -> {
-                // User dismissed the payment form
+                // User closed the payment UI
             }
         }
     }
 )
 ```
 
+## Customization Options
+
+The `XenditAppearance` class allows you to customize:
+
+| Property | Default | Description |
+|---|---|---|
+| `colorPrimary` | `#0052FF` | Primary action color (buttons, icons) |
+| `colorText` | `#1A1C1E` | Main text color |
+| `colorTextSecondary`| `#6B7280` | Secondary/hint text color |
+| `colorBorder` | `#E6E6E6` | Input field border color |
+| `borderRadius` | `8.dp` | Corner radius for inputs and buttons |
+| `fontFamily` | `null` | Custom font family for all text |
+
+## Release Workflow
+
+The SDK includes automated GitHub Actions for releasing:
+- **Build Demo**: Triggers on `main` push, generates debug/release APKs.
+- **Versioned Release**: Create a branch `release/v1.0.0` to automatically build version-named APKs (e.g., `v1.0.0-release-demo.apk`) and create a GitHub Release.
+- **Publish**: Automatically publishes to Maven Central on `release/**` branch push.
+
 ## Requirements
 
-- Android SDK 26+
-- Jetpack Compose support
-- Material3
-
-## Building AAR
-
-To build the SDK as a standalone AAR for distribution:
-
-```bash
-./gradlew :componentssdk:assembleRelease
-```
-
-The AAR will be generated at:
-`paymentsdk/build/outputs/aar/paymentsdk-release.aar`
-
+- **Min SDK**: 26
+- **Compile SDK**: 37
+- **Kotlin**: 1.9+
+- **Compose**: 1.5+
+- **Material3**: Enabled
