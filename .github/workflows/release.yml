@@ -1,0 +1,53 @@
+name: Build and Release Demo APKs
+
+on:
+  push:
+    branches:
+      - 'release/**'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Extract version from branch name
+        id: extract_version
+        run: |
+          # Extract version from branch name (e.g., release/v1.0.0 -> v1.0.0)
+          VERSION=${GITHUB_REF_NAME#release/}
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "Extracted version: $VERSION"
+
+      - name: Build APKs
+        run: ./gradlew :example-app:assembleDebug :example-app:assembleRelease
+
+      - name: Rename APKs
+        run: |
+          mv example-app/build/outputs/apk/debug/example-app-debug.apk example-app/build/outputs/apk/debug/${{ env.VERSION }}-debug-demo.apk
+          mv example-app/build/outputs/apk/release/example-app-release.apk example-app/build/outputs/apk/release/${{ env.VERSION }}-release-demo.apk
+
+      - name: Upload APKs to Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "release-${{ env.VERSION }}"
+          name: "Release ${{ env.VERSION }}"
+          body: "Automated debug and release builds for version ${{ env.VERSION }}."
+          files: |
+            example-app/build/outputs/apk/debug/${{ env.VERSION }}-debug-demo.apk
+            example-app/build/outputs/apk/release/${{ env.VERSION }}-release-demo.apk
+          token: ${{ secrets.GITHUB_TOKEN }}
+          generate_release_notes: true
