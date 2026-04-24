@@ -32,6 +32,8 @@ import androidx.compose.ui.unit.dp
 import co.xendit.paymentsdk.R
 import co.xendit.paymentsdk.data.model.BffChannel
 import co.xendit.paymentsdk.data.model.BffSession
+import co.xendit.paymentsdk.data.model.BffSessionAllowSavePaymentMethod
+import co.xendit.paymentsdk.data.model.BffSessionType
 import co.xendit.paymentsdk.data.model.CardDetails
 import co.xendit.paymentsdk.data.model.ChannelFormField
 import co.xendit.paymentsdk.data.model.InstallmentPlan
@@ -54,8 +56,8 @@ internal fun PaymentMethodsUI(
   selectedChannel: BffChannel?,
   cardDetails: CardDetails?,
   installmentPlans: List<InstallmentPlan>?,
-  sessionType: String?,
-  allowSavePaymentMethod: String?,
+  sessionType: BffSessionType?,
+  allowSavePaymentMethod: BffSessionAllowSavePaymentMethod?,
   onToggleGroup: (String) -> Unit,
   onSelectChannel: (String) -> Unit,
   onCardNumberChanged: (String) -> Unit,
@@ -66,7 +68,7 @@ internal fun PaymentMethodsUI(
   val rendererMap =
     listOf(
       PaymentMethodRenderer(uiGroup = "cards") { _, currentSelected ->
-        val showSaveCheckbox = sessionType == "PAY" && allowSavePaymentMethod == "OPTIONAL"
+        val showSaveCheckbox = sessionType == BffSessionType.PAY && allowSavePaymentMethod == BffSessionAllowSavePaymentMethod.OPTIONAL
         CardPaymentUI(
           session = session,
           channelData = currentSelected,
@@ -78,17 +80,6 @@ internal fun PaymentMethodsUI(
           },
           modifier = Modifier.padding(bottom = 8.dp),
           showSaveCheckbox = showSaveCheckbox
-        )
-      },
-      PaymentMethodRenderer(uiGroup = "qr_code") { groupChannels, currentSelected ->
-        QrPaymentUI(
-          channels = groupChannels,
-          selectedChannel = currentSelected,
-          onSelectChannel = onSelectChannel,
-          onFormStateChanged = { formValues, visibleFields ->
-            onFormChanged(currentSelected.channelCode, formValues, visibleFields, false)
-          },
-          modifier = Modifier.padding(bottom = 8.dp)
         )
       }
     ).associateBy { it.uiGroup }

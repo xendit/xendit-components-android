@@ -7,6 +7,8 @@ import co.xendit.paymentsdk.core.model.GlobalErrorHandler
 import co.xendit.paymentsdk.core.model.asApiError
 import co.xendit.paymentsdk.data.model.BffChannel
 import co.xendit.paymentsdk.data.model.BffSession
+import co.xendit.paymentsdk.data.model.BffSessionAllowSavePaymentMethod
+import co.xendit.paymentsdk.data.model.BffSessionType
 import co.xendit.paymentsdk.data.model.ChannelFormField
 import co.xendit.paymentsdk.data.model.Country
 import co.xendit.paymentsdk.data.model.InstallmentPlan
@@ -44,26 +46,54 @@ internal data class PaymentState(
   val paymentResponse: PaymentResponse? = null,
   val sessionResponse: BffSession? = null,
   val pollResponse: PollResponse? = null,
-  val sessionType: String? = null,
-  val allowSavePaymentMethod: String? = null,
+  val sessionType: BffSessionType? = null,
+  val allowSavePaymentMethod: BffSessionAllowSavePaymentMethod? = null,
   val paymentDraft: PaymentDraft = PaymentDraft()
 )
 
-internal sealed interface ActionIntent {
-  data class Initialize(val sessionAuthKey: String, val publicKey: String) : ActionIntent
-  data class FetchSession(val sessionAuthKey: String) : ActionIntent
-  data class ToggleUiGroup(val uiGroup: String) : ActionIntent
-  data class SelectChannel(val channelCode: String) : ActionIntent
+/**
+ * Actions for system to update the payment state.
+ */
+internal sealed class ActionIntent {
+  data class Initialize(val sessionAuthKey: String, val publicKey: String) : ActionIntent()
+  data class FetchSession(val sessionAuthKey: String) : ActionIntent()
+
+  /**
+   * Expands or collapses a payment method category (e.g., "cards", "qr_code").
+   * Also selects the first available channel in that group by default.
+   */
+  data class ToggleUiGroup(val uiGroup: String) : ActionIntent()
+
+  /**
+   * This is primarily used for dropdown selections where multiple channels exist in one group.
+   */
+  data class SelectChannel(val channelCode: String) : ActionIntent()
+
+  /**
+   * Updates the current payment draft with form values and field visibility.
+   */
+  data class UpdatePaymentDraft(val paymentDraft: PaymentDraft) : ActionIntent()
+
+  /**
+   * Triggers the actual payment processing or card saving.
+   */
   data class SubmitAction(
     val channelCode: String,
     val formValues: Map<String, String>,
     val fields: List<ChannelFormField>,
     val savePaymentMethod: Boolean,
     val installmentPlans: List<InstallmentPlan>? = null
-  ) : ActionIntent
+  ) : ActionIntent()
 
-  data class UpdatePaymentDraft(val paymentDraft: PaymentDraft) : ActionIntent
-  data object ChallengeCompleted : ActionIntent
+  /**
+   * This triggers a status check to verify the final result.
+   */
+  data object ChallengeCompleted : ActionIntent()
+
+  /**
+   * Close Webview
+   */
+  data object CloseWebPayment : ActionIntent()
 }
 
 internal class PaymentViewModel(
@@ -109,15 +139,11 @@ internal class PaymentViewModel(
 
       is ActionIntent.UpdatePaymentDraft -> onUpdatePaymentDraft(intent.paymentDraft)
       is ActionIntent.ChallengeCompleted -> onChallengeCompletedInternal()
+      is ActionIntent.CloseWebPayment -> {
+        _state.update { it.copy(actionRedirectUrl = null) }
+        markClosed()
+      }
     }
-  }
-
-  private fun resetForNewSession() {
-    challengePollingJob?.cancel()
-    paymentSessionId = null
-    lastPaymentRequestId = null
-    lastSessionTokenRequestId = null
-    _state.value = PaymentState()
   }
 
   private fun fetchSessionInternal(sessionAuthKey: String) {
@@ -249,7 +275,7 @@ internal class PaymentViewModel(
           )
 
         val response =
-          if (_state.value.sessionType == "SAVE") {
+          if (_state.value.sessionType == BffSessionType.SAVE) {
             xenditRepository.createPaymentToken(request = request)
           } else {
             xenditRepository.createPaymentRequest(request = request)
@@ -345,17 +371,19 @@ internal class PaymentViewModel(
             it.copy(errorMessage = "Payment status polling timeout", isLoading = false)
           }
         } catch (e: Exception) {
-          globalErrorHandler.postError(
-            errorMessage = UiText.DynamicString(e.message ?: "Payment Error")
-          )
-          _state.update {
-            it.copy(errorMessage = e.message ?: "Payment Error", isLoading = false)
-          }
+          Log.d("Polling", "Error: ${e.message}")
         }
       }
   }
 
-  // can use user action
+  fun resetForNewSession() {
+    markClosed()
+    paymentSessionId = null
+    lastPaymentRequestId = null
+    lastSessionTokenRequestId = null
+    _state.value = PaymentState()
+  }
+
   fun markClosed() {
     challengePollingJob?.cancel()
     challengePollingJob = null
