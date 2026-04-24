@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import androidx.activity.ComponentActivity
 import androidx.annotation.VisibleForTesting
 import androidx.compose.ui.platform.ComposeView
+import co.xendit.components.util.XLogger
 import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.lifecycle.setViewTreeViewModelStoreOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
@@ -110,7 +111,7 @@ object XenditComponents {
       try {
         parseSdkKey(componentsSdkKey)
       } catch (e: Exception) {
-        Log.e("ComponentsSDK", "Failed to parse SDK Key", e)
+        XLogger.e("Failed to parse SDK Key", e)
         onPaymentResult.invoke(
           XenditPaymentResult.Failed(
             XenditError(

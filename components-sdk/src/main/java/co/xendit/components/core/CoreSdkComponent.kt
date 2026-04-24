@@ -1,8 +1,8 @@
 package co.xendit.components.core
 
 import android.content.Context
-import android.util.Log
 import co.xendit.components.BuildConfig
+import co.xendit.components.util.XLogger
 import co.xendit.components.core.model.GlobalErrorHandler
 import co.xendit.components.core.model.GlobalLoadingHandler
 import co.xendit.components.core.model.SafeApiCall
@@ -49,7 +49,7 @@ internal object CoreSdkComponent {
     baseHttpUrl = baseUrl.toHttpUrl()
     retrofitInstance = null
     apiInstance = null
-    Log.i("CoreSdkComponent", "Base URL set to: $baseUrl")
+    XLogger.i("Base URL set to: $baseUrl")
   }
 
   val headerProvider: HeaderProvider by lazy { HeaderProvider() }

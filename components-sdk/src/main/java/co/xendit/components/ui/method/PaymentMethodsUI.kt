@@ -1,6 +1,6 @@
 package co.xendit.components.ui.method
 
-import android.util.Log
+import co.xendit.components.util.XLogger
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -83,7 +83,7 @@ internal fun PaymentMethodsUI(
     ).associateBy { it.uiGroup }
 
   val groups = remember(channels, rendererMap.keys) {
-    Log.d("GROUP PAYMENT", channels.groupBy { it.uiGroup }.keys.toString())
+    XLogger.d("GROUP PAYMENT ${channels.groupBy { it.uiGroup }.keys}")
     channels.groupBy { it.uiGroup }.filter { it.key in rendererMap.keys }
   }
   val filteredUiGroup = remember(groups.keys) {

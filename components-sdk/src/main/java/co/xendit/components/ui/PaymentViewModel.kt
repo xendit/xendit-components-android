@@ -1,6 +1,6 @@
 package co.xendit.components.ui
 
-import android.util.Log
+import co.xendit.components.util.XLogger
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import co.xendit.components.core.model.GlobalErrorHandler
@@ -351,10 +351,7 @@ internal class PaymentViewModel(
                     isLoading = false,
                   )
                 }
-                Log.d(
-                  "Challenge",
-                  "successResponse: ${poll.paymentRequest ?: poll.paymentToken}"
-                )
+                XLogger.d("Challenge successResponse: ${poll.paymentRequest ?: poll.paymentToken}")
               }
             } else {
               // On unauthorized or errors, just backoff and retry within timeout
@@ -370,7 +367,7 @@ internal class PaymentViewModel(
             it.copy(errorMessage = "Payment status polling timeout", isLoading = false)
           }
         } catch (e: Exception) {
-          Log.d("Polling", "Error: ${e.message}")
+          XLogger.d("Polling Error: ${e.message}")
         }
       }
   }

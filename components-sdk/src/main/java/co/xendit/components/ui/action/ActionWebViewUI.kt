@@ -2,7 +2,6 @@ package co.xendit.components.ui.action
 
 import android.graphics.Bitmap
 import android.net.Uri
-import android.util.Log
 import android.webkit.CookieManager
 import android.webkit.JavascriptInterface
 import android.webkit.WebResourceError
@@ -21,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.viewinterop.AndroidView
 import co.xendit.components.R
+import co.xendit.components.util.XLogger
 import java.util.concurrent.atomic.AtomicBoolean
 
 @Composable
@@ -60,20 +60,20 @@ internal fun ActionWebViewUI(
                 try {
                   val data = org.json.JSONObject(json)
                   val type = data.optString("type")
-                  Log.d("AcWeb:Iframe", "Data: $data")
-                  Log.d("AcWeb:Iframe", "Received type: $type")
+                  XLogger.d("AcWeb:Iframe Data: $data")
+                  XLogger.d("AcWeb:Iframe Received type: $type")
 
                   if (type == "xendit-iframe-action-complete") {
                     emitOnce()
                   }
                 } catch (e: Exception) {
-                  Log.e("AcWeb:Error", "Failed to parse JSON: $json")
+                  XLogger.e("AcWeb:Error Failed to parse JSON: $json")
                 }
               }
 
               @JavascriptInterface
               fun onIframeLoad(url: String) {
-                Log.i("AcWeb:IframeLoad", url)
+                XLogger.i("AcWeb:IframeLoad $url")
               }
             },
             "AndroidBridge"
@@ -85,19 +85,19 @@ internal fun ActionWebViewUI(
                 request: WebResourceRequest?
               ): Boolean {
                 val u = request?.url
-                Log.d("AcWeb:Redirect", "URL: $u")
+                XLogger.d("AcWeb:Redirect URL: $u")
                 return false
               }
 
               override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
                 super.onPageStarted(view, url, favicon)
-                Log.d("AcWeb:Started", "URL: $url")
+                XLogger.d("AcWeb:Started URL: $url")
               }
 
               override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
                 val currentUrl = view?.url ?: url
-                Log.d("AcWeb:Finished", "URL: $currentUrl")
+                XLogger.d("AcWeb:Finished URL: $currentUrl")
                 val u = currentUrl?.let { Uri.parse(it) }
               }
 
@@ -105,7 +105,7 @@ internal fun ActionWebViewUI(
                 view: WebView?,
                 request: WebResourceRequest?
               ): WebResourceResponse? {
-                Log.d("AcWeb:Network", "Iframe requesting: ${request?.url}")
+                XLogger.d("AcWeb:Network Iframe requesting: ${request?.url}")
                 return super.shouldInterceptRequest(view, request)
               }
 
@@ -115,9 +115,8 @@ internal fun ActionWebViewUI(
                 error: WebResourceError?
               ) {
                 super.onReceivedError(view, request, error)
-                Log.e(
-                  "AcWeb:Error",
-                  "Resource Error: ${request?.url} | Desc: ${error?.description} (Code: ${error?.errorCode})"
+                XLogger.e(
+                  "AcWeb:Error Resource Error: ${request?.url} | Desc: ${error?.description} (Code: ${error?.errorCode})"
                 )
               }
 
@@ -127,9 +126,8 @@ internal fun ActionWebViewUI(
                 errorResponse: WebResourceResponse?
               ) {
                 super.onReceivedHttpError(view, request, errorResponse)
-                Log.e(
-                  "AcWeb:Error",
-                  "HTTP Error: ${request?.url} | Status: ${errorResponse?.statusCode}"
+                XLogger.e(
+                  "AcWeb:Error HTTP Error: ${request?.url} | Status: ${errorResponse?.statusCode}"
                 )
               }
             }
@@ -185,7 +183,7 @@ internal fun ActionWebViewUI(
             """.trimIndent()
             loadDataWithBaseURL(baseUrl, data, "text/html", "utf-8", null)
           } else {
-            Log.i("AcWeb:Load", "Direct URL: $url")
+            XLogger.i("AcWeb:Load Direct URL: $url")
             loadUrl(url)
           }
         }

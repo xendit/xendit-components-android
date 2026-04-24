@@ -1,6 +1,6 @@
 package co.xendit.components.core.model
 
-import android.util.Log
+import co.xendit.components.util.XLogger
 import com.google.gson.JsonSyntaxException
 import okhttp3.ResponseBody.Companion.toResponseBody
 import retrofit2.HttpException
@@ -18,12 +18,12 @@ internal class SafeApiCall(val loadingHandler: GlobalLoadingHandler) {
     } catch (e: HttpException) {
       // This is the most important block. It catches API errors (4xx, 5xx).
       // The HttpException contains the original response with the error body.
-      Log.d(TAG, "safeApiCall caught HttpException for code: ${e.code()}")
+      XLogger.d("safeApiCall caught HttpException for code: ${e.code()}")
       val errorBody = e.response()?.errorBody()?.string() ?: "{}"
       return Response.error(e.code(), errorBody.toResponseBody(null))
     } catch (e: IOException) {
       // Handles network failures (timeouts, no internet)
-      Log.d(TAG,"safeApiCall caught IOException: ${e.message}")
+      XLogger.d("safeApiCall caught IOException: ${e.message}")
       return Response.error(
         503,
         "{\"responseMessage\":\"Network error. Please check your connection.\"}".toResponseBody(
@@ -32,7 +32,7 @@ internal class SafeApiCall(val loadingHandler: GlobalLoadingHandler) {
       )
     } catch (e: JsonSyntaxException) {
       // This is a data mismatch error, not a server error.
-      Log.d(TAG,"safeApiCall caught JsonSyntaxException: ${e.message}")
+      XLogger.d("safeApiCall caught JsonSyntaxException: ${e.message}")
       return Response.error(
         // Use a custom error code or 500, but log it differently.
         500,
@@ -40,7 +40,7 @@ internal class SafeApiCall(val loadingHandler: GlobalLoadingHandler) {
       )
     } catch (e: Exception) {
       // Handles any other unexpected crashes (like JSON parsing on a 200 response)
-      Log.e(TAG, "safeApiCall caught unexpected Exception", e)
+      XLogger.e("safeApiCall caught unexpected Exception", e)
       return Response.error(
         500,
         "{\"responseMessage\":\"An unexpected error occurred: ${e.message}\"}".toResponseBody(
