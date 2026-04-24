@@ -42,7 +42,8 @@ internal fun XenditTextField(
   shape: Shape? = null,
   noBorder: Boolean = false,
   leadingIcon: (@Composable (() -> Unit))? = null,
-  trailingIcon: (@Composable (() -> Unit))? = null
+  trailingIcon: (@Composable (() -> Unit))? = null,
+  disabledTextColor: Color? = null,
 ) {
   val appearance = xenditAppearance
 
@@ -102,12 +103,11 @@ internal fun XenditTextField(
           errorBorderColor = if (noBorder) Color.Transparent else appearance.colorDanger,
           focusedTextColor = appearance.colorText,
           unfocusedTextColor = appearance.colorText,
-          disabledTextColor = (appearance.colorText).copy(alpha = 0.5f),
+          disabledTextColor = disabledTextColor ?: (appearance.colorText).copy(alpha = 0.5f),
           errorTextColor = appearance.colorText,
           focusedLabelColor = appearance.colorText,
           unfocusedLabelColor = appearance.colorText,
-          disabledLabelColor =
-            (appearance.colorText).copy(alpha = 0.5f),
+          disabledLabelColor = (appearance.colorText).copy(alpha = 0.5f),
           disabledBorderColor = if (noBorder) Color.Transparent else MaterialTheme.colorScheme.outline,
           errorLabelColor = appearance.colorDanger,
           cursorColor = appearance.colorPrimary,

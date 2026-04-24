@@ -115,7 +115,8 @@ internal fun ProvinceField(
       isError = isError,
       errorMessage = errorMessage,
       shape = shape,
-      noBorder = noBorder
+      noBorder = noBorder,
+      disabledTextColor = appearance.colorText
     )
   }
 

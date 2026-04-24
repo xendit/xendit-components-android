@@ -104,13 +104,13 @@ internal fun CountryPicker(
             .weight(1f)
             .padding(16.dp),
           text = selectedCountry.name,
-          style = MaterialTheme.typography.bodyMedium,
+          style = MaterialTheme.typography.bodyLarge,
           color = appearance.colorText
         )
       } else {
         Text(
           text = "+${selectedCountry.dialCode}",
-          style = MaterialTheme.typography.bodyMedium,
+          style = MaterialTheme.typography.bodyLarge,
           color = appearance.colorText
         )
       }
