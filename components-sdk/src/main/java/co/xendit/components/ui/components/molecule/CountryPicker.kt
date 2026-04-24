@@ -61,6 +61,7 @@ internal fun CountryPicker(
   onCountrySelected: (Country) -> Unit,
   expanded: Boolean,
   onExpandedChange: (Boolean) -> Unit,
+  isShowCountryName: Boolean = false,
   modifier: Modifier = Modifier
 ) {
   val appearance = xenditAppearance
@@ -88,20 +89,32 @@ internal fun CountryPicker(
     }
   }
 
-  Box(modifier = modifier) {
+  Box(modifier = Modifier.clickable {
+    onExpandedChange(true)
+  }) {
     Row(
-      modifier = Modifier
-        .clickable { onExpandedChange(true) }
-        .padding(start = 8.dp),
+      modifier = modifier,
       verticalAlignment = Alignment.CenterVertically,
       horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
       FlagIcon(countryCode = selectedCountry.code)
-      Text(
-        text = "+${selectedCountry.dialCode}",
-        style = MaterialTheme.typography.bodyMedium,
-        color = appearance.colorText
-      )
+      if (isShowCountryName) {
+        Text(
+          modifier = Modifier
+            .weight(1f)
+            .padding(16.dp),
+          text = selectedCountry.name,
+          style = MaterialTheme.typography.bodyMedium,
+          color = appearance.colorText
+        )
+      } else {
+        Text(
+          text = "+${selectedCountry.dialCode}",
+          style = MaterialTheme.typography.bodyMedium,
+          color = appearance.colorText
+        )
+      }
+
       Icon(
         imageVector = Icons.Default.KeyboardArrowDown,
         contentDescription = "Select Country",

@@ -545,7 +545,6 @@ private fun FormFieldItem(
         isError = isError,
         errorMessage = errorMessage,
         modifier = Modifier.fillMaxWidth(),
-        shape = shape,
         noBorder = noBorder
       )
     }

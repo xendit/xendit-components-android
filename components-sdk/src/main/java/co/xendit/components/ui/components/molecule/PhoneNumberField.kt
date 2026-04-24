@@ -105,7 +105,7 @@ internal fun PhoneNumberField(
             },
             expanded = expanded,
             onExpandedChange = { expanded = it },
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 16.dp)
+            modifier = Modifier.padding(start = 16.dp, top = 16.dp, end = 12.dp, bottom = 16.dp)
           )
         }
         Spacer(modifier = Modifier.width(8.dp))
