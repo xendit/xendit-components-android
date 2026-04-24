@@ -12,7 +12,7 @@ version = "1.0.0"
 
 android {
   namespace = "co.xendit.components"
-  compileSdk = 36
+  compileSdk = 37
 
   defaultConfig {
     minSdk = 26

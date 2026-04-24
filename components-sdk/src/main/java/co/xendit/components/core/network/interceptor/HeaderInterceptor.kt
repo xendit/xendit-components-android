@@ -13,6 +13,8 @@ internal class HeaderInterceptor(
 
     requestBuilder.header("Content-Type", "application/json")
     requestBuilder.header("Origin", provider.getOrigin())
+    requestBuilder.header("x-sdk-version", provider.getSdkVersion())
+    requestBuilder.header("x-host-id", provider.getHostId())
 
     return chain.proceed(requestBuilder.build())
   }

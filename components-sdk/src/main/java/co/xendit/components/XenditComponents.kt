@@ -6,6 +6,7 @@ import android.content.ContextWrapper
 import android.util.Log
 import android.view.ViewGroup
 import androidx.activity.ComponentActivity
+import androidx.annotation.VisibleForTesting
 import androidx.compose.ui.platform.ComposeView
 import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.lifecycle.setViewTreeViewModelStoreOwner
@@ -41,7 +42,8 @@ object XenditComponents {
   }
 
   /** Internal data class to holding parsed keys. */
-  private data class Keys(
+  @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+  internal data class Keys(
     val sessionAuthKey: String,
     val hostId: String,
     val publicKey: String,
@@ -53,7 +55,8 @@ object XenditComponents {
    * Parses the component SDK key. Format: session_auth_key-host_id-public_key-signature Example:
    * session-123-prod-PK123-SIG123
    */
-  private fun parseSdkKey(sdkKey: String): Keys {
+  @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+  internal fun parseSdkKey(sdkKey: String): Keys {
     val parts = sdkKey.split("-")
     if (parts.size < 5) {
       throw IllegalArgumentException("Invalid SDK Key format")
@@ -98,7 +101,9 @@ object XenditComponents {
     if (activity !is Activity) {
       throw IllegalArgumentException("Context must be an Activity to show the Payment SDK.")
     }
-//    CoreSdkComponent.headerProvider.setOrigin(activity.packageName ?: "") // now only use default
+
+    CoreSdkComponent.headerProvider.setHostId(activity.packageName ?: "")
+
     this.merchantPreferredPaymentMethod = merchantPreferredPaymentMethod
 
     val keys =

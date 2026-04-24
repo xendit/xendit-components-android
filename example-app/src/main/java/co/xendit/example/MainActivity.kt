@@ -116,7 +116,7 @@ fun PaymentDemo(modifier: Modifier = Modifier) {
       horizontalAlignment = Alignment.CenterHorizontally
     ) {
       Text(
-        text = "Xendit SDK Dynamic Demo",
+        text = "Xendit Components Demo",
         style = MaterialTheme.typography.headlineMedium,
         modifier = Modifier.padding(bottom = 32.dp),
       )

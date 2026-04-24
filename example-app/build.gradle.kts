@@ -7,14 +7,14 @@ plugins {
 
 android {
   namespace = "co.xendit.example"
-  compileSdk = 36
+  compileSdk = 37
 
   defaultConfig {
-    applicationId = "co.xendit.xencomponentprivate"
+    applicationId = "co.xendit.example.app"
     minSdk = 26
-    targetSdk = 36
+    targetSdk = 37
     versionCode = 1
-    versionName = "1.0"
+    versionName = "1.0.0"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     manifestPlaceholders["appName"] = "Demo SDK"
@@ -32,6 +32,7 @@ android {
     targetCompatibility = JavaVersion.VERSION_17
   }
   buildFeatures {
+    buildConfig = true
     compose = true
   }
 }
