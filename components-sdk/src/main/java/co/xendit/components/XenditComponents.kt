@@ -105,11 +105,11 @@ object XenditComponents {
       try {
         parseSdkKey(componentsSdkKey)
       } catch (e: Exception) {
-        Log.e("PaymentSDK", "Failed to parse SDK Key", e)
+        Log.e("ComponentsSDK", "Failed to parse SDK Key", e)
         onPaymentResult.invoke(
           XenditPaymentResult.Failed(
             XenditError(
-              code = "111",
+              code = "001",
               message = e.toString(),
               cause = e
             )
