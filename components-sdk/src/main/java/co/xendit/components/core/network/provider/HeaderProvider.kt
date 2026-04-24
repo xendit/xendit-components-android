@@ -15,7 +15,7 @@ internal class HeaderProvider {
   }
 
   fun getSdkVersion(): String {
-    return "android:1.0.0"
+    return "android:${BuildConfig.VERSION_NAME}"
   }
 
   fun getHostId(): String {
