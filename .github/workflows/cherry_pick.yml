@@ -1,0 +1,28 @@
+name: Cherry Pick to Main
+on:
+  pull_request:
+    branches:
+      - 'release/**'
+    types: ["closed"]
+
+jobs:
+  cherry_pick_develop:
+    runs-on: ubuntu-latest
+    name: Cherry pick into Develop
+    if: contains(github.event.pull_request.labels.*.name, 'Hotfix')
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Cherry pick into Main
+        uses: carloscastrojumo/github-cherry-pick-action@v1.0.1
+        with:
+          branch: main
+          labels: |
+            cherry-pick
+          reviewers: |
+            aReviewerUser
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
