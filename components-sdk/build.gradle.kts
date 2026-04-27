@@ -96,7 +96,7 @@ mavenPublishing {
     variant = "release",
   ))
   // Use coordinates to set group, artifact, and version
-  coordinates("co.xendit", "components", "0.0.1")
+  coordinates(group.toString(), "components", version.toString())
 
   // Enable Maven Central and GPG signing
   publishToMavenCentral()
