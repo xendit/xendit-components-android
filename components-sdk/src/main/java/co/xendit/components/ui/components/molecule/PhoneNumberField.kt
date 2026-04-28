@@ -93,7 +93,15 @@ internal fun PhoneNumberField(
         Box(
           modifier = Modifier.border(
             width = 1.dp,
-            color = if (noBorder) Color.Transparent else appearance.colorBorder,
+            color = if (noBorder) {
+              Color.Transparent
+            } else {
+              if (isError) {
+                appearance.colorDanger
+              } else {
+                appearance.colorBorder
+              }
+            },
             shape = RoundedCornerShape(xenditAppearance.borderRadius)
           )
         ) {

@@ -147,7 +147,7 @@ internal fun DynamicForm(
       remember(formValues, formErrors, onValuesChangedRef, onCardNumberChangedRef) {
         { changedField: ChannelFormField, key: String, value: String ->
           formValues[key] = value
-          formErrors[key] = validateField(changedField, value)
+          formErrors[key] = validateField(changedField, value, formValues)
           onValuesChangedRef.value(formValues.toMap())
           if (changedField.type is FieldType.CreditCardNumber) {
             onCardNumberChangedRef.value(value)
@@ -183,7 +183,7 @@ internal fun DynamicForm(
       if (startsGroup) {
         Text(
           text = startField.groupLabel.orEmpty(),
-          style = MaterialTheme.typography.titleMedium,
+          style = MaterialTheme.typography.titleSmall,
           color = appearance.colorText,
           modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
         )
@@ -200,7 +200,7 @@ internal fun DynamicForm(
           modifier = Modifier
             .fillMaxWidth()
             .border(
-              width = if (groupHaveError) 2.dp else 1.dp,
+              width = 1.dp,
               color = if (groupHaveError) appearance.colorDanger else appearance.colorBorder,
               shape = RoundedCornerShape(appearance.borderRadius)
             )
@@ -217,13 +217,14 @@ internal fun DynamicForm(
                   .height(IntrinsicSize.Min),
                 singleNoBorder = true,
                 isDisplayError = false,
-                context = renderContext
+                context = renderContext,
+                groupHaveError = groupHaveError
               )
 
             if (groupFieldIndex < groupFields.size) {
               HorizontalDivider(
                 thickness = 1.dp,
-                color = appearance.colorBorder
+                color = if (groupHaveError) appearance.colorDanger else appearance.colorBorder
               )
             }
           }
@@ -353,6 +354,7 @@ private fun DynamicFormTwoColumnRow(
   dividerThickness: Dp,
   context: DynamicFormRenderContext,
   isDisplayError: Boolean,
+  groupHaveError: Boolean = false,
 ) {
   Row(modifier = modifier) {
     Box(modifier = Modifier.weight(1f)) {
@@ -365,7 +367,7 @@ private fun DynamicFormTwoColumnRow(
     }
     VerticalDivider(
       thickness = dividerThickness,
-      color = context.appearance.colorBorder
+      color = if (groupHaveError) context.appearance.colorDanger else context.appearance.colorBorder
     )
     Box(modifier = Modifier.weight(1f)) {
       DynamicFormFieldItem(
@@ -385,6 +387,7 @@ private fun renderDynamicFormFieldOrTwoColumnRow(
   rowModifier: Modifier,
   singleNoBorder: Boolean,
   isDisplayError: Boolean,
+  groupHaveError: Boolean = false,
   context: DynamicFormRenderContext
 ): Int {
   return if (canRenderDynamicFormAsTwoColumnRow(fields, index)) {
@@ -394,7 +397,8 @@ private fun renderDynamicFormFieldOrTwoColumnRow(
       modifier = rowModifier,
       dividerThickness = 1.dp,
       context = context,
-      isDisplayError = isDisplayError
+      isDisplayError = isDisplayError,
+      groupHaveError = groupHaveError
     )
     2
   } else {

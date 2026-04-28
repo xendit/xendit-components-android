@@ -6,20 +6,21 @@ import co.xendit.components.data.model.primaryChannelPropertyKey
 import co.xendit.components.ui.helper.FormCheckerUtil.isValidCardExpiry
 import co.xendit.components.ui.helper.FormCheckerUtil.isValidCreditCard
 import co.xendit.components.ui.helper.FormCheckerUtil.isValidEmail
+import co.xendit.components.ui.helper.FormCheckerUtil.isValidPhoneNumber
 import kotlin.collections.forEach
 
 internal object FormChecker {
 
   fun validateAllField(fields: List<ChannelFormField>, values: Map<String, String>): Boolean {
     fields.forEach { field ->
-      if (validateField(field, values[field.primaryChannelPropertyKey()] ?: "") != null) {
+      if (validateField(field, values[field.primaryChannelPropertyKey()] ?: "", values) != null) {
         return false
       }
     }
     return true
   }
 
-  fun validateField(field: ChannelFormField, value: String): String? {
+  fun validateField(field: ChannelFormField, value: String, values: Map<String, String>? = null): String? {
     if (field.required && value.isBlank()) {
       return "${field.label} is required"
     }
@@ -33,6 +34,16 @@ internal object FormChecker {
       is FieldType.CreditCardExpiry -> {
         if (!isValidCardExpiry(value)) {
           return "${field.label} is not valid"
+        }
+      }
+      is FieldType.PhoneNumber -> {
+        if (value.isNotBlank()) {
+          val propertyKey = field.primaryChannelPropertyKey()
+          val countryCodeKey = "${propertyKey}_country_code"
+          val regionCode = values?.get(countryCodeKey) ?: "ID"
+          if (!isValidPhoneNumber(value, regionCode)) {
+            return "${field.label} is not valid"
+          }
         }
       }
       is FieldType.Email -> {

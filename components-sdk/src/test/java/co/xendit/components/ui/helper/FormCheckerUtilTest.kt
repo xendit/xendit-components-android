@@ -1,6 +1,7 @@
 package co.xendit.components.ui.helper
 
 import co.xendit.components.ui.helper.FormCheckerUtil.isValidEmail
+import com.google.i18n.phonenumbers.PhoneNumberUtil
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -80,5 +81,19 @@ class FormCheckerUtilTest {
 
     // Contains invalid characters/spaces
     assertFalse(isValidEmail("user name@example.com"))
+  }
+
+  @Test
+  fun isValidPhoneNumber_validExampleNumber_returnsTrue() {
+    val phoneUtil = PhoneNumberUtil.getInstance()
+    val example = phoneUtil.getExampleNumber("ID")
+    val nationalNumber = example.nationalNumber.toString()
+    assertTrue(FormCheckerUtil.isValidPhoneNumber(nationalNumber, "ID"))
+  }
+
+  @Test
+  fun isValidPhoneNumber_invalidNumber_returnsFalse() {
+    assertFalse(FormCheckerUtil.isValidPhoneNumber("123", "ID"))
+    assertFalse(FormCheckerUtil.isValidPhoneNumber("", "ID"))
   }
 }

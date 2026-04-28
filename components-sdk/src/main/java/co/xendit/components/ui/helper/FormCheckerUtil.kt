@@ -1,5 +1,7 @@
 package co.xendit.components.ui.helper
 
+import com.google.i18n.phonenumbers.NumberParseException
+import com.google.i18n.phonenumbers.PhoneNumberUtil
 import java.time.YearMonth
 
 internal object FormCheckerUtil {
@@ -48,5 +50,20 @@ internal object FormCheckerUtil {
   fun isValidEmail(email: String): Boolean {
     val emailRegex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$".toRegex()
     return email.matches(emailRegex)
+  }
+
+  fun isValidPhoneNumber(phoneNumber: String, regionCode: String): Boolean {
+    val trimmed = phoneNumber.trim()
+    if (trimmed.isBlank()) return false
+
+    val phoneUtil = PhoneNumberUtil.getInstance()
+    return try {
+      val parsed = phoneUtil.parse(trimmed, regionCode.uppercase())
+      phoneUtil.isValidNumberForRegion(parsed, regionCode.uppercase())
+    } catch (_: NumberParseException) {
+      false
+    } catch (_: Exception) {
+      false
+    }
   }
 }
