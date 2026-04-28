@@ -92,7 +92,7 @@ internal fun CardPaymentUI(
           }
         )
         Text(
-          text = "Save for faster payments",
+          text = "Save card information for future use",
           style = MaterialTheme.typography.bodyMedium,
           color = appearance.colorText,
           modifier = Modifier.padding(start = 8.dp)
