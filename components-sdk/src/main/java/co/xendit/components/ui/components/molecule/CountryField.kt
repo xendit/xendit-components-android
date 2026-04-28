@@ -28,7 +28,7 @@ internal fun CountryField(
   value: String,
   label: String? = null,
   onValueChange: (String) -> Unit,
-  placeholder: String = "Select Country",
+  placeholder: String? = null,
   isError: Boolean = false,
   errorMessage: String? = null,
   noBorder: Boolean = false,

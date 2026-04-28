@@ -482,22 +482,15 @@ private fun FormFieldItem(
 
   when (val fieldType = field.type) {
     is FieldType.CreditCardNumber -> {
-      val selectedScheme = cardDetails?.schemes?.firstOrNull()
-      val logoUrl = if (selectedScheme != null) {
-        bffCardInfo?.brands?.firstOrNull {
-          it.name.equals(
-            selectedScheme,
-            ignoreCase = true
-          )
-        }?.logoUrl
-      } else null
 
       CardNumberField(
         value = currentValue,
+        placeholder = field.placeholder,
         onValueChange = { onValueChange(propertyKey, it) },
         isError = isError,
         errorMessage = errorMessage,
-        logoUrl = logoUrl,
+        selectedScheme = cardDetails?.schemes?.firstOrNull(),
+        bffCardInfo = bffCardInfo,
         modifier = Modifier.fillMaxWidth(),
         shape = shape,
         noBorder = noBorder
