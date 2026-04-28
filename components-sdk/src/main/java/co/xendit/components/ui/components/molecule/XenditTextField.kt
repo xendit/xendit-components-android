@@ -1,5 +1,6 @@
 package co.xendit.components.ui.components.molecule
 
+import android.health.connect.datatypes.units.Length
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -40,6 +41,7 @@ internal fun XenditTextField(
   enabled: Boolean = true,
   visualTransformation: VisualTransformation = VisualTransformation.None,
   shape: Shape? = null,
+  maxLength: Int = Int.MAX_VALUE,
   noBorder: Boolean = false,
   leadingIcon: (@Composable (() -> Unit))? = null,
   trailingIcon: (@Composable (() -> Unit))? = null,
@@ -63,7 +65,10 @@ internal fun XenditTextField(
       modifier = Modifier.fillMaxWidth(),
       value = value,
       textStyle = textStyle,
-      onValueChange = onValueChange,
+      onValueChange = {
+        if (it.length <= maxLength)
+        onValueChange.invoke(it)
+      },
       readOnly = readOnly,
       enabled = enabled,
       isError = isError,

@@ -5,6 +5,7 @@ import co.xendit.components.data.model.FieldType
 import co.xendit.components.data.model.primaryChannelPropertyKey
 import co.xendit.components.ui.helper.FormCheckerUtil.isValidCardExpiry
 import co.xendit.components.ui.helper.FormCheckerUtil.isValidCreditCard
+import co.xendit.components.ui.helper.FormCheckerUtil.isValidEmail
 import kotlin.collections.forEach
 
 internal object FormChecker {
@@ -26,16 +27,26 @@ internal object FormChecker {
     when (field.type) {
       is FieldType.CreditCardNumber -> {
         if (!isValidCreditCard(value)) {
-          return "Card number is not valid"
+          return "${field.label} is not valid"
         }
       }
       is FieldType.CreditCardExpiry -> {
         if (!isValidCardExpiry(value)) {
-          return "Card expiry is not valid"
+          return "${field.label} is not valid"
+        }
+      }
+      is FieldType.Email -> {
+        if (!isValidEmail(value)) {
+          return "${field.label} is not valid"
         }
       }
       else -> {
         if (field.type is FieldType.Text) {
+          if (field.type.autocomplete == "email") {
+            if (!isValidEmail(value)) {
+              return "${field.label} is not valid"
+            }
+          }
           field.type.regexValidators?.forEach { validator ->
             val regex = Regex(validator.regex.removeSurrounding("/"))
             if (!regex.matches(value)) {

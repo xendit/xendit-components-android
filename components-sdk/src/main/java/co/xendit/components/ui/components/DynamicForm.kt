@@ -155,7 +155,14 @@ internal fun DynamicForm(
         }
       }
     val renderContext =
-      remember(filteredFields, cardDetails, bffCardInfo, installmentPlans, appearance, handleValueChange) {
+      remember(
+        filteredFields,
+        cardDetails,
+        bffCardInfo,
+        installmentPlans,
+        appearance,
+        handleValueChange
+      ) {
         DynamicFormRenderContext(
           allFields = filteredFields,
           values = formValues,
@@ -181,7 +188,10 @@ internal fun DynamicForm(
           modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
         )
 
-        val (groupFields, nextFieldIndex) = collectDynamicFormGroupFields(filteredFields, fieldIndex)
+        val (groupFields, nextFieldIndex) = collectDynamicFormGroupFields(
+          filteredFields,
+          fieldIndex
+        )
         val listPropertyKey = groupFields.map { it.primaryChannelPropertyKey() }
         val filteredFormError = formErrors.filterKeys { it in listPropertyKey }
         val groupHaveError = filteredFormError.any { !it.value.isNullOrEmpty() }
@@ -246,7 +256,10 @@ internal fun DynamicForm(
   }
 }
 
-private fun canRenderDynamicFormAsTwoColumnRow(fields: List<ChannelFormField>, index: Int): Boolean {
+private fun canRenderDynamicFormAsTwoColumnRow(
+  fields: List<ChannelFormField>,
+  index: Int
+): Boolean {
   return fields[index].span == 1 && index + 1 < fields.size && fields[index + 1].span == 1
 }
 
@@ -605,11 +618,14 @@ private fun FormFieldItem(
                 KeyboardOptions.Default
               }
             }
+
             else -> {
               KeyboardOptions.Default
             }
           },
         singleLine = true,
+        maxLength = if (field.type is FieldType.Text) field.type.maxLength
+          ?: Int.MAX_VALUE else Int.MAX_VALUE,
         shape = shape,
         noBorder = noBorder
       )
