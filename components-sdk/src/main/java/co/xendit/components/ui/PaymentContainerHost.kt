@@ -187,14 +187,6 @@ internal fun PaymentContainerHost(
     }
   }
 
-  LaunchedEffect(mviState.expandedUiGroup, mviState.selectedChannel?.channelCode) {
-    viewModel.dispatch(
-      ActionIntent.UpdatePaymentDraft(
-        PaymentDraft(channelCode = mviState.selectedChannel?.channelCode)
-      )
-    )
-  }
-
   LaunchedEffect(sessionAuthKey, publicKey, mviState.paymentSessionId) {
     val paymentSessionId = mviState.paymentSessionId ?: return@LaunchedEffect
     cardViewModel.dispatch(
@@ -333,6 +325,7 @@ internal fun PaymentContainerHost(
                     channels = mviState.channels,
                     expandedUiGroup = mviState.expandedUiGroup,
                     selectedChannel = mviState.selectedChannel,
+                    paymentDrafts = mviState.paymentDrafts,
                     cardDetails = cardState.cardDetails,
                     installmentPlans = cardState.installmentPlans,
                     sessionType = mviState.sessionType,
@@ -359,8 +352,12 @@ internal fun PaymentContainerHost(
 
                 val isPaymentSelected =
                   mviState.expandedUiGroup != null && mviState.selectedChannel != null
-                val isFormFilled = mviState.paymentDraft.visibleFields
-                val formValue = mviState.paymentDraft.formValues
+                val selectedChannelCode = mviState.selectedChannel?.channelCode
+                val currentDraft = if (selectedChannelCode == null) PaymentDraft() else {
+                  mviState.paymentDrafts[selectedChannelCode] ?: PaymentDraft(channelCode = selectedChannelCode)
+                }
+                val isFormFilled = currentDraft.visibleFields
+                val formValue = currentDraft.formValues
                 val isPayEnabled =
                   isPaymentSelected && !mviState.isLoading && validateAllField(
                     isFormFilled,
@@ -379,7 +376,8 @@ internal fun PaymentContainerHost(
                     enabled = isPayEnabled,
                     onClick = {
                       val selected = mviState.selectedChannel ?: return@Button
-                      val draft = mviState.paymentDraft
+                      val draft = mviState.paymentDrafts[selected.channelCode]
+                        ?: PaymentDraft(channelCode = selected.channelCode)
                       val installmentPlans =
                         if (selected.uiGroup == "cards") cardState.installmentPlans else draft.installmentPlans
                       viewModel.dispatch(

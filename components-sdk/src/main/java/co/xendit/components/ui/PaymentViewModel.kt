@@ -47,7 +47,7 @@ internal data class PaymentState(
   val pollResponse: PollResponse? = null,
   val sessionType: BffSessionType? = null,
   val allowSavePaymentMethod: BffSessionAllowSavePaymentMethod? = null,
-  val paymentDraft: PaymentDraft = PaymentDraft()
+  val paymentDrafts: Map<String, PaymentDraft> = emptyMap()
 )
 
 /**
@@ -226,9 +226,12 @@ internal class PaymentViewModel(
   }
 
   private fun onUpdatePaymentDraft(paymentDraft: PaymentDraft) {
+    val channelCode = paymentDraft.channelCode ?: return
     _state.update {
       it.copy(
-        paymentDraft = paymentDraft,
+        paymentDrafts = it.paymentDrafts.toMutableMap().apply {
+          put(channelCode, paymentDraft)
+        }
       )
     }
   }

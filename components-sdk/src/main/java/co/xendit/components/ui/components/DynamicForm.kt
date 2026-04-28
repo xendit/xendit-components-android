@@ -49,6 +49,7 @@ import co.xendit.components.ui.style.xenditAppearance
 internal fun DynamicForm(
   fields: List<ChannelFormField>,
   cardDetails: CardDetails?,
+  initialValues: Map<String, String> = emptyMap(),
   onValuesChanged: (Map<String, String>) -> Unit,
   onCardNumberChanged: (String) -> Unit,
   onVisibleFieldsChanged: (List<ChannelFormField>) -> Unit,
@@ -61,12 +62,19 @@ internal fun DynamicForm(
   val onCardNumberChangedRef = rememberUpdatedState(onCardNumberChanged)
   val onVisibleFieldsChangedRef = rememberUpdatedState(onVisibleFieldsChanged)
 
-  val formValues = remember { mutableStateMapOf<String, String>() }
+  val formValues =
+    remember {
+      mutableStateMapOf<String, String>().apply {
+        putAll(initialValues)
+      }
+    }
   val formErrors = remember { mutableStateMapOf<String, String?>() }
 
   LaunchedEffect(mockData) {
-    formValues.clear()
-    formValues.putAll(mockData)
+    if (mockData.isNotEmpty()) {
+      formValues.clear()
+      formValues.putAll(mockData)
+    }
   }
 
   val filteredFields =
@@ -86,8 +94,10 @@ internal fun DynamicForm(
           if (propertyKey.isNotEmpty()) {
             when (field.type) {
               is FieldType.Country -> {
-                formValues[propertyKey] = resolvedCountry.code
-                onValuesChangedRef.value(formValues.toMap())
+                if (!formValues.containsKey(propertyKey)) {
+                  formValues[propertyKey] = resolvedCountry.code
+                  onValuesChangedRef.value(formValues.toMap())
+                }
               }
 
               is FieldType.PhoneNumber -> {
@@ -96,7 +106,7 @@ internal fun DynamicForm(
 
                 val isEffectivelyEmpty = currentPhone.isBlank()
 
-                if (isEffectivelyEmpty) {
+                if (isEffectivelyEmpty && !formValues.containsKey(countryCodeKey)) {
                   formValues[countryCodeKey] = resolvedCountry.code
                   onValuesChangedRef.value(formValues.toMap())
                 }
@@ -122,19 +132,29 @@ internal fun DynamicForm(
             formValues[propertyKey] = installmentPlans.first().terms.toString()
           }
         } else if (!formValues.containsKey(propertyKey)) {
-          formValues[propertyKey] = field.initialValue ?: ""
+          formValues[propertyKey] = initialValues[propertyKey] ?: field.initialValue ?: ""
         }
 
         if (field.type is FieldType.PhoneNumber) {
           val countryCodeKey = "${propertyKey}_country_code"
           if (!formValues.containsKey(countryCodeKey)) {
             // Default to ID or first country if no initial country code
-            formValues[countryCodeKey] =
+            formValues[countryCodeKey] = initialValues[countryCodeKey] ?:
               Country.fromCode("ID")?.code ?: Country.countries.first().code
           }
         }
         if (!formErrors.containsKey(propertyKey)) {
           formErrors[propertyKey] = null
+        }
+      }
+    }
+
+    filteredFields.forEach { field ->
+      val propertyKey = field.primaryChannelPropertyKey()
+      if (propertyKey.isNotEmpty()) {
+        val currentValue = formValues[propertyKey] ?: ""
+        if (currentValue.isNotBlank()) {
+          formErrors[propertyKey] = validateField(field, currentValue, formValues)
         }
       }
     }

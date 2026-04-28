@@ -36,6 +36,7 @@ import co.xendit.components.data.model.BffSessionType
 import co.xendit.components.data.model.CardDetails
 import co.xendit.components.data.model.ChannelFormField
 import co.xendit.components.data.model.InstallmentPlan
+import co.xendit.components.data.model.PaymentDraft
 import co.xendit.components.ui.card.CardPaymentUI
 import co.xendit.components.ui.style.xenditAppearance
 import co.xendit.components.ui.ui_util.CustomShape.createTopRoundedOpenShape
@@ -52,6 +53,7 @@ internal fun PaymentMethodsUI(
   channels: List<BffChannel>,
   expandedUiGroup: String?,
   selectedChannel: BffChannel?,
+  paymentDrafts: Map<String, PaymentDraft> = emptyMap(),
   cardDetails: CardDetails?,
   installmentPlans: List<InstallmentPlan>?,
   sessionType: BffSessionType?,
@@ -67,10 +69,12 @@ internal fun PaymentMethodsUI(
     listOf(
       PaymentMethodRenderer(uiGroup = "cards") { _, currentSelected ->
         val showSaveCheckbox = sessionType == BffSessionType.PAY && allowSavePaymentMethod == BffSessionAllowSavePaymentMethod.OPTIONAL
+        val initialValues = paymentDrafts[currentSelected.channelCode]?.formValues.orEmpty()
         CardPaymentUI(
           session = session,
           channelData = currentSelected,
           cardDetails = cardDetails,
+          initialValues = initialValues,
           installmentPlans = installmentPlans,
           onCardNumberChanged = onCardNumberChanged,
           onFormStateChanged = { formValues, visibleFields, isSaveChecked ->
