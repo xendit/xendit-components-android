@@ -5,6 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -55,12 +56,12 @@ internal fun CardNumberField(
     }?.logoUrl
   } else null
 
-  Box(
-    modifier = modifier,
-    contentAlignment = Alignment.CenterEnd // Ensures everything inside stays at the right
+  Row (
+    modifier = Modifier.fillMaxWidth().then(modifier),
+    verticalAlignment = Alignment.CenterVertically // Ensures everything inside stays at the right
   ) {
     XenditTextField(
-      modifier = modifier,
+      modifier = modifier.weight(1f),
       value = value,
       onValueChange = { newValue ->
         val digitsOnly = newValue.filter { it.isDigit() }
@@ -83,7 +84,7 @@ internal fun CardNumberField(
       horizontalArrangement = Arrangement.spacedBy(2.dp),
       verticalAlignment = Alignment.CenterVertically
     ) {
-      if (logoUrl != null || value.length > 3) {
+      if (logoUrl != null) {
         logoUrl?.let {
           CardLogo(
             logoUrl = logoUrl,

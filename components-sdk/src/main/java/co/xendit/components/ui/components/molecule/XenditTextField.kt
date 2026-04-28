@@ -20,6 +20,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import co.xendit.components.ui.style.xenditAppearance
 
@@ -92,7 +93,15 @@ internal fun XenditTextField(
               { Text(label, color = appearance.colorText) }
             } else null,
             placeholder = if (placeholder != null) {
-              { Text(placeholder, color = appearance.colorTextPlaceholder) }
+              {
+                Text(
+                  text = placeholder,
+                  color = appearance.colorTextPlaceholder,
+                  maxLines = 1,
+                  softWrap = false,
+                  overflow = TextOverflow.Ellipsis
+                )
+              }
             } else null,
             leadingIcon = leadingIcon,
             isError = isError,

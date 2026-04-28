@@ -515,7 +515,6 @@ private fun FormFieldItem(
         errorMessage = errorMessage,
         selectedScheme = cardDetails?.schemes?.firstOrNull(),
         bffCardInfo = bffCardInfo,
-        modifier = Modifier.fillMaxWidth(),
         shape = shape,
         noBorder = noBorder
       )
