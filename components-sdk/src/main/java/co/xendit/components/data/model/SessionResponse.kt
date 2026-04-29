@@ -6,7 +6,8 @@ import com.google.gson.annotations.SerializedName
 @Keep
 internal data class SessionResponse(
   @SerializedName("session") val session: BffSession?,
-  @SerializedName("channels") val paymentChannels: List<BffChannel>?
+  @SerializedName("channels") val paymentChannels: List<BffChannel>?,
+  @SerializedName("succeeded_channel") val succeededChannel: SucceededChannel?
 )
 
 @Keep

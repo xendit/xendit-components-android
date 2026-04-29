@@ -18,6 +18,7 @@ import co.xendit.components.data.model.PaymentRequest
 import co.xendit.components.data.model.PaymentResponse
 import co.xendit.components.data.model.PaymentRequestStatus
 import co.xendit.components.data.model.PollResponse
+import co.xendit.components.data.model.SessionResponse
 import co.xendit.components.data.network.repo.session.XenditRepository
 import co.xendit.components.ui.components.molecule.UiText
 import co.xendit.components.util.PaymentRequestMapper
@@ -43,7 +44,7 @@ internal data class PaymentState(
   val iframeCapable: Boolean = true,
   val errorMessage: String? = null,
   val paymentResponse: PaymentResponse? = null,
-  val sessionResponse: BffSession? = null,
+  val sessionResponse: SessionResponse? = null,
   val pollResponse: PollResponse? = null,
   val sessionType: BffSessionType? = null,
   val allowSavePaymentMethod: BffSessionAllowSavePaymentMethod? = null,
@@ -165,7 +166,7 @@ internal class PaymentViewModel(
                 isLoading = false,
                 channels = channels,
                 paymentSessionId = this@PaymentViewModel.paymentSessionId,
-                sessionResponse = session,
+                sessionResponse = body,
                 errorMessage = null,
                 sessionType = sessionType,
                 allowSavePaymentMethod = allowSavePaymentMethod
