@@ -18,6 +18,7 @@ import co.xendit.components.data.model.PaymentRequest
 import co.xendit.components.data.model.PaymentResponse
 import co.xendit.components.data.model.PaymentRequestStatus
 import co.xendit.components.data.model.PollResponse
+import co.xendit.components.data.model.SessionResponse
 import co.xendit.components.data.network.repo.session.XenditRepository
 import co.xendit.components.ui.components.molecule.UiText
 import co.xendit.components.util.PaymentRequestMapper
@@ -43,11 +44,11 @@ internal data class PaymentState(
   val iframeCapable: Boolean = true,
   val errorMessage: String? = null,
   val paymentResponse: PaymentResponse? = null,
-  val sessionResponse: BffSession? = null,
+  val sessionResponse: SessionResponse? = null,
   val pollResponse: PollResponse? = null,
   val sessionType: BffSessionType? = null,
   val allowSavePaymentMethod: BffSessionAllowSavePaymentMethod? = null,
-  val paymentDraft: PaymentDraft = PaymentDraft()
+  val paymentDrafts: Map<String, PaymentDraft> = emptyMap()
 )
 
 /**
@@ -165,21 +166,32 @@ internal class PaymentViewModel(
                 isLoading = false,
                 channels = channels,
                 paymentSessionId = this@PaymentViewModel.paymentSessionId,
-                sessionResponse = session,
+                sessionResponse = body,
                 errorMessage = null,
                 sessionType = sessionType,
                 allowSavePaymentMethod = allowSavePaymentMethod
               )
             }
           } else {
-            _state.update { it.copy(isLoading = false, errorMessage = "No payment channels found") }
+            _state.update {
+              it.copy(isLoading = false, errorMessage = "No payment channels found")
+            }
           }
         } else {
+          val error = response.errorBody()?.asApiError()
+          val errorMessage = error?.message ?: "Failed to fetch session"
+          val errorCode = error?.errorCode
           _state.update {
-            it.copy(isLoading = false, errorMessage = "Error API +${response.toString()}")
+            it.copy(
+              isLoading = false,
+              errorMessage = if (errorCode == "NETWORK_ERROR") null else errorMessage
+            )
           }
         }
       } catch (e: Exception) {
+        globalErrorHandler.postError(
+          errorMessage = UiText.DynamicString(e.message ?: "Failed to fetch session")
+        )
         _state.update {
           it.copy(isLoading = false, errorMessage = e.message ?: "Failed to fetch session")
         }
@@ -207,7 +219,8 @@ internal class PaymentViewModel(
         actionRedirectUrl = null,
         presentToCustomerPaymentAction = null,
         paymentResponse = null,
-        pollResponse = null
+        pollResponse = null,
+        errorMessage = null
       )
     }
   }
@@ -220,15 +233,19 @@ internal class PaymentViewModel(
         actionRedirectUrl = null,
         presentToCustomerPaymentAction = null,
         paymentResponse = null,
-        pollResponse = null
+        pollResponse = null,
+        errorMessage = null
       )
     }
   }
 
   private fun onUpdatePaymentDraft(paymentDraft: PaymentDraft) {
+    val channelCode = paymentDraft.channelCode ?: return
     _state.update {
       it.copy(
-        paymentDraft = paymentDraft,
+        paymentDrafts = it.paymentDrafts.toMutableMap().apply {
+          put(channelCode, paymentDraft)
+        }
       )
     }
   }
@@ -319,8 +336,7 @@ internal class PaymentViewModel(
           onChallengeCompletedInternal() // start pooling here
         } else {
           val error = response.errorBody()?.asApiError()
-          val errorMessage = error?.errorContent?.message1 ?: "Payment Failed"
-          globalErrorHandler.postError(errorMessage = UiText.DynamicString(errorMessage))
+          val errorMessage = error?.errorContent?.message1 ?: error?.message ?: "Payment Failed"
           _state.update { it.copy(isLoading = false, errorMessage = errorMessage) }
         }
       } catch (e: Exception) {

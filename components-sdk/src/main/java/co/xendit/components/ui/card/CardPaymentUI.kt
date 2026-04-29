@@ -10,6 +10,7 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -30,6 +31,7 @@ internal fun CardPaymentUI(
   session: BffSession?,
   channelData: BffChannel,
   cardDetails: CardDetails?,
+  initialValues: Map<String, String> = emptyMap(),
   installmentPlans: List<InstallmentPlan>?,
   onCardNumberChanged: (String) -> Unit,
   onFormStateChanged: (Map<String, String>, List<ChannelFormField>, Boolean) -> Unit = { _, _, _ -> },
@@ -58,22 +60,25 @@ internal fun CardPaymentUI(
     }
     // Dynamic Form for Card
     channelData.form?.let { fields ->
-      DynamicForm(
-        fields = fields,
-        cardDetails = cardDetails,
-        installmentPlans = installmentPlans,
-        onValuesChanged = { updatedValues ->
-          formValues.clear()
-          formValues.putAll(updatedValues)
-          onFormStateChanged(formValues.toMap(), visibleFields.value, isSaveChecked.value)
-        },
-        onCardNumberChanged = onCardNumberChanged,
-        onVisibleFieldsChanged = {
-          visibleFields.value = it
-          onFormStateChanged(formValues.toMap(), visibleFields.value, isSaveChecked.value)
-        },
-        bffCardInfo = channelData.card
-      )
+      key(channelData.channelCode) {
+        DynamicForm(
+          fields = fields,
+          cardDetails = cardDetails,
+          initialValues = initialValues,
+          installmentPlans = installmentPlans,
+          onValuesChanged = { updatedValues ->
+            formValues.clear()
+            formValues.putAll(updatedValues)
+            onFormStateChanged(formValues.toMap(), visibleFields.value, isSaveChecked.value)
+          },
+          onCardNumberChanged = onCardNumberChanged,
+          onVisibleFieldsChanged = {
+            visibleFields.value = it
+            onFormStateChanged(formValues.toMap(), visibleFields.value, isSaveChecked.value)
+          },
+          bffCardInfo = channelData.card
+        )
+      }
     }
 
     Spacer(modifier = Modifier.height(16.dp))
@@ -92,7 +97,7 @@ internal fun CardPaymentUI(
           }
         )
         Text(
-          text = "Save for faster payments",
+          text = "Save card information for future use",
           style = MaterialTheme.typography.bodyMedium,
           color = appearance.colorText,
           modifier = Modifier.padding(start = 8.dp)

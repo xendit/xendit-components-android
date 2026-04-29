@@ -54,7 +54,7 @@ internal fun ProvinceField(
   label: String? = null,
   onValueChange: (String) -> Unit,
   countryCode: String?,
-  placeholder: String = "Select Province",
+  placeholder: String? = null,
   isError: Boolean = false,
   errorMessage: String? = null,
   shape: Shape? = null,

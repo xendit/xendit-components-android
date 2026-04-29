@@ -1,6 +1,9 @@
 package co.xendit.components.ui.helper
 
+import com.google.i18n.phonenumbers.NumberParseException
+import com.google.i18n.phonenumbers.PhoneNumberUtil
 import java.time.YearMonth
+import java.util.Locale
 
 internal object FormCheckerUtil {
   fun isValidCreditCard(cardNumber: String): Boolean {
@@ -41,6 +44,27 @@ internal object FormCheckerUtil {
 
       !expiry.isBefore(currentMonth)
     } catch (e: Exception) {
+      false
+    }
+  }
+
+  fun isValidEmail(email: String): Boolean {
+    val emailRegex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$".toRegex()
+    return email.matches(emailRegex)
+  }
+
+  fun isValidPhoneNumber(phoneNumber: String, regionCode: String): Boolean {
+    val trimmed = phoneNumber.trim()
+    if (trimmed.isBlank()) return false
+
+    val normalizedRegion = regionCode.trim().uppercase(Locale.US)
+    val phoneUtil = PhoneNumberUtil.getInstance()
+    return try {
+      val parsed = phoneUtil.parse(trimmed, normalizedRegion)
+      phoneUtil.isValidNumberForRegion(parsed, normalizedRegion)
+    } catch (_: NumberParseException) {
+      false
+    } catch (_: Exception) {
       false
     }
   }

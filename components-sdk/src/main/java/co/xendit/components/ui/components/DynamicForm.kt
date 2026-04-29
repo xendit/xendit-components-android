@@ -49,6 +49,7 @@ import co.xendit.components.ui.style.xenditAppearance
 internal fun DynamicForm(
   fields: List<ChannelFormField>,
   cardDetails: CardDetails?,
+  initialValues: Map<String, String> = emptyMap(),
   onValuesChanged: (Map<String, String>) -> Unit,
   onCardNumberChanged: (String) -> Unit,
   onVisibleFieldsChanged: (List<ChannelFormField>) -> Unit,
@@ -61,12 +62,19 @@ internal fun DynamicForm(
   val onCardNumberChangedRef = rememberUpdatedState(onCardNumberChanged)
   val onVisibleFieldsChangedRef = rememberUpdatedState(onVisibleFieldsChanged)
 
-  val formValues = remember { mutableStateMapOf<String, String>() }
+  val formValues =
+    remember {
+      mutableStateMapOf<String, String>().apply {
+        putAll(initialValues)
+      }
+    }
   val formErrors = remember { mutableStateMapOf<String, String?>() }
 
   LaunchedEffect(mockData) {
-    formValues.clear()
-    formValues.putAll(mockData)
+    if (mockData.isNotEmpty()) {
+      formValues.clear()
+      formValues.putAll(mockData)
+    }
   }
 
   val filteredFields =
@@ -86,8 +94,10 @@ internal fun DynamicForm(
           if (propertyKey.isNotEmpty()) {
             when (field.type) {
               is FieldType.Country -> {
-                formValues[propertyKey] = resolvedCountry.code
-                onValuesChangedRef.value(formValues.toMap())
+                if (!formValues.containsKey(propertyKey)) {
+                  formValues[propertyKey] = resolvedCountry.code
+                  onValuesChangedRef.value(formValues.toMap())
+                }
               }
 
               is FieldType.PhoneNumber -> {
@@ -96,7 +106,7 @@ internal fun DynamicForm(
 
                 val isEffectivelyEmpty = currentPhone.isBlank()
 
-                if (isEffectivelyEmpty) {
+                if (isEffectivelyEmpty && !formValues.containsKey(countryCodeKey)) {
                   formValues[countryCodeKey] = resolvedCountry.code
                   onValuesChangedRef.value(formValues.toMap())
                 }
@@ -122,19 +132,29 @@ internal fun DynamicForm(
             formValues[propertyKey] = installmentPlans.first().terms.toString()
           }
         } else if (!formValues.containsKey(propertyKey)) {
-          formValues[propertyKey] = field.initialValue ?: ""
+          formValues[propertyKey] = initialValues[propertyKey] ?: field.initialValue ?: ""
         }
 
         if (field.type is FieldType.PhoneNumber) {
           val countryCodeKey = "${propertyKey}_country_code"
           if (!formValues.containsKey(countryCodeKey)) {
             // Default to ID or first country if no initial country code
-            formValues[countryCodeKey] =
+            formValues[countryCodeKey] = initialValues[countryCodeKey] ?:
               Country.fromCode("ID")?.code ?: Country.countries.first().code
           }
         }
         if (!formErrors.containsKey(propertyKey)) {
           formErrors[propertyKey] = null
+        }
+      }
+    }
+
+    filteredFields.forEach { field ->
+      val propertyKey = field.primaryChannelPropertyKey()
+      if (propertyKey.isNotEmpty()) {
+        val currentValue = formValues[propertyKey] ?: ""
+        if (currentValue.isNotBlank()) {
+          formErrors[propertyKey] = validateField(field, currentValue, formValues)
         }
       }
     }
@@ -147,7 +167,7 @@ internal fun DynamicForm(
       remember(formValues, formErrors, onValuesChangedRef, onCardNumberChangedRef) {
         { changedField: ChannelFormField, key: String, value: String ->
           formValues[key] = value
-          formErrors[key] = validateField(changedField, value)
+          formErrors[key] = validateField(changedField, value, formValues)
           onValuesChangedRef.value(formValues.toMap())
           if (changedField.type is FieldType.CreditCardNumber) {
             onCardNumberChangedRef.value(value)
@@ -155,7 +175,14 @@ internal fun DynamicForm(
         }
       }
     val renderContext =
-      remember(filteredFields, cardDetails, bffCardInfo, installmentPlans, appearance, handleValueChange) {
+      remember(
+        filteredFields,
+        cardDetails,
+        bffCardInfo,
+        installmentPlans,
+        appearance,
+        handleValueChange
+      ) {
         DynamicFormRenderContext(
           allFields = filteredFields,
           values = formValues,
@@ -176,12 +203,15 @@ internal fun DynamicForm(
       if (startsGroup) {
         Text(
           text = startField.groupLabel.orEmpty(),
-          style = MaterialTheme.typography.titleMedium,
+          style = MaterialTheme.typography.titleSmall,
           color = appearance.colorText,
           modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
         )
 
-        val (groupFields, nextFieldIndex) = collectDynamicFormGroupFields(filteredFields, fieldIndex)
+        val (groupFields, nextFieldIndex) = collectDynamicFormGroupFields(
+          filteredFields,
+          fieldIndex
+        )
         val listPropertyKey = groupFields.map { it.primaryChannelPropertyKey() }
         val filteredFormError = formErrors.filterKeys { it in listPropertyKey }
         val groupHaveError = filteredFormError.any { !it.value.isNullOrEmpty() }
@@ -190,7 +220,7 @@ internal fun DynamicForm(
           modifier = Modifier
             .fillMaxWidth()
             .border(
-              width = if (groupHaveError) 2.dp else 1.dp,
+              width = 1.dp,
               color = if (groupHaveError) appearance.colorDanger else appearance.colorBorder,
               shape = RoundedCornerShape(appearance.borderRadius)
             )
@@ -207,13 +237,14 @@ internal fun DynamicForm(
                   .height(IntrinsicSize.Min),
                 singleNoBorder = true,
                 isDisplayError = false,
-                context = renderContext
+                context = renderContext,
+                groupHaveError = groupHaveError
               )
 
             if (groupFieldIndex < groupFields.size) {
               HorizontalDivider(
                 thickness = 1.dp,
-                color = appearance.colorBorder
+                color = if (groupHaveError) appearance.colorDanger else appearance.colorBorder
               )
             }
           }
@@ -246,7 +277,10 @@ internal fun DynamicForm(
   }
 }
 
-private fun canRenderDynamicFormAsTwoColumnRow(fields: List<ChannelFormField>, index: Int): Boolean {
+private fun canRenderDynamicFormAsTwoColumnRow(
+  fields: List<ChannelFormField>,
+  index: Int
+): Boolean {
   return fields[index].span == 1 && index + 1 < fields.size && fields[index + 1].span == 1
 }
 
@@ -340,6 +374,7 @@ private fun DynamicFormTwoColumnRow(
   dividerThickness: Dp,
   context: DynamicFormRenderContext,
   isDisplayError: Boolean,
+  groupHaveError: Boolean = false,
 ) {
   Row(modifier = modifier) {
     Box(modifier = Modifier.weight(1f)) {
@@ -352,7 +387,7 @@ private fun DynamicFormTwoColumnRow(
     }
     VerticalDivider(
       thickness = dividerThickness,
-      color = context.appearance.colorBorder
+      color = if (groupHaveError) context.appearance.colorDanger else context.appearance.colorBorder
     )
     Box(modifier = Modifier.weight(1f)) {
       DynamicFormFieldItem(
@@ -372,6 +407,7 @@ private fun renderDynamicFormFieldOrTwoColumnRow(
   rowModifier: Modifier,
   singleNoBorder: Boolean,
   isDisplayError: Boolean,
+  groupHaveError: Boolean = false,
   context: DynamicFormRenderContext
 ): Int {
   return if (canRenderDynamicFormAsTwoColumnRow(fields, index)) {
@@ -381,7 +417,8 @@ private fun renderDynamicFormFieldOrTwoColumnRow(
       modifier = rowModifier,
       dividerThickness = 1.dp,
       context = context,
-      isDisplayError = isDisplayError
+      isDisplayError = isDisplayError,
+      groupHaveError = groupHaveError
     )
     2
   } else {
@@ -469,23 +506,15 @@ private fun FormFieldItem(
 
   when (val fieldType = field.type) {
     is FieldType.CreditCardNumber -> {
-      val selectedScheme = cardDetails?.schemes?.firstOrNull()
-      val logoUrl = if (selectedScheme != null) {
-        bffCardInfo?.brands?.firstOrNull {
-          it.name.equals(
-            selectedScheme,
-            ignoreCase = true
-          )
-        }?.logoUrl
-      } else null
 
       CardNumberField(
         value = currentValue,
+        placeholder = field.placeholder,
         onValueChange = { onValueChange(propertyKey, it) },
         isError = isError,
         errorMessage = errorMessage,
-        logoUrl = logoUrl,
-        modifier = Modifier.fillMaxWidth(),
+        selectedScheme = cardDetails?.schemes?.firstOrNull(),
+        bffCardInfo = bffCardInfo,
         shape = shape,
         noBorder = noBorder
       )
@@ -605,11 +634,14 @@ private fun FormFieldItem(
                 KeyboardOptions.Default
               }
             }
+
             else -> {
               KeyboardOptions.Default
             }
           },
         singleLine = true,
+        maxLength = if (field.type is FieldType.Text) field.type.maxLength
+          ?: Int.MAX_VALUE else Int.MAX_VALUE,
         shape = shape,
         noBorder = noBorder
       )
