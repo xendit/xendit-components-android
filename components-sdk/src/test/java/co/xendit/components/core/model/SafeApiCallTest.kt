@@ -1,6 +1,7 @@
 package co.xendit.components.core.model
 
 import co.xendit.components.util.XLogger
+import io.mockk.clearMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -8,6 +9,7 @@ import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.unmockkAll
 import io.mockk.verify
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.runBlocking
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.After
@@ -26,6 +28,7 @@ class SafeApiCallTest {
 
   @Before
   fun setUp() {
+    clearMocks(loadingHandler, globalErrorHandler)
     mockkObject(XLogger)
     every { XLogger.d(any()) } returns Unit
     every { XLogger.e(any(), any()) } returns Unit
@@ -89,5 +92,21 @@ class SafeApiCallTest {
     verify { globalErrorHandler.postError("UNEXPECTED_ERROR", any()) }
     coVerify { loadingHandler.setLoading() }
     coVerify { loadingHandler.stopLoading() }
+  }
+
+  @Test
+  fun `call rethrows CancellationException without posting error`() = runBlocking {
+    val apiCall = mockk<suspend () -> Response<String>>()
+    coEvery { apiCall() } throws CancellationException("cancelled")
+
+    try {
+      safeApiCall.call(apiCall)
+    } catch (_: CancellationException) {
+      verify(exactly = 0) { globalErrorHandler.postError(any(), any()) }
+      coVerify { loadingHandler.stopLoading() }
+      return@runBlocking
+    }
+
+    throw AssertionError("Expected CancellationException to be thrown")
   }
 }

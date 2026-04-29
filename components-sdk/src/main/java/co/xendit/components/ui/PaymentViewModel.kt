@@ -22,6 +22,7 @@ import co.xendit.components.data.model.SessionResponse
 import co.xendit.components.data.network.repo.session.XenditRepository
 import co.xendit.components.ui.components.molecule.UiText
 import co.xendit.components.util.PaymentRequestMapper
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.TimeoutCancellationException
@@ -383,6 +384,7 @@ internal class PaymentViewModel(
             it.copy(errorMessage = "Payment status polling timeout", isLoading = false)
           }
         } catch (e: Exception) {
+          if (e is CancellationException) throw e
           XLogger.d("Polling Error: ${e.message}")
         }
       }
