@@ -18,10 +18,4 @@ internal class GlobalErrorHandler(
   fun postError(errorCode: String? = null, errorMessage: UiText) {
     _apiErrorFlow.tryEmit(Pair(errorCode, errorMessage))
   }
-
-  fun getErrorMessageFromApiError(apiError: String): UiText {
-    return when (apiError) {
-      else -> UiText.DynamicString(apiError)
-    }
-  }
 }

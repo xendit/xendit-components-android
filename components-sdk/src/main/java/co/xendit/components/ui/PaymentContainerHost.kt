@@ -1,5 +1,6 @@
 package co.xendit.components.ui
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -123,17 +124,63 @@ internal fun PaymentContainerHost(
   }
 
   LaunchedEffect(Unit) {
-    globalErrorHandler.apiErrorFlow.collect { (_, message) ->
-      message?.let { snackbarHostState.showSnackbar(it.asString(context)) }
-      onResult(
-        XenditPaymentResult.Failed(
-          XenditError(
-            code = "001",
-            message = message.toString(),
-            cause = Throwable(message.toString())
+    globalErrorHandler.apiErrorFlow.collect { (errorCode, message) ->
+      val msg = message?.asString(context) ?: return@collect
+      if (errorCode == "NETWORK_ERROR") {
+        Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+        onResult(
+          XenditPaymentResult.Failed(
+            XenditError(
+              code = "NETWORK_ERROR",
+              message = msg,
+              cause = Throwable(msg)
+            )
           )
         )
-      )
+        return@collect
+      }
+      snackbarHostState.showSnackbar(msg)
+    }
+  }
+
+  LaunchedEffect(mviState.sessionResponse) {
+    val session = mviState.sessionResponse ?: return@LaunchedEffect
+    val bffSession = mviState.sessionResponse?.session ?: return@LaunchedEffect
+    when (bffSession.status) {
+      PaymentSessionStatus.COMPLETED -> {
+        viewModel.resetForNewSession()
+        onResult(
+          XenditPaymentResult.Success(
+            paymentRequestId = bffSession.paymentSessionId,
+            channelCode = session.succeededChannel?.channelCode
+          )
+        )
+        onCleanup()
+      }
+
+      PaymentSessionStatus.CANCELED -> {
+        viewModel.resetForNewSession()
+        onResult(XenditPaymentResult.Canceled)
+        onCleanup()
+      }
+
+      PaymentSessionStatus.EXPIRED -> {
+        viewModel.markClosed()
+        onResult(
+          XenditPaymentResult.Failed(
+            XenditError(
+              code = "002",
+              message = "Payment failed or expired. Session: ${bffSession.paymentSessionId}, Status: ${bffSession.status}",
+              cause = Throwable("Payment failed or expired. Session: ${bffSession.paymentSessionId}, Status: ${bffSession.status}")
+            )
+          )
+        )
+      }
+
+      else -> {
+
+      }
+
     }
   }
 
@@ -177,7 +224,7 @@ internal fun PaymentContainerHost(
         onResult(
           XenditPaymentResult.Failed(
             XenditError(
-              code = "123",
+              code = "001",
               message = "Payment failed or expired. Session: $sessionStatus, PR: $prStatus",
               cause = Throwable("Payment failed or expired. Session: $sessionStatus, PR: $prStatus")
             )
@@ -185,14 +232,6 @@ internal fun PaymentContainerHost(
         )
       }
     }
-  }
-
-  LaunchedEffect(mviState.expandedUiGroup, mviState.selectedChannel?.channelCode) {
-    viewModel.dispatch(
-      ActionIntent.UpdatePaymentDraft(
-        PaymentDraft(channelCode = mviState.selectedChannel?.channelCode)
-      )
-    )
   }
 
   LaunchedEffect(sessionAuthKey, publicKey, mviState.paymentSessionId) {
@@ -232,7 +271,7 @@ internal fun PaymentContainerHost(
         ModalBottomSheet(
           onDismissRequest = dismiss,
           sheetState = sheetState!!,
-          containerColor = style.colorBackground ?: Color.White
+          containerColor = style.colorBackground
         ) {
           Box(
             modifier = Modifier
@@ -249,7 +288,7 @@ internal fun PaymentContainerHost(
   container {
     Scaffold(
       snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
-      containerColor = style.colorBackground ?: Color.White,
+      containerColor = style.colorBackground,
       modifier = Modifier
         .fillMaxSize()
         .imePadding()
@@ -277,7 +316,7 @@ internal fun PaymentContainerHost(
                 color = Color.Gray
               )
               Text(
-                text = mviState.sessionResponse?.referenceId ?: "",
+                text = mviState.sessionResponse?.session?.referenceId ?: "",
                 style = MaterialTheme.typography.bodySmall,
                 color = Color.Gray
               )
@@ -313,26 +352,27 @@ internal fun PaymentContainerHost(
                 channelName = mviState.selectedChannel?.brandName ?: "QR Code",
                 channelLogoUrl = mviState.selectedChannel?.brandLogoUrl,
                 qrString = qrAction.value.orEmpty(),
-                amount = mviState.sessionResponse?.amount,
-                currency = mviState.sessionResponse?.currency,
+                amount = mviState.sessionResponse?.session?.amount,
+                currency = mviState.sessionResponse?.session?.currency,
                 onClose = { viewModel.markClosed() },
                 onPaymentMade = { viewModel.dispatch(ActionIntent.ChallengeCompleted) }
               )
             }
 
             mviState.channels.isNotEmpty() -> {
-              Column() {
+              Column {
                 Column(
                   modifier = Modifier
                     .weight(1f)
                     .verticalScroll(rememberScrollState())
                 ) {
                   PaymentMethodsUI(
-                    session = mviState.sessionResponse,
+                    session = mviState.sessionResponse?.session,
                     merchantPreferredPaymentMethod = merchantPreferredPaymentMethod,
                     channels = mviState.channels,
                     expandedUiGroup = mviState.expandedUiGroup,
                     selectedChannel = mviState.selectedChannel,
+                    paymentDrafts = mviState.paymentDrafts,
                     cardDetails = cardState.cardDetails,
                     installmentPlans = cardState.installmentPlans,
                     sessionType = mviState.sessionType,
@@ -359,8 +399,13 @@ internal fun PaymentContainerHost(
 
                 val isPaymentSelected =
                   mviState.expandedUiGroup != null && mviState.selectedChannel != null
-                val isFormFilled = mviState.paymentDraft.visibleFields
-                val formValue = mviState.paymentDraft.formValues
+                val selectedChannelCode = mviState.selectedChannel?.channelCode
+                val currentDraft = if (selectedChannelCode == null) PaymentDraft() else {
+                  mviState.paymentDrafts[selectedChannelCode]
+                    ?: PaymentDraft(channelCode = selectedChannelCode)
+                }
+                val isFormFilled = currentDraft.visibleFields
+                val formValue = currentDraft.formValues
                 val isPayEnabled =
                   isPaymentSelected && !mviState.isLoading && validateAllField(
                     isFormFilled,
@@ -379,7 +424,8 @@ internal fun PaymentContainerHost(
                     enabled = isPayEnabled,
                     onClick = {
                       val selected = mviState.selectedChannel ?: return@Button
-                      val draft = mviState.paymentDraft
+                      val draft = mviState.paymentDrafts[selected.channelCode]
+                        ?: PaymentDraft(channelCode = selected.channelCode)
                       val installmentPlans =
                         if (selected.uiGroup == "cards") cardState.installmentPlans else draft.installmentPlans
                       viewModel.dispatch(
@@ -426,7 +472,7 @@ internal fun PaymentContainerHost(
           }
         }
 
-        if (mviState.errorMessage != null) {
+        if (mviState.errorMessage != null && mviState.sessionResponse == null) {
           Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             AlertDialog(
               onDismissRequest = { onCleanup() },

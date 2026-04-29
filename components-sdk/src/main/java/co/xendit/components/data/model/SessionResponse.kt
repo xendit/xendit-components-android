@@ -6,7 +6,8 @@ import com.google.gson.annotations.SerializedName
 @Keep
 internal data class SessionResponse(
   @SerializedName("session") val session: BffSession?,
-  @SerializedName("channels") val paymentChannels: List<BffChannel>?
+  @SerializedName("channels") val paymentChannels: List<BffChannel>?,
+  @SerializedName("succeeded_channel") val succeededChannel: SucceededChannel?
 )
 
 @Keep
@@ -87,7 +88,7 @@ internal data class BffCardBrand(
 internal data class ChannelFormField(
   @SerializedName("group_label") val groupLabel: String? = null,
   @SerializedName("label") val label: String,
-  @SerializedName("placeholder") val placeholder: String,
+  @SerializedName("placeholder") val placeholder: String? = null,
   @SerializedName("type") val type: FieldType,
   @SerializedName("channel_property")
   val channelProperty: Any, // Can be String or List<String>

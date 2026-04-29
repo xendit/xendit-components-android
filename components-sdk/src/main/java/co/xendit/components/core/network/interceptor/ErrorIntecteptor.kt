@@ -2,6 +2,7 @@ package co.xendit.components.core.network.interceptor
 
 import co.xendit.components.core.model.APIError
 import co.xendit.components.core.model.GlobalErrorHandler
+import co.xendit.components.ui.components.molecule.UiText
 import com.google.gson.Gson
 import kotlinx.coroutines.runBlocking
 import okhttp3.Interceptor
@@ -18,11 +19,12 @@ internal class ErrorInterceptor(private val globalErrorHandler: GlobalErrorHandl
         val errorBodyString = response.peekBody(Long.MAX_VALUE).string()
 
         val apiError = errorBodyString.asApiError()
-        val errorMessage = globalErrorHandler.getErrorMessageFromApiError(apiError.message)
+        val apiErrorMessage = apiError.errorContent?.message1 ?: apiError.message
+        val errorMessage = UiText.DynamicString(apiErrorMessage)
 
         runBlocking {
           globalErrorHandler.postError(
-            errorCode = apiError.message,
+            errorCode = apiError.errorCode,
             errorMessage = errorMessage
           )
         }
