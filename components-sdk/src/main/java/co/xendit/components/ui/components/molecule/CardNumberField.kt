@@ -3,9 +3,7 @@ package co.xendit.components.ui.components.molecule
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -56,52 +54,48 @@ internal fun CardNumberField(
     }?.logoUrl
   } else null
 
-  Row (
-    modifier = Modifier.fillMaxWidth().then(modifier),
-    verticalAlignment = Alignment.CenterVertically // Ensures everything inside stays at the right
-  ) {
-    XenditTextField(
-      modifier = modifier.weight(1f),
-      value = value,
-      onValueChange = { newValue ->
-        val digitsOnly = newValue.filter { it.isDigit() }
-        if (digitsOnly.length <= 16) {
-          onValueChange(digitsOnly)
-        }
-      },
-      label = label,
-      placeholder = placeholder,
-      keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-      visualTransformation = groupedDigitsTransformation,
-      singleLine = true,
-      isError = isError,
-      errorMessage = errorMessage,
-      shape = shape,
-      noBorder = noBorder
-    )
-    Row(
-      modifier = Modifier.padding(end = 12.dp), // Space from the right edge
-      horizontalArrangement = Arrangement.spacedBy(2.dp),
-      verticalAlignment = Alignment.CenterVertically
-    ) {
-      if (logoUrl != null) {
-        logoUrl?.let {
-          CardLogo(
-            logoUrl = logoUrl,
-            imageLoader = imageLoader,
-          )
-        }
-      } else {
-        bffCardInfo?.brands?.forEach { logo ->
-          CardLogo(
-            logoUrl = logo.logoUrl,
-            imageLoader = imageLoader,
-          )
+  XenditTextField(
+    modifier = modifier,
+    value = value,
+    onValueChange = { newValue ->
+      val digitsOnly = newValue.filter { it.isDigit() }
+      if (digitsOnly.length <= 16) {
+        onValueChange(digitsOnly)
+      }
+    },
+    label = label,
+    placeholder = placeholder,
+    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+    visualTransformation = groupedDigitsTransformation,
+    singleLine = true,
+    isError = isError,
+    errorMessage = errorMessage,
+    shape = shape,
+    noBorder = noBorder,
+    trailingIcon = {
+      Row(
+        modifier = Modifier.padding(end = 12.dp), // Space from the right edge
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
+        verticalAlignment = Alignment.CenterVertically
+      ) {
+        if (logoUrl != null) {
+          logoUrl?.let {
+            CardLogo(
+              logoUrl = logoUrl,
+              imageLoader = imageLoader,
+            )
+          }
+        } else {
+          bffCardInfo?.brands?.forEach { logo ->
+            CardLogo(
+              logoUrl = logo.logoUrl,
+              imageLoader = imageLoader,
+            )
+          }
         }
       }
     }
-  }
-
+  )
 }
 
 @Composable
