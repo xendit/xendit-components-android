@@ -105,7 +105,7 @@ internal object CoreSdkComponent {
           apiInstance ?: retrofit.create(XenditApi::class.java).also { apiInstance = it }
         }
 
-  val safeApiCall: SafeApiCall by lazy { SafeApiCall(globalLoadingHandler) }
+  val safeApiCall: SafeApiCall by lazy { SafeApiCall(globalLoadingHandler, globalErrorHandler) }
 }
 
 internal class FieldTypeDeserializer : JsonDeserializer<FieldType> {

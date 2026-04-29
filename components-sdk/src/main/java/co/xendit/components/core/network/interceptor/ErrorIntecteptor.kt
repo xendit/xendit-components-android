@@ -18,11 +18,12 @@ internal class ErrorInterceptor(private val globalErrorHandler: GlobalErrorHandl
         val errorBodyString = response.peekBody(Long.MAX_VALUE).string()
 
         val apiError = errorBodyString.asApiError()
-        val errorMessage = globalErrorHandler.getErrorMessageFromApiError(apiError.message)
+        val bestMessage = apiError.errorContent?.message1 ?: apiError.message
+        val errorMessage = globalErrorHandler.getErrorMessageFromApiError(bestMessage)
 
         runBlocking {
           globalErrorHandler.postError(
-            errorCode = apiError.message,
+            errorCode = apiError.errorCode,
             errorMessage = errorMessage
           )
         }

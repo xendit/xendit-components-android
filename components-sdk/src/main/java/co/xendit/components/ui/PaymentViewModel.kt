@@ -173,14 +173,25 @@ internal class PaymentViewModel(
               )
             }
           } else {
-            _state.update { it.copy(isLoading = false, errorMessage = "No payment channels found") }
+            _state.update {
+              it.copy(isLoading = false, errorMessage = "No payment channels found")
+            }
           }
         } else {
+          val error = response.errorBody()?.asApiError()
+          val errorMessage = error?.message ?: "Failed to fetch session"
+          val errorCode = error?.errorCode
           _state.update {
-            it.copy(isLoading = false, errorMessage = "Error API +${response.toString()}")
+            it.copy(
+              isLoading = false,
+              errorMessage = if (errorCode == "NETWORK_ERROR") null else errorMessage
+            )
           }
         }
       } catch (e: Exception) {
+        globalErrorHandler.postError(
+          errorMessage = UiText.DynamicString(e.message ?: "Failed to fetch session")
+        )
         _state.update {
           it.copy(isLoading = false, errorMessage = e.message ?: "Failed to fetch session")
         }
@@ -208,7 +219,8 @@ internal class PaymentViewModel(
         actionRedirectUrl = null,
         presentToCustomerPaymentAction = null,
         paymentResponse = null,
-        pollResponse = null
+        pollResponse = null,
+        errorMessage = null
       )
     }
   }
@@ -221,7 +233,8 @@ internal class PaymentViewModel(
         actionRedirectUrl = null,
         presentToCustomerPaymentAction = null,
         paymentResponse = null,
-        pollResponse = null
+        pollResponse = null,
+        errorMessage = null
       )
     }
   }
@@ -323,8 +336,7 @@ internal class PaymentViewModel(
           onChallengeCompletedInternal() // start pooling here
         } else {
           val error = response.errorBody()?.asApiError()
-          val errorMessage = error?.errorContent?.message1 ?: "Payment Failed"
-          globalErrorHandler.postError(errorMessage = UiText.DynamicString(errorMessage))
+          val errorMessage = error?.errorContent?.message1 ?: error?.message ?: "Payment Failed"
           _state.update { it.copy(isLoading = false, errorMessage = errorMessage) }
         }
       } catch (e: Exception) {

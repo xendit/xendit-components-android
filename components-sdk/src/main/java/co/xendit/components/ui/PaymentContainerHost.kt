@@ -1,5 +1,6 @@
 package co.xendit.components.ui
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -123,17 +124,22 @@ internal fun PaymentContainerHost(
   }
 
   LaunchedEffect(Unit) {
-    globalErrorHandler.apiErrorFlow.collect { (_, message) ->
-      message?.let { snackbarHostState.showSnackbar(it.asString(context)) }
-      onResult(
-        XenditPaymentResult.Failed(
-          XenditError(
-            code = "001",
-            message = message.toString(),
-            cause = Throwable(message.toString())
+    globalErrorHandler.apiErrorFlow.collect { (errorCode, message) ->
+      val msg = message?.asString(context) ?: return@collect
+      if (errorCode == "NETWORK_ERROR") {
+        Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+        onResult(
+          XenditPaymentResult.Failed(
+            XenditError(
+              code = "NETWORK_ERROR",
+              message = msg,
+              cause = Throwable(msg)
+            )
           )
         )
-      )
+        return@collect
+      }
+      snackbarHostState.showSnackbar(msg)
     }
   }
 
@@ -170,6 +176,7 @@ internal fun PaymentContainerHost(
           )
         )
       }
+
       else -> {
 
       }
@@ -465,7 +472,7 @@ internal fun PaymentContainerHost(
           }
         }
 
-        if (mviState.errorMessage != null) {
+        if (mviState.errorMessage != null && mviState.sessionResponse == null) {
           Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             AlertDialog(
               onDismissRequest = { onCleanup() },
