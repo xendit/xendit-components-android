@@ -47,14 +47,14 @@ internal object FormChecker {
         }
       }
       is FieldType.Email -> {
-        if (!isValidEmail(value)) {
+        if (value.isNotBlank() && !isValidEmail(value)) {
           return "${field.label} is not valid"
         }
       }
       else -> {
         if (field.type is FieldType.Text) {
           if (field.type.autocomplete == "email") {
-            if (!isValidEmail(value)) {
+            if (value.isNotBlank() && !isValidEmail(value)) {
               return "${field.label} is not valid"
             }
           }
