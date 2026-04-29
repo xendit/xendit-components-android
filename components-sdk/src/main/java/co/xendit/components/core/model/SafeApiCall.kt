@@ -3,6 +3,7 @@ package co.xendit.components.core.model
 import co.xendit.components.util.XLogger
 import co.xendit.components.ui.components.molecule.UiText
 import com.google.gson.JsonSyntaxException
+import kotlinx.coroutines.CancellationException
 import okhttp3.ResponseBody.Companion.toResponseBody
 import retrofit2.HttpException
 import retrofit2.Response
@@ -50,6 +51,8 @@ internal class SafeApiCall(
         "{\"error_code\":\"PARSE_ERROR\",\"message\":\"Failed to parse server response.\"}"
           .toResponseBody(null)
       )
+    } catch (e: CancellationException) {
+      throw e
     } catch (e: Exception) {
       // Handles any other unexpected crashes (like JSON parsing on a 200 response)
       XLogger.e("safeApiCall caught unexpected Exception", e)
