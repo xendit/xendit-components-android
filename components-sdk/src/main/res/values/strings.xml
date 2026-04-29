@@ -19,6 +19,8 @@
   <string name="sessionaction_otp.subtext">We sent an OTP to your {{channelName}} registered number {{phoneNumber}} to continue with your purchase.</string>
   <string name="sessionaction_qr_code.amount_to_pay">Amount to pay</string>
   <string name="sessionaction_qr_code.download_qr">Download QR</string>
+  <string name="sessionpayment_qr_scan_title">Scan QR code to pay</string>
+  <string name="sessionpayment_qr_scan_subtitle">Your QR code will be shown on the next page</string>
   <string name="sessionaction_redirect.button">Go to {{channelName}}\'s page</string>
   <string name="sessionaction_redirect.instructions">You are being redirected to</string>
   <string name="sessionaction_redirect.instructions_cards">Processing...</string>

@@ -399,6 +399,9 @@ internal class PaymentViewModel(
   }
 
   fun markClosed() {
+    _state.update {
+      it.copy(presentToCustomerPaymentAction = null, isLoading = false)
+    }
     challengePollingJob?.cancel()
     challengePollingJob = null
   }
