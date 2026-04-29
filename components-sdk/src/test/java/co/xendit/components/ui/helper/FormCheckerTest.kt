@@ -3,6 +3,7 @@ package co.xendit.components.ui.helper
 import co.xendit.components.data.model.ChannelFormField
 import co.xendit.components.data.model.FieldType
 import co.xendit.components.data.model.RegexValidator
+import com.google.i18n.phonenumbers.PhoneNumberUtil
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -99,5 +100,70 @@ class FormCheckerTest {
     val result = FormChecker.validateAllField(fields, values)
 
     assertFalse(result)
+  }
+
+  @Test
+  fun `validateField returns null when optional email is blank`() {
+    val field = ChannelFormField(
+      label = "Email",
+      placeholder = "",
+      type = FieldType.Email(),
+      channelProperty = "email",
+      required = false,
+      span = 1
+    )
+
+    val result = FormChecker.validateField(field, "")
+
+    assertNull(result)
+  }
+
+  @Test
+  fun `validateField returns error when email format is invalid`() {
+    val field = ChannelFormField(
+      label = "Email",
+      placeholder = "",
+      type = FieldType.Email(),
+      channelProperty = "email",
+      required = false,
+      span = 1
+    )
+
+    val result = FormChecker.validateField(field, "invalid-email")
+
+    assertEquals("Email is not valid", result)
+  }
+
+  @Test
+  fun `validateField uses country code lookup for phone number validation`() {
+    val phoneUtil = PhoneNumberUtil.getInstance()
+    val usExample = phoneUtil.getExampleNumber("US")
+    val usNationalNumber = usExample.nationalNumber.toString()
+
+    val field = ChannelFormField(
+      label = "Phone",
+      placeholder = "",
+      type = FieldType.PhoneNumber(),
+      channelProperty = "phone",
+      required = false,
+      span = 1
+    )
+
+    val validValues =
+      mapOf(
+        "phone" to usNationalNumber,
+        "phone_country_code" to "US"
+      )
+    assertNull(FormChecker.validateField(field, usNationalNumber, validValues))
+
+    val invalidValues =
+      mapOf(
+        "phone" to usNationalNumber,
+        "phone_country_code" to "ID"
+      )
+    assertEquals(
+      "Phone is not valid",
+      FormChecker.validateField(field, usNationalNumber, invalidValues)
+    )
   }
 }

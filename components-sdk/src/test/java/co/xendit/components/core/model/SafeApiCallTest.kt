@@ -7,6 +7,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.unmockkAll
+import io.mockk.verify
 import kotlinx.coroutines.runBlocking
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.After
@@ -20,7 +21,8 @@ import java.io.IOException
 class SafeApiCallTest {
 
   private val loadingHandler = mockk<GlobalLoadingHandler>(relaxed = true)
-  private val safeApiCall = SafeApiCall(loadingHandler)
+  private val globalErrorHandler = mockk<GlobalErrorHandler>(relaxed = true)
+  private val safeApiCall = SafeApiCall(loadingHandler, globalErrorHandler)
 
   @Before
   fun setUp() {
@@ -71,6 +73,7 @@ class SafeApiCallTest {
     val result = safeApiCall.call(apiCall)
 
     assertEquals(503, result.code())
+    verify { globalErrorHandler.postError("NETWORK_ERROR", any()) }
     coVerify { loadingHandler.setLoading() }
     coVerify { loadingHandler.stopLoading() }
   }
@@ -83,6 +86,7 @@ class SafeApiCallTest {
     val result = safeApiCall.call(apiCall)
 
     assertEquals(500, result.code())
+    verify { globalErrorHandler.postError("UNEXPECTED_ERROR", any()) }
     coVerify { loadingHandler.setLoading() }
     coVerify { loadingHandler.stopLoading() }
   }
