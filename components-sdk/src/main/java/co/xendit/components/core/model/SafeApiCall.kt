@@ -53,6 +53,10 @@ internal class SafeApiCall(
     } catch (e: Exception) {
       // Handles any other unexpected crashes (like JSON parsing on a 200 response)
       XLogger.e("safeApiCall caught unexpected Exception", e)
+      globalErrorHandler.postError(
+        errorCode = "UNEXPECTED_ERROR",
+        errorMessage = UiText.DynamicString("An unexpected error occurred: ${e.message}")
+      )
       return Response.error(
         500,
         "{\"error_code\":\"UNEXPECTED_ERROR\",\"message\":\"An unexpected error occurred: ${e.message}\"}"

@@ -7,6 +7,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 class FormCheckerUtilTest {
 
@@ -95,5 +96,21 @@ class FormCheckerUtilTest {
   fun isValidPhoneNumber_invalidNumber_returnsFalse() {
     assertFalse(FormCheckerUtil.isValidPhoneNumber("123", "ID"))
     assertFalse(FormCheckerUtil.isValidPhoneNumber("", "ID"))
+  }
+
+  @Test
+  fun isValidPhoneNumber_normalizesRegionCodeWithFixedLocale() {
+    val original = Locale.getDefault()
+    try {
+      Locale.setDefault(Locale.Builder().setLanguage("tr").setRegion("TR").build())
+
+      val phoneUtil = PhoneNumberUtil.getInstance()
+      val example = phoneUtil.getExampleNumber("ID")
+      val nationalNumber = example.nationalNumber.toString()
+
+      assertTrue(FormCheckerUtil.isValidPhoneNumber(nationalNumber, "id"))
+    } finally {
+      Locale.setDefault(original)
+    }
   }
 }

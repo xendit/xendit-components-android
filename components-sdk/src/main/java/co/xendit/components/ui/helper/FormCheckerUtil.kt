@@ -3,6 +3,7 @@ package co.xendit.components.ui.helper
 import com.google.i18n.phonenumbers.NumberParseException
 import com.google.i18n.phonenumbers.PhoneNumberUtil
 import java.time.YearMonth
+import java.util.Locale
 
 internal object FormCheckerUtil {
   fun isValidCreditCard(cardNumber: String): Boolean {
@@ -56,10 +57,11 @@ internal object FormCheckerUtil {
     val trimmed = phoneNumber.trim()
     if (trimmed.isBlank()) return false
 
+    val normalizedRegion = regionCode.trim().uppercase(Locale.US)
     val phoneUtil = PhoneNumberUtil.getInstance()
     return try {
-      val parsed = phoneUtil.parse(trimmed, regionCode.uppercase())
-      phoneUtil.isValidNumberForRegion(parsed, regionCode.uppercase())
+      val parsed = phoneUtil.parse(trimmed, normalizedRegion)
+      phoneUtil.isValidNumberForRegion(parsed, normalizedRegion)
     } catch (_: NumberParseException) {
       false
     } catch (_: Exception) {
