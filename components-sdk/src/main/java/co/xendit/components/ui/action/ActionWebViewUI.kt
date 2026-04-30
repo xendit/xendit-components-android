@@ -190,9 +190,5 @@ internal fun ActionWebViewUI(
       },
       modifier = Modifier.fillMaxSize()
     )
-
-    Button(onClick = onClose, modifier = Modifier.align(Alignment.BottomCenter)) {
-      Text(stringResource(id = R.string.sessiondialog_close))
-    }
   }
 }
