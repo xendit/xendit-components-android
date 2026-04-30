@@ -223,7 +223,6 @@ internal fun PaymentContainerHost(
         viewModel.markClosed()
         viewModel.dispatch(ActionIntent.CloseWebPayment)
         val message = "Payment failed or expired. Session: $sessionStatus, PR: $prStatus"
-        snackbarHostState.showSnackbar(message)
         onResult(
           XenditPaymentResult.Failed(
             XenditError(
@@ -233,6 +232,7 @@ internal fun PaymentContainerHost(
             )
           )
         )
+        snackbarHostState.showSnackbar(message)
       }
     }
   }
