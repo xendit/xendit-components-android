@@ -1,6 +1,4 @@
 package co.xendit.components.ui
-
-import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -127,7 +125,7 @@ internal fun PaymentContainerHost(
     globalErrorHandler.apiErrorFlow.collect { (errorCode, message) ->
       val msg = message?.asString(context) ?: return@collect
       if (errorCode == "NETWORK_ERROR") {
-        Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+        snackbarHostState.showSnackbar(msg)
         onResult(
           XenditPaymentResult.Failed(
             XenditError(
@@ -355,7 +353,8 @@ internal fun PaymentContainerHost(
                 amount = mviState.sessionResponse?.session?.amount,
                 currency = mviState.sessionResponse?.session?.currency,
                 onClose = { viewModel.markClosed() },
-                onPaymentMade = { viewModel.dispatch(ActionIntent.ChallengeCompleted) }
+                onPaymentMade = { viewModel.dispatch(ActionIntent.ChallengeCompleted) },
+                snackbarHostState = snackbarHostState
               )
             }
 

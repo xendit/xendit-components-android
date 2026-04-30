@@ -1,10 +1,17 @@
 package co.xendit.components.ui.action
 
+import android.content.ContentValues
+import android.graphics.Bitmap
+import android.media.MediaScannerConnection
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -12,33 +19,42 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
+import co.xendit.components.R
+import co.xendit.components.ui.helper.CurrencyUtil
+import co.xendit.components.ui.helper.SdkImageLoader
 import co.xendit.components.ui.style.xenditAppearance
 import co.xendit.components.ui.theme.xenditCustomColors
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.foundation.Image
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import java.text.NumberFormat
-import java.util.Locale
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import java.io.File
 
 @Composable
 internal fun ActionQrUI(
@@ -50,12 +66,17 @@ internal fun ActionQrUI(
   currency: String?,
   onClose: () -> Unit,
   onPaymentMade: () -> Unit,
+  snackbarHostState: SnackbarHostState? = null,
   modifier: Modifier = Modifier
 ) {
   val appearance = xenditAppearance
   val customColors = MaterialTheme.xenditCustomColors
+  val context = LocalContext.current
+  val scope = rememberCoroutineScope()
+  val hostState = snackbarHostState ?: remember { SnackbarHostState() }
+  val qrisImageUrl = "https://assets.xendit.co/payment-session/logos/QRIS.svg"
   val density = LocalDensity.current
-  val qrSizePx = remember(density) { with(density) { 240.dp.roundToPx() } }
+  val qrSizePx = remember(density) { with(density) { 260.dp.roundToPx() } }
   val qrBitmap =
     remember(qrString, qrSizePx, customColors.qrForegroundColor, customColors.qrBackgroundColor) {
       runCatching {
@@ -68,17 +89,7 @@ internal fun ActionQrUI(
       }.getOrNull()
     }
 
-  val formattedAmount = remember(amount, currency) {
-    if (amount == null || currency.isNullOrBlank()) return@remember ""
-    val symbol = when (currency) {
-      "IDR" -> "Rp"
-      "USD" -> "$"
-      "PHP" -> "₱"
-      else -> currency
-    }
-    val number = NumberFormat.getNumberInstance(Locale("id", "ID"))
-    "$symbol${number.format(amount)}"
-  }
+  val formattedAmount = remember(amount, currency) { CurrencyUtil.formatAmount(amount, currency) }
 
   Box(
     modifier = modifier
@@ -86,6 +97,15 @@ internal fun ActionQrUI(
       .background(Color.Black.copy(alpha = 0.55f)),
     contentAlignment = Alignment.Center
   ) {
+    if (snackbarHostState == null) {
+      SnackbarHost(
+        hostState = hostState,
+        modifier =
+          Modifier
+            .align(Alignment.BottomCenter)
+            .padding(16.dp)
+      )
+    }
     Surface(
       modifier = Modifier
         .fillMaxWidth()
@@ -98,17 +118,23 @@ internal fun ActionQrUI(
         modifier = Modifier.padding(20.dp),
         horizontalAlignment = Alignment.CenterHorizontally
       ) {
-        Row(
-          modifier = Modifier.fillMaxWidth(),
-          verticalAlignment = Alignment.CenterVertically
-        ) {
-          Text(
-            text = title ?: "Complete Your Payment",
-            style = MaterialTheme.typography.titleMedium,
-            color = appearance.colorText,
-            modifier = Modifier.weight(1f)
+        Box(modifier = Modifier.fillMaxWidth()) {
+          AsyncImage(
+            model =
+              ImageRequest.Builder(context)
+                .data(qrisImageUrl)
+                .crossfade(true)
+                .build(),
+            imageLoader = SdkImageLoader.get(context),
+            contentDescription = null,
+            modifier = Modifier
+              .align(Alignment.Center)
+              .height(28.dp)
           )
-          IconButton(onClick = onClose) {
+          IconButton(
+            onClick = onClose,
+            modifier = Modifier.align(Alignment.CenterEnd)
+          ) {
             Icon(
               imageVector = Icons.Filled.Close,
               contentDescription = null,
@@ -117,54 +143,64 @@ internal fun ActionQrUI(
           }
         }
 
-        if (!channelLogoUrl.isNullOrBlank()) {
-          Spacer(modifier = Modifier.height(8.dp))
-          AsyncImage(
-            model = ImageRequest.Builder(LocalContext.current).data(channelLogoUrl).crossfade(true).build(),
-            contentDescription = null,
-            modifier = Modifier.size(40.dp)
-          )
-        } else {
-          Spacer(modifier = Modifier.height(8.dp))
-          Text(
-            text = channelName,
-            style = MaterialTheme.typography.titleSmall,
-            color = appearance.colorTextSecondary
-          )
-        }
+        Spacer(modifier = Modifier.height(16.dp))
 
-        Spacer(modifier = Modifier.height(12.dp))
-
-        Box(
+        Surface(
           modifier = Modifier
-            .clip(RoundedCornerShape(appearance.borderRadius))
-            .background(customColors.qrBackgroundColor)
-            .padding(16.dp),
-          contentAlignment = Alignment.Center
+            .fillMaxWidth()
+            .border(
+              width = 1.dp,
+              color = appearance.colorBorder,
+              shape = RoundedCornerShape(appearance.borderRadius)
+            ),
+          shape = RoundedCornerShape(appearance.borderRadius),
+          color = appearance.colorBackground,
+          tonalElevation = 0.dp
         ) {
-          if (qrBitmap != null) {
-            Image(
-              bitmap = qrBitmap.asImageBitmap(),
-              contentDescription = null,
-              modifier = Modifier.size(240.dp)
-            )
-          } else {
+          Column(
+            modifier = Modifier.padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+          ) {
             Text(
-              text = "Unable to generate QR code",
-              style = MaterialTheme.typography.bodyMedium,
-              color = appearance.colorDanger,
+              text = title ?: channelName,
+              style = MaterialTheme.typography.titleMedium,
+              color = appearance.colorText,
               textAlign = TextAlign.Center
             )
-          }
-        }
+            Spacer(modifier = Modifier.height(12.dp))
 
-        if (formattedAmount.isNotBlank()) {
-          Spacer(modifier = Modifier.height(12.dp))
-          Text(
-            text = formattedAmount,
-            style = MaterialTheme.typography.titleMedium,
-            color = appearance.colorText
-          )
+            Box(
+              modifier = Modifier
+                .clip(RoundedCornerShape(appearance.borderRadius))
+                .background(customColors.qrBackgroundColor)
+                .padding(12.dp),
+              contentAlignment = Alignment.Center
+            ) {
+              if (qrBitmap != null) {
+                Image(
+                  bitmap = qrBitmap.asImageBitmap(),
+                  contentDescription = null,
+                  modifier = Modifier.size(260.dp)
+                )
+              } else {
+                Text(
+                  text = "Unable to generate QR code",
+                  style = MaterialTheme.typography.bodyMedium,
+                  color = appearance.colorDanger,
+                  textAlign = TextAlign.Center
+                )
+              }
+            }
+
+            if (formattedAmount.isNotBlank()) {
+              Spacer(modifier = Modifier.height(12.dp))
+              Text(
+                text = formattedAmount,
+                style = MaterialTheme.typography.titleMedium,
+                color = appearance.colorText
+              )
+            }
+          }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -175,27 +211,111 @@ internal fun ActionQrUI(
           modifier = Modifier.fillMaxWidth()
         ) {
           Button(
-            onClick = onPaymentMade,
-            modifier = Modifier
-              .fillMaxWidth()
-              .height(52.dp),
+            onClick = {
+              if (qrBitmap == null) {
+                scope.launch {
+                  hostState.showSnackbar("Unable to download QR code")
+                }
+                return@Button
+              }
+              scope.launch(Dispatchers.IO) {
+                val uri =
+                  runCatching { saveBitmapToGallery(context, qrBitmap) }.getOrNull()
+                launch(Dispatchers.Main) {
+                  if (uri != null) {
+                    hostState.showSnackbar("QR code saved")
+                  } else {
+                    hostState.showSnackbar("Failed to save QR code")
+                  }
+                }
+              }
+            },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(appearance.borderRadius),
             colors = ButtonDefaults.buttonColors(
-              containerColor = Color(0xFFEDEDED),
-              contentColor = appearance.colorText
+              containerColor = appearance.colorPrimary,
+              contentColor = appearance.colorBackground
             )
           ) {
-            Text("I've made this payment", style = MaterialTheme.typography.titleSmall)
+            Text(
+              stringResource(R.string.sessionaction_qr_code_download_qr),
+              style = MaterialTheme.typography.titleSmall
+            )
           }
-          Text(
-            text = "Once you've paid, click the button above to get your payment confirmation.",
-            style = MaterialTheme.typography.bodySmall,
-            color = appearance.colorTextSecondary,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 12.dp)
-          )
+          OutlinedButton(
+            onClick = onPaymentMade,
+            modifier = Modifier
+              .fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(
+              containerColor = appearance.colorBackground,
+              contentColor = appearance.colorText
+            ),
+            shape = RoundedCornerShape(appearance.borderRadius)
+          ) {
+            Text(
+              stringResource(R.string.sessionaction_payment_made),
+              style = MaterialTheme.typography.titleSmall
+            )
+          }
         }
+
+        Text(
+          text = stringResource(R.string.sessionaction_payment_confirmation_instructions),
+          style = MaterialTheme.typography.bodySmall,
+          color = appearance.colorTextSecondary,
+          textAlign = TextAlign.Center,
+          modifier = Modifier.padding(horizontal = 12.dp)
+        )
       }
     }
   }
 }
 
+private fun saveBitmapToGallery(
+  context: android.content.Context,
+  bitmap: Bitmap
+): android.net.Uri? {
+  val displayName = "xendit_qr_${System.currentTimeMillis()}.png"
+  val resolver = context.contentResolver
+  val values =
+    ContentValues().apply {
+      put(MediaStore.Images.Media.DISPLAY_NAME, displayName)
+      put(MediaStore.Images.Media.MIME_TYPE, "image/png")
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES)
+      }
+    }
+
+  val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
+  if (uri == null) {
+    val dir = context.getExternalFilesDir(Environment.DIRECTORY_PICTURES) ?: return null
+    val file = File(dir, displayName)
+    return try {
+      file.outputStream().use { out ->
+        if (!bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)) {
+          throw IllegalStateException("Bitmap compress failed")
+        }
+      }
+      MediaScannerConnection.scanFile(
+        context,
+        arrayOf(file.absolutePath),
+        arrayOf("image/png"),
+        null
+      )
+      file.toUri()
+    } catch (_: Exception) {
+      null
+    }
+  }
+  return try {
+    resolver.openOutputStream(uri)?.use { out ->
+      if (!bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)) {
+        throw IllegalStateException("Bitmap compress failed")
+      }
+    } ?: throw IllegalStateException("OutputStream is null")
+    uri
+  } catch (_: Exception) {
+    runCatching { resolver.delete(uri, null, null) }
+    null
+  }
+}
