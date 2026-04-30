@@ -1,4 +1,5 @@
 package co.xendit.components.ui
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -36,6 +37,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -330,6 +332,12 @@ internal fun PaymentContainerHost(
           modifier = Modifier
             .fillMaxWidth()
             .weight(1f)
+            .drawWithContent {
+              drawContent()
+              if (mviState.isLoading) {
+                drawRect(Color.Black.copy(alpha = 0.08f))
+              }
+            }
         ) {
           when {
             mviState.actionRedirectUrl != null -> {
@@ -353,7 +361,10 @@ internal fun PaymentContainerHost(
                 amount = mviState.sessionResponse?.session?.amount,
                 currency = mviState.sessionResponse?.session?.currency,
                 onClose = { viewModel.markClosed() },
-                onPaymentMade = { viewModel.dispatch(ActionIntent.ChallengeCompleted) },
+                onPaymentMade = {
+                  viewModel.dispatch(ActionIntent.ChallengeCompleted)
+                  viewModel.showLoading()
+                },
                 snackbarHostState = snackbarHostState
               )
             }
@@ -463,11 +474,12 @@ internal fun PaymentContainerHost(
               }
             }
           }
-        }
-
-        if (mviState.isLoading) {
-          Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator()
+          if (mviState.isLoading) {
+            Box(
+              modifier = Modifier.align(Alignment.Center)
+            ) {
+              CircularProgressIndicator()
+            }
           }
         }
 

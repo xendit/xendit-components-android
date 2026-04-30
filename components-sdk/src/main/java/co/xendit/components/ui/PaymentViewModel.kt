@@ -355,7 +355,6 @@ internal class PaymentViewModel(
     if (challengePollingJob?.isActive == true) return
     challengePollingJob =
       viewModelScope.launch {
-        _state.update { it.copy(isLoading = true) }
         try {
           var delayMs = 3000L
           while (isActive) {
@@ -366,13 +365,13 @@ internal class PaymentViewModel(
                 _state.update {
                   it.copy(
                     pollResponse = poll,
-                    isLoading = false,
                   )
                 }
                 XLogger.d("Challenge successResponse: ${poll.paymentRequest ?: poll.paymentToken}")
               }
             } else {
               // On unauthorized or errors, just backoff and retry within timeout
+              XLogger.d("Challenge Error: ${res}")
             }
             delay(delayMs)
             delayMs = minOf((delayMs * 1.2).toLong(), 10_000L)
@@ -397,6 +396,22 @@ internal class PaymentViewModel(
     lastPaymentRequestId = null
     lastSessionTokenRequestId = null
     _state.value = PaymentState()
+  }
+
+  fun showLoading() {
+    _state.update {
+      it.copy(
+        isLoading = true,
+      )
+    }
+  }
+
+  fun stopLoading() {
+    _state.update {
+      it.copy(
+        isLoading = true,
+      )
+    }
   }
 
   fun markClosed() {

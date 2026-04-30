@@ -9,6 +9,9 @@ import androidx.activity.ComponentActivity
 import androidx.annotation.VisibleForTesting
 import androidx.compose.ui.platform.ComposeView
 import co.xendit.components.util.XLogger
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.lifecycle.setViewTreeViewModelStoreOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
@@ -127,6 +130,15 @@ object XenditComponents {
     CoreSdkComponent.setBaseUrl(resolveBaseUrlForHostId(keys.hostId))
 
     cleanup()
+
+    activity.lifecycle.addObserver(object : LifecycleEventObserver {
+      override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
+        if (event == Lifecycle.Event.ON_DESTROY) {
+          cleanup()
+          source.lifecycle.removeObserver(this)
+        }
+      }
+    })
 
     currentCallback = onPaymentResult
 
