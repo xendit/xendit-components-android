@@ -206,4 +206,8 @@
   <string name="sessionwaiting_payment.message_2_prefix"></string>
   <string name="sessionwaiting_payment.simulate.message_1"></string>
   <string name="sessionwaiting_payment.title"></string>
+
+  <!--  LOCAL UPDATE-->
+  <string name="select_country">Seleccionar país</string>
+  <string name="select_province">Seleccionar provincia</string>
 </resources>
