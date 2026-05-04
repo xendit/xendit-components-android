@@ -189,7 +189,7 @@ internal fun PaymentContainerHost(
     val isCanceled =
       sessionStatus == PaymentSessionStatus.CANCELED || prStatus == PaymentRequestStatus.CANCELED
     val isFailed = prStatus == PaymentRequestStatus.FAILED
-    val isExpire = sessionStatus == PaymentSessionStatus.EXPIRED || prStatus == PaymentRequestStatus.EXPIRED
+    val isExpired = sessionStatus == PaymentSessionStatus.EXPIRED || prStatus == PaymentRequestStatus.EXPIRED
 
     when {
       isSuccess -> {
@@ -209,7 +209,7 @@ internal fun PaymentContainerHost(
         onCleanup()
       }
 
-      isExpire -> {
+      isExpired -> {
         viewModel.resetForNewSession()
         onResult(XenditPaymentResult.Expired)
         onCleanup()
