@@ -356,8 +356,9 @@ internal fun PaymentContainerHost(
 
             mviState.presentToCustomerPaymentAction != null -> {
               val qrAction = mviState.presentToCustomerPaymentAction!!
+              val merchantName = mviState.sessionResponse?.business?.name
               ActionQrUI(
-                title = qrAction.actionSubtitle ?: qrAction.actionTitle,
+                title = merchantName,
                 channelName = mviState.selectedChannel?.brandName ?: "QR Code",
                 channelLogoUrl = mviState.selectedChannel?.brandLogoUrl,
                 qrString = qrAction.value.orEmpty(),

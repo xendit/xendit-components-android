@@ -6,6 +6,7 @@ import com.google.gson.annotations.SerializedName
 @Keep
 internal data class SessionResponse(
   @SerializedName("session") val session: BffSession?,
+  @SerializedName("business") val business: BffBusiness? = null,
   @SerializedName("channels") val paymentChannels: List<BffChannel>?,
   @SerializedName("succeeded_channel") val succeededChannel: SucceededChannel?
 )
@@ -21,6 +22,13 @@ internal data class BffSession(
   @SerializedName("currency") val currency: String?,
   @SerializedName("amount") val amount: Long?,
   @SerializedName("items") val items: List<BffItem>?
+)
+
+@Keep
+internal data class BffBusiness(
+  @SerializedName("name") val name: String? = null,
+  @SerializedName("country_of_operation") val countryOfOperation: String? = null,
+  @SerializedName("merchant_profile_picture_url") val merchantProfilePictureUrl: String? = null
 )
 
 @Keep
