@@ -166,15 +166,7 @@ internal fun PaymentContainerHost(
 
       PaymentSessionStatus.EXPIRED -> {
         viewModel.markClosed()
-        onResult(
-          XenditPaymentResult.Failed(
-            XenditError(
-              code = "002",
-              message = "Payment failed or expired. Session: ${bffSession.paymentSessionId}, Status: ${bffSession.status}",
-              cause = Throwable("Payment failed or expired. Session: ${bffSession.paymentSessionId}, Status: ${bffSession.status}")
-            )
-          )
-        )
+        onResult(XenditPaymentResult.Expired)
       }
 
       else -> {
@@ -196,10 +188,8 @@ internal fun PaymentContainerHost(
 
     val isCanceled =
       sessionStatus == PaymentSessionStatus.CANCELED || prStatus == PaymentRequestStatus.CANCELED
-    val isFailed =
-      sessionStatus == PaymentSessionStatus.EXPIRED
-          || prStatus == PaymentRequestStatus.FAILED
-          || prStatus == PaymentRequestStatus.EXPIRED
+    val isFailed = prStatus == PaymentRequestStatus.FAILED
+    val isExpire = sessionStatus == PaymentSessionStatus.EXPIRED || prStatus == PaymentRequestStatus.EXPIRED
 
     when {
       isSuccess -> {
@@ -216,6 +206,12 @@ internal fun PaymentContainerHost(
       isCanceled -> {
         viewModel.resetForNewSession()
         onResult(XenditPaymentResult.Canceled)
+        onCleanup()
+      }
+
+      isExpire -> {
+        viewModel.resetForNewSession()
+        onResult(XenditPaymentResult.Expired)
         onCleanup()
       }
 
