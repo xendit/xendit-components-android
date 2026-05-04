@@ -68,7 +68,7 @@ internal fun QrPaymentUI(
     Row(
       modifier = Modifier
         .fillMaxWidth()
-        .padding(horizontal = 16.dp, vertical = 8.dp),
+        .padding(horizontal = 20.dp, vertical = 8.dp),
       verticalAlignment = Alignment.CenterVertically
     ) {
       Icon(
@@ -79,17 +79,16 @@ internal fun QrPaymentUI(
       )
       Spacer(modifier = Modifier.width(12.dp))
       Column(modifier = Modifier.weight(1f)) {
-        Text(
-          text = stringResource(id = R.string.sessionpayment_qr_scan_title),
-          style = MaterialTheme.typography.titleSmall,
-          color = appearance.colorText
-        )
-        Spacer(modifier = Modifier.height(2.dp))
-        Text(
-          text = stringResource(id = R.string.sessionpayment_qr_scan_subtitle),
-          style = MaterialTheme.typography.bodySmall,
-          color = appearance.colorTextSecondary
-        )
+        selectedChannel.instructions?.forEachIndexed { index, instruction ->
+          Text(
+            text = instruction,
+            style = MaterialTheme.typography.titleSmall.takeIf { index == 0 } ?: MaterialTheme.typography.bodySmall,
+            color = appearance.colorText.takeIf { index == 0 } ?: appearance.colorTextSecondary
+          )
+          if (index != selectedChannel.instructions.size - 1) {
+            Spacer(modifier = Modifier.height(4.dp))
+          }
+        }
       }
     }
   }

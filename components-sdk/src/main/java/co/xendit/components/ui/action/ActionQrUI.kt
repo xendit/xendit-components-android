@@ -143,6 +143,14 @@ internal fun ActionQrUI(
           }
         }
 
+        Text(
+          text = "Scan To Pay",
+          style = MaterialTheme.typography.titleLarge,
+          color = appearance.colorText,
+          textAlign = TextAlign.Center,
+          modifier = Modifier.fillMaxWidth()
+        )
+
         Spacer(modifier = Modifier.height(16.dp))
 
         Surface(
@@ -192,11 +200,43 @@ internal fun ActionQrUI(
               }
             }
 
+            OutlinedButton(
+              onClick = {
+                if (qrBitmap == null) {
+                  scope.launch {
+                    hostState.showSnackbar("Unable to download QR code")
+                  }
+                  return@OutlinedButton
+                }
+                scope.launch(Dispatchers.IO) {
+                  val uri =
+                    runCatching { saveBitmapToGallery(context, qrBitmap) }.getOrNull()
+                  launch(Dispatchers.Main) {
+                    if (uri != null) {
+                      hostState.showSnackbar("QR code saved")
+                    } else {
+                      hostState.showSnackbar("Failed to save QR code")
+                    }
+                  }
+                }
+              },
+              colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFFFAFAFA),
+                contentColor = appearance.colorText
+              ),
+              shape = RoundedCornerShape(appearance.borderRadius)
+            ) {
+              Text(
+                stringResource(R.string.sessionaction_qr_code_download_qr),
+                style = MaterialTheme.typography.titleSmall
+              )
+            }
+
             if (formattedAmount.isNotBlank()) {
               Spacer(modifier = Modifier.height(12.dp))
               Text(
                 text = formattedAmount,
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.titleLarge,
                 color = appearance.colorText
               )
             }
@@ -210,38 +250,6 @@ internal fun ActionQrUI(
           horizontalAlignment = Alignment.CenterHorizontally,
           modifier = Modifier.fillMaxWidth()
         ) {
-          Button(
-            onClick = {
-              if (qrBitmap == null) {
-                scope.launch {
-                  hostState.showSnackbar("Unable to download QR code")
-                }
-                return@Button
-              }
-              scope.launch(Dispatchers.IO) {
-                val uri =
-                  runCatching { saveBitmapToGallery(context, qrBitmap) }.getOrNull()
-                launch(Dispatchers.Main) {
-                  if (uri != null) {
-                    hostState.showSnackbar("QR code saved")
-                  } else {
-                    hostState.showSnackbar("Failed to save QR code")
-                  }
-                }
-              }
-            },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(appearance.borderRadius),
-            colors = ButtonDefaults.buttonColors(
-              containerColor = appearance.colorPrimary,
-              contentColor = appearance.colorBackground
-            )
-          ) {
-            Text(
-              stringResource(R.string.sessionaction_qr_code_download_qr),
-              style = MaterialTheme.typography.titleSmall
-            )
-          }
           OutlinedButton(
             onClick = onPaymentMade,
             modifier = Modifier
@@ -254,7 +262,7 @@ internal fun ActionQrUI(
           ) {
             Text(
               stringResource(R.string.sessionaction_payment_made),
-              style = MaterialTheme.typography.titleSmall
+              style = MaterialTheme.typography.titleMedium
             )
           }
         }

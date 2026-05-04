@@ -20,6 +20,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight.Companion.W500
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
@@ -56,7 +57,7 @@ internal fun XenditTheme(style: XenditAppearance, content: @Composable () -> Uni
       headlineLarge = baseTypography.headlineLarge.copy(fontFamily = style.fontFamily),
       headlineMedium = baseTypography.headlineMedium.copy(fontFamily = style.fontFamily),
       headlineSmall = baseTypography.headlineSmall.copy(fontFamily = style.fontFamily),
-      titleLarge = baseTypography.titleLarge.copy(fontFamily = style.fontFamily),
+      titleLarge = baseTypography.titleLarge.copy(fontFamily = style.fontFamily, fontWeight = W500),
       titleMedium = baseTypography.titleMedium.copy(fontFamily = style.fontFamily),
       titleSmall = baseTypography.titleSmall.copy(fontFamily = style.fontFamily),
       bodyLarge = baseTypography.bodyLarge.copy(fontFamily = style.fontFamily),
