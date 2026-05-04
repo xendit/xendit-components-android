@@ -89,7 +89,7 @@ internal sealed class ActionIntent {
   /**
    * This triggers a status check to verify the final result.
    */
-  data object ChallengeCompleted : ActionIntent()
+  data class ChallengeCompleted(val forceStart: Boolean = false) : ActionIntent()
 
   /**
    * Close Webview
@@ -139,7 +139,7 @@ internal class PaymentViewModel(
         )
 
       is ActionIntent.UpdatePaymentDraft -> onUpdatePaymentDraft(intent.paymentDraft)
-      is ActionIntent.ChallengeCompleted -> onChallengeCompletedInternal()
+      is ActionIntent.ChallengeCompleted -> onChallengeCompletedInternal(intent.forceStart)
       is ActionIntent.CloseWebPayment -> {
         _state.update { it.copy(actionRedirectUrl = null) }
         markClosed()
@@ -348,11 +348,13 @@ internal class PaymentViewModel(
     }
   }
 
-  private fun onChallengeCompletedInternal() {
+  private fun onChallengeCompletedInternal(forceStart: Boolean = false) {
     val authKey = sessionAuthKey ?: return
     val tokenReqId = lastSessionTokenRequestId
-    cancelChallenge()
     if (challengePollingJob?.isActive == true) return
+    if (forceStart) {
+      cancelChallenge()
+    }
     challengePollingJob =
       viewModelScope.launch {
         try {

@@ -221,15 +221,18 @@ internal fun PaymentContainerHost(
 
       isFailed -> {
         viewModel.markClosed()
+        viewModel.dispatch(ActionIntent.CloseWebPayment)
+        val message = "Payment failed or expired. Session: $sessionStatus, PR: $prStatus"
         onResult(
           XenditPaymentResult.Failed(
             XenditError(
-              code = "001",
-              message = "Payment failed or expired. Session: $sessionStatus, PR: $prStatus",
+              code = poll.paymentRequest?.failure_code ?: "001",
+              message = message,
               cause = Throwable("Payment failed or expired. Session: $sessionStatus, PR: $prStatus")
             )
           )
         )
+        snackbarHostState.showSnackbar(message)
       }
     }
   }
@@ -346,7 +349,7 @@ internal fun PaymentContainerHost(
                 onClose = {
                   viewModel.dispatch(ActionIntent.CloseWebPayment)
                 },
-                onChallengeCompleted = { viewModel.dispatch(ActionIntent.ChallengeCompleted) },
+                onChallengeCompleted = { viewModel.dispatch(ActionIntent.ChallengeCompleted(true)) },
                 iframeCapable = mviState.iframeCapable
               )
             }
@@ -362,7 +365,7 @@ internal fun PaymentContainerHost(
                 currency = mviState.sessionResponse?.session?.currency,
                 onClose = { viewModel.markClosed() },
                 onPaymentMade = {
-                  viewModel.dispatch(ActionIntent.ChallengeCompleted)
+                  viewModel.dispatch(ActionIntent.ChallengeCompleted(true))
                   viewModel.showLoading()
                 },
                 snackbarHostState = snackbarHostState
