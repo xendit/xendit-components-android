@@ -141,7 +141,14 @@ internal class PaymentViewModel(
       is ActionIntent.UpdatePaymentDraft -> onUpdatePaymentDraft(intent.paymentDraft)
       is ActionIntent.ChallengeCompleted -> onChallengeCompletedInternal(intent.forceStart)
       is ActionIntent.CloseWebPayment -> {
-        _state.update { it.copy(actionRedirectUrl = null, pollResponse = null) }
+        _state.update {
+          it.copy(
+            actionRedirectUrl = null,
+            presentToCustomerPaymentAction = null,
+            paymentResponse = null,
+            pollResponse = null
+          )
+        }
         markClosed()
       }
     }
