@@ -206,4 +206,8 @@
   <string name="sessionwaiting_payment.message_2_prefix">Note:</string>
   <string name="sessionwaiting_payment.simulate.message_1">Your simulated payment will be processed in a few seconds.</string>
   <string name="sessionwaiting_payment.title">Still awaiting your payment</string>
+
+  <!--  LOCAL UPDATE-->
+  <string name="select_country">Select Country</string>
+  <string name="select_province">Select Province</string>
 </resources>

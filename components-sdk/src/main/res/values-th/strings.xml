@@ -206,4 +206,8 @@
   <string name="sessionwaiting_payment.message_2_prefix">หมายเหตุ:</string>
   <string name="sessionwaiting_payment.simulate.message_1">การชำระเงินจำลองของคุณจะถูกประมวลผลภายในไม่กี่วินาที</string>
   <string name="sessionwaiting_payment.title">กำลังรอการชำระเงิน</string>
+
+  <!--  LOCAL UPDATE-->
+  <string name="select_country">เลือกประเทศ</string>
+  <string name="select_province">เลือกจังหวัด</string>
 </resources>

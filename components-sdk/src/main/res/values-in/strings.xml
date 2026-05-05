@@ -206,4 +206,8 @@
   <string name="sessionwaiting_payment.message_2_prefix">Catatan:</string>
   <string name="sessionwaiting_payment.simulate.message_1">Pembayaran simulasi Anda akan diproses dalam beberapa detik.</string>
   <string name="sessionwaiting_payment.title">Menunggu pembayaran...</string>
+
+  <!--  LOCAL UPDATE-->
+  <string name="select_country">Pilih Negara</string>
+  <string name="select_province">Pilih Provinsi</string>
 </resources>
