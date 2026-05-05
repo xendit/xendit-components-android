@@ -63,14 +63,13 @@ import co.xendit.components.ui.action.ActionWebViewUI
 import co.xendit.components.ui.card.CardIntent
 import co.xendit.components.ui.card.CardViewModel
 import co.xendit.components.ui.components.molecule.GenericHeader
-import co.xendit.components.ui.helper.FormChecker.validateAllField
 import co.xendit.components.ui.helper.FailureCodeMessageUtil
+import co.xendit.components.ui.helper.FormChecker.validateAllField
 import co.xendit.components.ui.method.PaymentMethodsUI
 import co.xendit.components.ui.style.XenditAppearance
 import co.xendit.components.ui.style.xenditAppearance
 import io.nerdythings.okhttp.modifier.settings.OkHttpProfilerSettingsActivity
 import kotlinx.coroutines.launch
-import java.util.Locale
 
 internal enum class PaymentContainerPresentation {
   Dialog,
@@ -169,6 +168,7 @@ internal fun PaymentContainerHost(
       PaymentSessionStatus.EXPIRED -> {
         viewModel.markClosed()
         onResult(XenditPaymentResult.Expired)
+        onCleanup()
       }
 
       else -> {
@@ -191,7 +191,8 @@ internal fun PaymentContainerHost(
     val isCanceled =
       sessionStatus == PaymentSessionStatus.CANCELED || prStatus == PaymentRequestStatus.CANCELED
     val isFailed = prStatus == PaymentRequestStatus.FAILED
-    val isExpired = sessionStatus == PaymentSessionStatus.EXPIRED || prStatus == PaymentRequestStatus.EXPIRED
+    val isExpired =
+      sessionStatus == PaymentSessionStatus.EXPIRED || prStatus == PaymentRequestStatus.EXPIRED
 
     when {
       isSuccess -> {
@@ -218,19 +219,20 @@ internal fun PaymentContainerHost(
       }
 
       isFailed -> {
-        viewModel.markClosed()
-        viewModel.dispatch(ActionIntent.CloseWebPayment)
         val pollFailureCode = poll.paymentRequest?.failure_code
-        val pollFailureMessage = FailureCodeMessageUtil.resolveFailureMessage(context, pollFailureCode)
+        val pollFailureMessage =
+          FailureCodeMessageUtil.resolveFailureMessage(context, pollFailureCode)
+
         onResult(
           XenditPaymentResult.Failed(
             XenditError(
               code = pollFailureCode?.trim().takeIf { !it.isNullOrBlank() } ?: "UNKNOWN",
               message = pollFailureMessage,
-              cause = Throwable("Payment failed or expired. Session: $sessionStatus, PR: $prStatus")
+              cause = Throwable("Payment failed Session: $sessionStatus, PR: $prStatus")
             )
           )
         )
+        viewModel.dispatch(ActionIntent.CloseWebPayment)
         snackbarHostState.showSnackbar(pollFailureMessage)
       }
     }

@@ -13,9 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -106,14 +104,24 @@ fun PaymentDemo(fontFamily: FontFamily, modifier: Modifier = Modifier) {
 
       parseColorOrNull(colorPrimaryHex)?.let { appearance = appearance.copy(colorPrimary = it) }
       parseColorOrNull(colorTextHex)?.let { appearance = appearance.copy(colorText = it) }
-      parseColorOrNull(colorTextSecondaryHex)?.let { appearance = appearance.copy(colorTextSecondary = it) }
-      parseColorOrNull(colorTextPlaceholderHex)?.let { appearance = appearance.copy(colorTextPlaceholder = it) }
+      parseColorOrNull(colorTextSecondaryHex)?.let {
+        appearance = appearance.copy(colorTextSecondary = it)
+      }
+      parseColorOrNull(colorTextPlaceholderHex)?.let {
+        appearance = appearance.copy(colorTextPlaceholder = it)
+      }
       parseColorOrNull(colorDisabledHex)?.let { appearance = appearance.copy(colorDisabled = it) }
       parseColorOrNull(colorDangerHex)?.let { appearance = appearance.copy(colorDanger = it) }
       parseColorOrNull(colorBorderHex)?.let { appearance = appearance.copy(colorBorder = it) }
-      parseColorOrNull(colorBackgroundHex)?.let { appearance = appearance.copy(colorBackground = it) }
-      parseColorOrNull(qrForegroundHex)?.let { appearance = appearance.copy(qrForegroundColor = it) }
-      parseColorOrNull(qrBackgroundHex)?.let { appearance = appearance.copy(qrBackgroundColor = it) }
+      parseColorOrNull(colorBackgroundHex)?.let {
+        appearance = appearance.copy(colorBackground = it)
+      }
+      parseColorOrNull(qrForegroundHex)?.let {
+        appearance = appearance.copy(qrForegroundColor = it)
+      }
+      parseColorOrNull(qrBackgroundHex)?.let {
+        appearance = appearance.copy(qrBackgroundColor = it)
+      }
 
       borderRadiusDp.trim().takeIf { it.isNotBlank() }?.toFloatOrNull()?.let {
         appearance = appearance.copy(borderRadius = it.dp)
@@ -148,7 +156,7 @@ fun PaymentDemo(fontFamily: FontFamily, modifier: Modifier = Modifier) {
         sessionId,
         merchantPreferredPaymentMethod = listOf("cards", "qr_code")
       ) {
-        paymentResultText = "Success: ${it.toString()}"
+        paymentResultText = "Result: ${it.toString()}"
       }
     }
   }
