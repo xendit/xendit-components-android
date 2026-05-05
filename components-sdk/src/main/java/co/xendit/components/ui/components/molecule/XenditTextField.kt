@@ -15,6 +15,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
@@ -70,6 +71,7 @@ internal fun XenditTextField(
       enabled = enabled,
       readOnly = readOnly,
       textStyle = textStyle.copy(color = appearance.colorText),
+      cursorBrush = SolidColor(appearance.colorPrimary),
       interactionSource = interactionSource,
       keyboardOptions = keyboardOptions,
       visualTransformation = visualTransformation,

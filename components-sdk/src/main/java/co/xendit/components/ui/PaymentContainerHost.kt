@@ -34,8 +34,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -63,6 +65,7 @@ import co.xendit.components.ui.action.ActionWebViewUI
 import co.xendit.components.ui.card.CardIntent
 import co.xendit.components.ui.card.CardViewModel
 import co.xendit.components.ui.components.molecule.GenericHeader
+import co.xendit.components.ui.helper.FailureCodeMessageUtil
 import co.xendit.components.ui.helper.FormChecker.validateAllField
 import co.xendit.components.ui.method.PaymentMethodsUI
 import co.xendit.components.ui.style.XenditAppearance
@@ -96,6 +99,20 @@ internal fun PaymentContainerHost(
   val snackbarHostState = remember { SnackbarHostState() }
   val scope = rememberCoroutineScope()
   val appearance = xenditAppearance
+  var pendingSnackbarMessage by remember { mutableStateOf<String?>(null) }
+
+  LaunchedEffect(
+    pendingSnackbarMessage,
+    mviState.actionRedirectUrl,
+    mviState.presentToCustomerPaymentAction
+  ) {
+    val message = pendingSnackbarMessage ?: return@LaunchedEffect
+    if (mviState.actionRedirectUrl != null || mviState.presentToCustomerPaymentAction != null) {
+      return@LaunchedEffect
+    }
+    snackbarHostState.showSnackbar(message)
+    pendingSnackbarMessage = null
+  }
 
   val sheetState =
     if (presentation == PaymentContainerPresentation.BottomSheet) {
@@ -166,15 +183,8 @@ internal fun PaymentContainerHost(
 
       PaymentSessionStatus.EXPIRED -> {
         viewModel.markClosed()
-        onResult(
-          XenditPaymentResult.Failed(
-            XenditError(
-              code = "002",
-              message = "Payment failed or expired. Session: ${bffSession.paymentSessionId}, Status: ${bffSession.status}",
-              cause = Throwable("Payment failed or expired. Session: ${bffSession.paymentSessionId}, Status: ${bffSession.status}")
-            )
-          )
-        )
+        onResult(XenditPaymentResult.Expired)
+        onCleanup()
       }
 
       else -> {
@@ -196,10 +206,9 @@ internal fun PaymentContainerHost(
 
     val isCanceled =
       sessionStatus == PaymentSessionStatus.CANCELED || prStatus == PaymentRequestStatus.CANCELED
-    val isFailed =
-      sessionStatus == PaymentSessionStatus.EXPIRED
-          || prStatus == PaymentRequestStatus.FAILED
-          || prStatus == PaymentRequestStatus.EXPIRED
+    val isFailed = prStatus == PaymentRequestStatus.FAILED
+    val isExpired =
+      sessionStatus == PaymentSessionStatus.EXPIRED || prStatus == PaymentRequestStatus.EXPIRED
 
     when {
       isSuccess -> {
@@ -219,20 +228,28 @@ internal fun PaymentContainerHost(
         onCleanup()
       }
 
+      isExpired -> {
+        viewModel.resetForNewSession()
+        onResult(XenditPaymentResult.Expired)
+        onCleanup()
+      }
+
       isFailed -> {
-        viewModel.markClosed()
-        viewModel.dispatch(ActionIntent.CloseWebPayment)
-        val message = "Payment failed or expired. Session: $sessionStatus, PR: $prStatus"
+        val pollFailureCode = poll.paymentRequest?.failure_code
+        val pollFailureMessage =
+          FailureCodeMessageUtil.resolveFailureMessage(context, pollFailureCode)
+
+        pendingSnackbarMessage = pollFailureMessage
         onResult(
           XenditPaymentResult.Failed(
             XenditError(
-              code = poll.paymentRequest?.failure_code ?: "001",
-              message = message,
-              cause = Throwable("Payment failed or expired. Session: $sessionStatus, PR: $prStatus")
+              code = pollFailureCode?.trim().takeIf { !it.isNullOrBlank() } ?: "UNKNOWN",
+              message = pollFailureMessage,
+              cause = Throwable("Payment failed Session: $sessionStatus, PR: $prStatus")
             )
           )
         )
-        snackbarHostState.showSnackbar(message)
+        viewModel.dispatch(ActionIntent.CloseWebPayment)
       }
     }
   }

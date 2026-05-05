@@ -44,8 +44,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import co.xendit.components.R
 import co.xendit.components.data.model.Country
 import co.xendit.components.ui.style.xenditAppearance
 import coil.compose.AsyncImage
@@ -117,7 +119,7 @@ internal fun CountryPicker(
 
       Icon(
         imageVector = Icons.Default.KeyboardArrowDown,
-        contentDescription = "Select Country",
+        contentDescription = stringResource(id = R.string.select_country),
         tint = appearance.colorTextSecondary
       )
     }
@@ -165,7 +167,7 @@ internal fun CountryPicker(
               )
 
               Text(
-                text = "Select Country",
+                text = stringResource(R.string.sessioncountry_picker_default_placeholder),
                 style = MaterialTheme.typography.headlineSmall,
                 color = appearance.colorText,
                 modifier = Modifier.padding(top = 4.dp)
