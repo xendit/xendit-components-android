@@ -1,6 +1,5 @@
 package co.xendit.components.ui.method
 
-import co.xendit.components.util.XLogger
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -41,6 +40,7 @@ import co.xendit.components.ui.card.CardPaymentUI
 import co.xendit.components.ui.qrcode.QrPaymentUI
 import co.xendit.components.ui.style.xenditAppearance
 import co.xendit.components.ui.ui_util.CustomShape.createTopRoundedOpenShape
+import co.xendit.components.util.XLogger
 
 private data class PaymentMethodRenderer(
   val uiGroup: String,
@@ -69,7 +69,8 @@ internal fun PaymentMethodsUI(
   val rendererMap =
     listOf(
       PaymentMethodRenderer(uiGroup = "cards") { _, currentSelected ->
-        val showSaveCheckbox = sessionType == BffSessionType.PAY && allowSavePaymentMethod == BffSessionAllowSavePaymentMethod.OPTIONAL
+        val showSaveCheckbox =
+          sessionType == BffSessionType.PAY && allowSavePaymentMethod == BffSessionAllowSavePaymentMethod.OPTIONAL
         val initialValues = paymentDrafts[currentSelected.channelCode]?.formValues.orEmpty()
         CardPaymentUI(
           session = session,

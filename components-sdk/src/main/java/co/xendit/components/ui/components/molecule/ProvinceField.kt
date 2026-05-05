@@ -38,8 +38,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.style.TextAlign
+import co.xendit.components.R
 import androidx.compose.ui.unit.dp
 import co.xendit.components.data.model.ProvinceOption
 import co.xendit.components.data.model.Provinces
@@ -204,7 +206,7 @@ private fun ProvincePickerSheet(
           )
 
           Text(
-            text = "Select Province",
+            text = stringResource(id = R.string.select_province),
             style = MaterialTheme.typography.headlineSmall,
             color = appearance.colorText,
             modifier = Modifier.padding(top = 4.dp)

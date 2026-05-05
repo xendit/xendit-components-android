@@ -63,32 +63,16 @@ class MainActivity : ComponentActivity() {
       Font(R.font.open_sans_extra_bold, FontWeight.ExtraBold, FontStyle.Normal),
       Font(R.font.open_sans_extra_bold_italic, FontWeight.ExtraBold, FontStyle.Italic)
     )
-    val customStyle = XenditAppearance(
-      fontFamily = openSansFontFamily,
-//      colorPrimary = Color(0xFF21DCCB),
-//      borderRadius = 2.dp,
-//      colorText = Color(0xFF035E6C),
-//      colorTextSecondary = Color(0xFF44474E),
-//      colorTextPlaceholder = Color(0xFFAAAAAA),
-//      colorDisabled = Color(0xFFCCCCCC),
-//      colorDanger = Color(0xFFFF0000),
-//      colorBorder = Color(0xFF0A7F8D),
-//      colorBackground = Color(0xFFCCE3E5),
-//      qrForegroundColor = Color(0xFF000000),
-//      qrBackgroundColor = Color(0xFFFFFFFF),
-    )
-    findActivity()?.let { act ->
-      XenditComponents.initialize(
-        appearance = customStyle,
-//      merchantPreferredPaymentMethod = listOf("cards")
-      )
-    }
+    XenditComponents.initialize(appearance = XenditAppearance(fontFamily = openSansFontFamily))
 
     enableEdgeToEdge()
     setContent {
       XenComponentPrivateTheme {
         Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-          PaymentDemo(modifier = Modifier.padding(innerPadding))
+          PaymentDemo(
+            fontFamily = openSansFontFamily,
+            modifier = Modifier.padding(innerPadding)
+          )
         }
       }
     }
@@ -96,29 +80,129 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun PaymentDemo(modifier: Modifier = Modifier) {
+fun PaymentDemo(fontFamily: FontFamily, modifier: Modifier = Modifier) {
   var sessionId by remember { mutableStateOf("") }
   val context = LocalContext.current
   var paymentResultText by remember { mutableStateOf("") }
+  var colorPrimaryHex by remember { mutableStateOf("") }
+  var colorTextHex by remember { mutableStateOf("") }
+  var colorTextSecondaryHex by remember { mutableStateOf("") }
+  var colorTextPlaceholderHex by remember { mutableStateOf("") }
+  var colorDisabledHex by remember { mutableStateOf("") }
+  var colorDangerHex by remember { mutableStateOf("") }
+  var colorBorderHex by remember { mutableStateOf("") }
+  var colorBackgroundHex by remember { mutableStateOf("") }
+  var qrForegroundHex by remember { mutableStateOf("") }
+  var qrBackgroundHex by remember { mutableStateOf("") }
+  var borderRadiusDp by remember { mutableStateOf("") }
+  var styleError by remember { mutableStateOf("") }
 
+  val onLaunch: () -> Unit = {
+    context.findActivity()?.let { act ->
+      styleError = ""
+      var appearance = XenditAppearance(fontFamily = fontFamily)
 
-  Box(modifier = modifier.fillMaxSize()) {
-    // 1. SCROLLABLE CONTENT (Top & Middle)
+      parseColorOrNull(colorPrimaryHex)?.let { appearance = appearance.copy(colorPrimary = it) }
+      parseColorOrNull(colorTextHex)?.let { appearance = appearance.copy(colorText = it) }
+      parseColorOrNull(colorTextSecondaryHex)?.let {
+        appearance = appearance.copy(colorTextSecondary = it)
+      }
+      parseColorOrNull(colorTextPlaceholderHex)?.let {
+        appearance = appearance.copy(colorTextPlaceholder = it)
+      }
+      parseColorOrNull(colorDisabledHex)?.let { appearance = appearance.copy(colorDisabled = it) }
+      parseColorOrNull(colorDangerHex)?.let { appearance = appearance.copy(colorDanger = it) }
+      parseColorOrNull(colorBorderHex)?.let { appearance = appearance.copy(colorBorder = it) }
+      parseColorOrNull(colorBackgroundHex)?.let {
+        appearance = appearance.copy(colorBackground = it)
+      }
+      parseColorOrNull(qrForegroundHex)?.let {
+        appearance = appearance.copy(qrForegroundColor = it)
+      }
+      parseColorOrNull(qrBackgroundHex)?.let {
+        appearance = appearance.copy(qrBackgroundColor = it)
+      }
+
+      borderRadiusDp.trim().takeIf { it.isNotBlank() }?.toFloatOrNull()?.let {
+        appearance = appearance.copy(borderRadius = it.dp)
+      }
+
+      val anyInvalidColor =
+        listOf(
+          colorPrimaryHex to "colorPrimary",
+          colorTextHex to "colorText",
+          colorTextSecondaryHex to "colorTextSecondary",
+          colorTextPlaceholderHex to "colorTextPlaceholder",
+          colorDisabledHex to "colorDisabled",
+          colorDangerHex to "colorDanger",
+          colorBorderHex to "colorBorder",
+          colorBackgroundHex to "colorBackground",
+          qrForegroundHex to "qrForegroundColor",
+          qrBackgroundHex to "qrBackgroundColor"
+        ).firstOrNull { (raw, _) -> raw.isNotBlank() && parseColorOrNull(raw) == null }
+
+      if (anyInvalidColor != null) {
+        styleError = "Invalid hex for ${anyInvalidColor.second}"
+        return@let
+      }
+      if (borderRadiusDp.isNotBlank() && borderRadiusDp.trim().toFloatOrNull() == null) {
+        styleError = "Invalid borderRadius dp"
+        return@let
+      }
+
+      XenditComponents.initialize(appearance = appearance)
+      XenditComponents.present(
+        act,
+        sessionId,
+        merchantPreferredPaymentMethod = listOf("cards", "qr_code")
+      ) {
+        paymentResultText = "Result: ${it.toString()}"
+      }
+    }
+  }
+
+  Scaffold(
+    modifier = modifier
+      .fillMaxSize(),
+    bottomBar = {
+      Box(
+        modifier = Modifier
+          .fillMaxWidth()
+          .imePadding()
+          .background(MaterialTheme.colorScheme.surface)
+          .padding(16.dp)
+      ) {
+        Button(
+          onClick = onLaunch,
+          modifier = Modifier
+            .fillMaxWidth()
+            .height(56.dp)
+        ) {
+          Text("Launch Xendit Payment SDK")
+        }
+      }
+    }
+  ) { paddingValues ->
     Column(
       modifier = Modifier
         .fillMaxSize()
         .verticalScroll(rememberScrollState())
+        .padding(paddingValues)
         .padding(horizontal = 24.dp)
-        .padding(
-          top = 60.dp,
-          bottom = 120.dp
-        ), // Large bottom padding so text doesn't hide behind button
+        .padding(vertical = 16.dp),
       horizontalAlignment = Alignment.CenterHorizontally
     ) {
       Text(
         text = "Xendit Components Demo",
         style = MaterialTheme.typography.headlineMedium,
-        modifier = Modifier.padding(bottom = 32.dp),
+        modifier = Modifier.padding(bottom = 12.dp),
+      )
+      Text(
+        text = "Payment",
+        style = MaterialTheme.typography.titleMedium,
+        modifier = Modifier
+          .fillMaxWidth()
+          .padding(top = 24.dp, bottom = 12.dp)
       )
 
       OutlinedTextField(
@@ -136,36 +220,89 @@ fun PaymentDemo(modifier: Modifier = Modifier) {
           color = if (paymentResultText.startsWith("Success")) Color.Green else Color.Red
         )
       }
-    }
 
-    // 2. FIXED BUTTON (Bottom)
-    // This Box is NOT inside the scrollable Column
-    Box(
-      modifier = Modifier
-        .align(Alignment.BottomCenter)
-        .imePadding()
-        .background(MaterialTheme.colorScheme.surface) // Prevents text from bleeding through
-        .padding(16.dp)
-    ) {
-      Button(
-        onClick = {
-
-          context.findActivity()?.let { act ->
-            XenditComponents.present(
-              act,
-              sessionId,
-              merchantPreferredPaymentMethod = listOf("cards", "qr_code")
-            ) {
-              paymentResultText = "Success: ${it.toString()}"
-            }
-          }
-
-        },
+      Text(
+        text = "Customize Appearance (hex like 21DCCB, #21DCCB or #FF21DCCB)",
+        style = MaterialTheme.typography.titleMedium,
         modifier = Modifier
           .fillMaxWidth()
-          .height(56.dp)
-      ) {
-        Text("Launch Xendit Payment SDK")
+          .padding(vertical = 12.dp)
+      )
+
+      OutlinedTextField(
+        value = colorPrimaryHex,
+        onValueChange = { colorPrimaryHex = it },
+        label = { Text("colorPrimary") },
+        modifier = Modifier.fillMaxWidth()
+      )
+      OutlinedTextField(
+        value = colorTextHex,
+        onValueChange = { colorTextHex = it },
+        label = { Text("colorText") },
+        modifier = Modifier.fillMaxWidth()
+      )
+      OutlinedTextField(
+        value = colorTextSecondaryHex,
+        onValueChange = { colorTextSecondaryHex = it },
+        label = { Text("colorTextSecondary") },
+        modifier = Modifier.fillMaxWidth()
+      )
+      OutlinedTextField(
+        value = colorTextPlaceholderHex,
+        onValueChange = { colorTextPlaceholderHex = it },
+        label = { Text("colorTextPlaceholder") },
+        modifier = Modifier.fillMaxWidth()
+      )
+      OutlinedTextField(
+        value = colorDisabledHex,
+        onValueChange = { colorDisabledHex = it },
+        label = { Text("colorDisabled") },
+        modifier = Modifier.fillMaxWidth()
+      )
+      OutlinedTextField(
+        value = colorDangerHex,
+        onValueChange = { colorDangerHex = it },
+        label = { Text("colorDanger") },
+        modifier = Modifier.fillMaxWidth()
+      )
+      OutlinedTextField(
+        value = colorBorderHex,
+        onValueChange = { colorBorderHex = it },
+        label = { Text("colorBorder") },
+        modifier = Modifier.fillMaxWidth()
+      )
+      OutlinedTextField(
+        value = colorBackgroundHex,
+        onValueChange = { colorBackgroundHex = it },
+        label = { Text("colorBackground") },
+        modifier = Modifier.fillMaxWidth()
+      )
+      OutlinedTextField(
+        value = qrForegroundHex,
+        onValueChange = { qrForegroundHex = it },
+        label = { Text("qrForegroundColor") },
+        modifier = Modifier.fillMaxWidth()
+      )
+      OutlinedTextField(
+        value = qrBackgroundHex,
+        onValueChange = { qrBackgroundHex = it },
+        label = { Text("qrBackgroundColor") },
+        modifier = Modifier.fillMaxWidth()
+      )
+      OutlinedTextField(
+        value = borderRadiusDp,
+        onValueChange = { borderRadiusDp = it },
+        label = { Text("borderRadius (dp)") },
+        modifier = Modifier.fillMaxWidth()
+      )
+
+      if (styleError.isNotBlank()) {
+        Text(
+          text = styleError,
+          style = MaterialTheme.typography.bodyMedium,
+          color = Color.Red,
+          modifier = Modifier.padding(top = 8.dp)
+        )
       }
     }
   }
@@ -175,4 +312,28 @@ fun Context.findActivity(): ComponentActivity? = when (this) {
   is ComponentActivity -> this
   is ContextWrapper -> baseContext.findActivity()
   else -> null
+}
+
+private fun parseColorOrNull(raw: String): Color? {
+  val cleaned =
+    raw.trim()
+      .removePrefix("Color(")
+      .removeSuffix(")")
+      .removePrefix("0x")
+      .removePrefix("0X")
+      .removePrefix("#")
+      .replace("_", "")
+      .replace(" ", "")
+
+  val hex = cleaned.uppercase()
+  val argb =
+    when (hex.length) {
+      6 -> "FF$hex"
+      8 -> hex
+      else -> return null
+    }
+
+  return runCatching {
+    Color(argb.toLong(16))
+  }.getOrNull()
 }
