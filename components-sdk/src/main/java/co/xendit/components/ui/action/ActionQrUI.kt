@@ -1,11 +1,19 @@
 package co.xendit.components.ui.action
 
+import android.app.Activity
 import android.content.ContentValues
+import android.content.Context
+import android.content.ContextWrapper
 import android.graphics.Bitmap
+import android.graphics.Rect
 import android.media.MediaScannerConnection
 import android.os.Build
 import android.os.Environment
+import android.os.Handler
+import android.os.Looper
 import android.provider.MediaStore
+import android.view.PixelCopy
+import android.view.Window
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -21,7 +29,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -32,18 +39,25 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.DialogWindowProvider
 import androidx.core.net.toUri
 import co.xendit.components.R
 import co.xendit.components.ui.helper.CurrencyUtil
@@ -53,7 +67,11 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
 import java.io.File
+import kotlin.coroutines.resume
+import kotlin.math.roundToInt
 
 @Composable
 internal fun ActionQrUI(
@@ -70,11 +88,17 @@ internal fun ActionQrUI(
 ) {
   val appearance = xenditAppearance
   val context = LocalContext.current
+  val view = LocalView.current
   val scope = rememberCoroutineScope()
   val hostState = snackbarHostState ?: remember { SnackbarHostState() }
   val qrisImageUrl = "https://assets.xendit.co/payment-session/logos/QRIS.svg"
   val density = LocalDensity.current
   val qrSizePx = remember(density) { with(density) { 260.dp.roundToPx() } }
+  var downloadMenuExpanded by remember { mutableStateOf(false) }
+  var hideDownloadButton by remember { mutableStateOf(false) }
+  var borderedContentBounds by remember { mutableStateOf<Rect?>(null) }
+  val window: Window? =
+    (view.parent as? DialogWindowProvider)?.window ?: context.findActivity()?.window
   val qrBitmap =
     remember(qrString, qrSizePx, appearance.qrForegroundColor, appearance.qrBackgroundColor) {
       runCatching {
@@ -158,7 +182,17 @@ internal fun ActionQrUI(
               width = 1.dp,
               color = appearance.colorBorder,
               shape = RoundedCornerShape(appearance.borderRadius)
-            ),
+            )
+            .onGloballyPositioned { coordinates ->
+              val bounds = coordinates.boundsInWindow()
+              borderedContentBounds =
+                Rect(
+                  bounds.left.roundToInt(),
+                  bounds.top.roundToInt(),
+                  bounds.right.roundToInt(),
+                  bounds.bottom.roundToInt()
+                )
+            },
           shape = RoundedCornerShape(appearance.borderRadius),
           color = appearance.colorBackground,
           tonalElevation = 0.dp
@@ -198,36 +232,78 @@ internal fun ActionQrUI(
               }
             }
 
-            OutlinedButton(
-              onClick = {
-                if (qrBitmap == null) {
-                  scope.launch {
-                    hostState.showSnackbar("Unable to download QR code")
-                  }
-                  return@OutlinedButton
-                }
-                scope.launch(Dispatchers.IO) {
-                  val uri =
-                    runCatching { saveBitmapToGallery(context, qrBitmap) }.getOrNull()
-                  launch(Dispatchers.Main) {
-                    if (uri != null) {
-                      hostState.showSnackbar("QR code saved")
-                    } else {
-                      hostState.showSnackbar("Failed to save QR code")
+            if (!hideDownloadButton) {
+              Spacer(modifier = Modifier.height(12.dp))
+              Box {
+                OutlinedButton(
+                  onClick = {
+                    if (qrBitmap == null) {
+                      scope.launch { hostState.showSnackbar("Unable to download QR code") }
+                      return@OutlinedButton
                     }
-                  }
+                    scope.launch {
+                      val uri =
+                        withContext(Dispatchers.IO) {
+                          runCatching { saveBitmapToGallery(context, qrBitmap) }.getOrNull()
+                        }
+                      if (uri != null) {
+                        hostState.showSnackbar("QR code saved")
+                      } else {
+                        hostState.showSnackbar("Failed to save QR code")
+                      }
+                    }
+
+//                    Just in case we need to download with frame
+//                    scope.launch {
+//                      val w = window
+//                      if (w == null) {
+//                        hostState.showSnackbar("Failed to download QR")
+//                        return@launch
+//                      }
+//
+//                      val bitmap =
+//                        try {
+//                          hideDownloadButton = true
+//                          withFrameNanos { }
+//                          withFrameNanos { } // to wait button dissapear
+//                          val rect = borderedContentBounds
+//                          if (rect == null || rect.width() <= 0 || rect.height() <= 0) {
+//                            null
+//                          } else {
+//                            captureBitmapFromWindow(w, rect)
+//                          }
+//                        } finally {
+//                          hideDownloadButton = false
+//                        }
+//
+//                      if (bitmap == null) {
+//                        hostState.showSnackbar("Failed to save QR code")
+//                        return@launch
+//                      }
+//
+//                      val uri =
+//                        withContext(Dispatchers.IO) {
+//                          runCatching { saveBitmapToGallery(context, bitmap) }.getOrNull()
+//                        }
+//                      if (uri != null) {
+//                        hostState.showSnackbar("QR code saved")
+//                      } else {
+//                        hostState.showSnackbar("Failed to save QR code")
+//                      }
+//                    }
+                  },
+                  colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFFAFAFA),
+                    contentColor = appearance.colorText
+                  ),
+                  shape = RoundedCornerShape(appearance.borderRadius)
+                ) {
+                  Text(
+                    stringResource(R.string.sessionaction_qr_code_download_qr),
+                    style = MaterialTheme.typography.titleSmall
+                  )
                 }
-              },
-              colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFFFAFAFA),
-                contentColor = appearance.colorText
-              ),
-              shape = RoundedCornerShape(appearance.borderRadius)
-            ) {
-              Text(
-                stringResource(R.string.sessionaction_qr_code_download_qr),
-                style = MaterialTheme.typography.titleSmall
-              )
+              }
             }
 
             if (formattedAmount.isNotBlank()) {
@@ -277,8 +353,61 @@ internal fun ActionQrUI(
   }
 }
 
+private suspend fun captureBitmapFromWindow(
+  window: Window,
+  rect: Rect
+): Bitmap? {
+  return suspendCancellableCoroutine { cont ->
+    val decorView = window.decorView
+    val safeRect =
+      Rect(rect).apply {
+        val maxW = decorView.width
+        val maxH = decorView.height
+        if (maxW > 0 && maxH > 0) {
+          intersect(0, 0, maxW, maxH)
+        }
+      }
+
+    if (safeRect.width() <= 0 || safeRect.height() <= 0) {
+      cont.resume(null)
+      return@suspendCancellableCoroutine
+    }
+
+    val bitmap =
+      runCatching {
+        Bitmap.createBitmap(safeRect.width(), safeRect.height(), Bitmap.Config.ARGB_8888)
+      }.getOrNull()
+
+    if (bitmap == null) {
+      cont.resume(null)
+      return@suspendCancellableCoroutine
+    }
+
+    PixelCopy.request(
+      window,
+      safeRect,
+      bitmap,
+      { result ->
+        if (cont.isActive) {
+          cont.resume(if (result == PixelCopy.SUCCESS) bitmap else null)
+        }
+      },
+      Handler(Looper.getMainLooper())
+    )
+  }
+}
+
+private fun Context.findActivity(): Activity? {
+  var current: Context? = this
+  while (current != null) {
+    if (current is Activity) return current
+    current = if (current is ContextWrapper) current.baseContext else null
+  }
+  return null
+}
+
 private fun saveBitmapToGallery(
-  context: android.content.Context,
+  context: Context,
   bitmap: Bitmap
 ): android.net.Uri? {
   val displayName = "xendit_qr_${System.currentTimeMillis()}.png"
