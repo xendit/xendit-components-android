@@ -61,6 +61,7 @@ import androidx.compose.ui.window.DialogWindowProvider
 import androidx.core.net.toUri
 import co.xendit.components.R
 import co.xendit.components.ui.helper.CurrencyUtil
+import co.xendit.components.ui.helper.QrNmidSearcherUtil
 import co.xendit.components.ui.helper.SdkImageLoader
 import co.xendit.components.ui.style.xenditAppearance
 import coil.compose.AsyncImage
@@ -86,6 +87,7 @@ internal fun ActionQrUI(
   snackbarHostState: SnackbarHostState? = null,
   modifier: Modifier = Modifier
 ) {
+  val qrString = "00020101021126610014COM.GO-JEK.WWW01189360091435456007810210G5456007810303UMI51440014ID.CO.QRIS.WWW0215ID10190000023280303UMI5204581253033605802ID5916Kantin Ibu Lilik6013Jakarta Pusat61051031062070703A0163044C6B"
   val appearance = xenditAppearance
   val context = LocalContext.current
   val view = LocalView.current
@@ -110,6 +112,9 @@ internal fun ActionQrUI(
         )
       }.getOrNull()
     }
+  val nmid = remember {
+    QrNmidSearcherUtil.getNationalMerchantID(qrString)
+  }
 
   val formattedAmount = remember(amount, currency) { CurrencyUtil.formatAmount(amount, currency) }
 
@@ -207,7 +212,17 @@ internal fun ActionQrUI(
               color = appearance.colorText,
               textAlign = TextAlign.Center
             )
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(8.dp))
+            nmid?.let {
+              Text(
+                text = "NMID: $it",
+                style = MaterialTheme.typography.titleMedium,
+                color = appearance.colorText,
+                textAlign = TextAlign.Center
+              )
+              Spacer(modifier = Modifier.height(12.dp))
+            }
+
 
             Box(
               modifier = Modifier
