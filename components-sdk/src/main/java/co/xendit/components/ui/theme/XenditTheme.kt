@@ -77,18 +77,8 @@ internal fun XenditTheme(style: XenditAppearance, content: @Composable () -> Uni
       extraLarge = RoundedCornerShape(style.borderRadius ?: 8.dp)
     )
 
-  val customColors =
-    XenditCustomColors(
-      colorTextPlaceholder = style.colorTextPlaceholder ?: Color(0xFF9CA3AF),
-      colorDisabled = style.colorDisabled ?: Color(0xFFE5E7EB),
-      colorBorder = style.colorBorder ?: Color(0xFFE5E7EB),
-      qrForegroundColor = style.qrForegroundColor ?: Color(0xFF000000),
-      qrBackgroundColor = style.qrBackgroundColor ?: Color(0xFFFFFFFF)
-    )
-
   CompositionLocalProvider(
     LocalXenditAppearance provides style,
-    LocalXenditCustomColors provides customColors
   ) {
     MaterialTheme(
       colorScheme = colorScheme,

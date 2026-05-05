@@ -49,7 +49,6 @@ import co.xendit.components.R
 import co.xendit.components.ui.helper.CurrencyUtil
 import co.xendit.components.ui.helper.SdkImageLoader
 import co.xendit.components.ui.style.xenditAppearance
-import co.xendit.components.ui.theme.xenditCustomColors
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import kotlinx.coroutines.Dispatchers
@@ -70,7 +69,6 @@ internal fun ActionQrUI(
   modifier: Modifier = Modifier
 ) {
   val appearance = xenditAppearance
-  val customColors = MaterialTheme.xenditCustomColors
   val context = LocalContext.current
   val scope = rememberCoroutineScope()
   val hostState = snackbarHostState ?: remember { SnackbarHostState() }
@@ -78,13 +76,13 @@ internal fun ActionQrUI(
   val density = LocalDensity.current
   val qrSizePx = remember(density) { with(density) { 260.dp.roundToPx() } }
   val qrBitmap =
-    remember(qrString, qrSizePx, customColors.qrForegroundColor, customColors.qrBackgroundColor) {
+    remember(qrString, qrSizePx, appearance.qrForegroundColor, appearance.qrBackgroundColor) {
       runCatching {
         QrCodeGenerator.generateQrBitmap(
           content = qrString,
           sizePx = qrSizePx,
-          foreground = customColors.qrForegroundColor,
-          background = customColors.qrBackgroundColor
+          foreground = appearance.qrForegroundColor,
+          background = appearance.qrBackgroundColor
         )
       }.getOrNull()
     }
@@ -180,7 +178,7 @@ internal fun ActionQrUI(
             Box(
               modifier = Modifier
                 .clip(RoundedCornerShape(appearance.borderRadius))
-                .background(customColors.qrBackgroundColor)
+                .background(appearance.qrBackgroundColor)
                 .padding(12.dp),
               contentAlignment = Alignment.Center
             ) {
