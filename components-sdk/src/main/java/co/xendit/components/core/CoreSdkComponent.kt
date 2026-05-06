@@ -52,6 +52,10 @@ internal object CoreSdkComponent {
     XLogger.i("Base URL set to: $baseUrl")
   }
 
+  fun isProdLive(): Boolean {
+    return baseHttpUrl.host == "checkout-ui-gateway.xendit.co"
+  }
+
   val headerProvider: HeaderProvider by lazy { HeaderProvider() }
   val globalErrorHandler: GlobalErrorHandler by lazy { GlobalErrorHandler(appContext) }
   val globalLoadingHandler: GlobalLoadingHandler by lazy { GlobalLoadingHandler(appContext) }

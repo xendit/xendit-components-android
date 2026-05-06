@@ -8,6 +8,7 @@ import co.xendit.components.data.model.PaymentResponse
 import co.xendit.components.data.model.SessionResponse
 import co.xendit.components.data.model.PollResponse
 import co.xendit.components.data.model.PaymentOptionsResponse
+import co.xendit.components.data.model.SimulatePaymentRequest
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -53,6 +54,14 @@ internal interface XenditApi {
     @Query("token_request_id") tokenRequestId: String?,
     @Query("components_version") componentsVersion: String
   ): Response<PollResponse>
+
+  @POST("api/sessions/{session_id}/payment_requests/{payment_request_id}/simulate")
+  suspend fun simulatePaymentRequest(
+    @Path("session_id") sessionId: String,
+    @Path("payment_request_id") paymentRequestId: String,
+    @Query("components_version") componentsVersion: String,
+    @Body request: SimulatePaymentRequest
+  ): Response<PaymentResponse>
 
   @POST("api/sessions/{session_id}/payment_options")
   suspend fun getPaymentOptions(

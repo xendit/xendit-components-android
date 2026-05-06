@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import co.xendit.components.core.model.GlobalErrorHandler
 import co.xendit.components.core.model.asApiError
+import co.xendit.components.core.CoreSdkComponent
 import co.xendit.components.data.model.BffChannel
 import co.xendit.components.data.model.BffSession
 import co.xendit.components.data.model.BffSessionAllowSavePaymentMethod
@@ -19,6 +20,7 @@ import co.xendit.components.data.model.PaymentResponse
 import co.xendit.components.data.model.PaymentRequestStatus
 import co.xendit.components.data.model.PollResponse
 import co.xendit.components.data.model.SessionResponse
+import co.xendit.components.data.model.SimulatePaymentRequest
 import co.xendit.components.data.network.repo.session.XenditRepository
 import co.xendit.components.ui.components.molecule.UiText
 import co.xendit.components.util.PaymentRequestMapper
@@ -366,6 +368,24 @@ internal class PaymentViewModel(
     challengePollingJob =
       viewModelScope.launch {
         try {
+          val isPaySession = _state.value.sessionType != BffSessionType.SAVE
+          val shouldSimulate = forceStart && isPaySession && !CoreSdkComponent.isProdLive()
+          if (shouldSimulate) {
+            val prId = lastPaymentRequestId
+            val channelCode = _state.value.selectedChannel?.channelCode
+            if (!prId.isNullOrBlank() && !channelCode.isNullOrBlank()) {
+              runCatching {
+                xenditRepository.simulatePaymentRequest(
+                  sessionId = authKey,
+                  paymentRequestId = prId,
+                  request = SimulatePaymentRequest(channelCode = channelCode)
+                )
+              }.onFailure { e ->
+                XLogger.d("Simulate Payment failed: ${e.message}")
+              }
+            }
+          }
+
           var delayMs = 3000L
           while (isActive) {
             val res = xenditRepository.pollSession(authKey, tokenReqId)
