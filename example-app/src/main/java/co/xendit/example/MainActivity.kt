@@ -156,7 +156,7 @@ fun PaymentDemo(fontFamily: FontFamily, modifier: Modifier = Modifier) {
         sessionId,
         merchantPreferredPaymentMethod = listOf("cards", "qr_code")
       ) {
-        paymentResultText = "Result: ${it.toString()}"
+        paymentResultText = it.toString()
       }
     }
   }

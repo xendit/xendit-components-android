@@ -216,7 +216,7 @@ internal fun PaymentContainerHost(
         onResult(
           XenditPaymentResult.Success(
             paymentRequestId = poll.session?.paymentSessionId,
-            channelCode = poll.succeededChannel?.channelCode
+            channelCode = poll.succeededChannel?.channelCode ?: poll.paymentRequest?.channelCode
           )
         )
         onCleanup()
