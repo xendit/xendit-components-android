@@ -44,7 +44,6 @@ internal fun QrPaymentUI(
   modifier: Modifier = Modifier
 ) {
   val appearance = xenditAppearance
-  var expanded by remember { mutableStateOf(false) }
   val formValues = remember { mutableStateMapOf<String, String>() }
   val visibleFields = remember { mutableStateOf<List<ChannelFormField>>(emptyList()) }
 

@@ -116,6 +116,11 @@ internal fun ActionQrUI(
 
   val formattedAmount = remember(amount, currency) { CurrencyUtil.formatAmount(amount, currency) }
 
+  // COPY
+  val unableDownloadQrText = stringResource(R.string.sessionaction_qr_unable_download_qr)
+  val qrSavedText = stringResource(R.string.sessionaction_qr_saved)
+  val qrFailedSaveText = stringResource(R.string.sessionaction_qr_failed_save)
+
   Box(
     modifier = modifier
       .fillMaxSize()
@@ -169,7 +174,7 @@ internal fun ActionQrUI(
         }
 
         Text(
-          text = "Scan To Pay",
+          text = stringResource(R.string.sessionaction_qr_scan_to_pay),
           style = MaterialTheme.typography.titleLarge,
           color = appearance.colorText,
           textAlign = TextAlign.Center,
@@ -213,7 +218,7 @@ internal fun ActionQrUI(
             Spacer(modifier = Modifier.height(8.dp))
             nmid?.let {
               Text(
-                text = "NMID: $it",
+                text = stringResource(R.string.sessionaction_qr_nmid, it),
                 style = MaterialTheme.typography.titleMedium,
                 color = appearance.colorText,
                 textAlign = TextAlign.Center
@@ -237,7 +242,7 @@ internal fun ActionQrUI(
                 )
               } else {
                 Text(
-                  text = "Unable to generate QR code",
+                  text = stringResource(R.string.sessionaction_qr_unable_generate_qr),
                   style = MaterialTheme.typography.bodyMedium,
                   color = appearance.colorDanger,
                   textAlign = TextAlign.Center
@@ -251,7 +256,7 @@ internal fun ActionQrUI(
                 OutlinedButton(
                   onClick = {
                     if (qrBitmap == null) {
-                      scope.launch { hostState.showSnackbar("Unable to download QR code") }
+                      scope.launch { hostState.showSnackbar(unableDownloadQrText) }
                       return@OutlinedButton
                     }
                     scope.launch {
@@ -260,9 +265,9 @@ internal fun ActionQrUI(
                           runCatching { saveBitmapToGallery(context, qrBitmap) }.getOrNull()
                         }
                       if (uri != null) {
-                        hostState.showSnackbar("QR code saved")
+                        hostState.showSnackbar(qrSavedText)
                       } else {
-                        hostState.showSnackbar("Failed to save QR code")
+                        hostState.showSnackbar(qrFailedSaveText)
                       }
                     }
 
@@ -270,7 +275,7 @@ internal fun ActionQrUI(
 //                    scope.launch {
 //                      val w = window
 //                      if (w == null) {
-//                        hostState.showSnackbar("Failed to download QR")
+//                        hostState.showSnackbar(qrFailedDownloadText)
 //                        return@launch
 //                      }
 //
@@ -290,7 +295,7 @@ internal fun ActionQrUI(
 //                        }
 //
 //                      if (bitmap == null) {
-//                        hostState.showSnackbar("Failed to save QR code")
+//                        hostState.showSnackbar(qrFailedSaveText)
 //                        return@launch
 //                      }
 //
@@ -299,9 +304,9 @@ internal fun ActionQrUI(
 //                          runCatching { saveBitmapToGallery(context, bitmap) }.getOrNull()
 //                        }
 //                      if (uri != null) {
-//                        hostState.showSnackbar("QR code saved")
+//                        hostState.showSnackbar(qrSavedText)
 //                      } else {
-//                        hostState.showSnackbar("Failed to save QR code")
+//                        hostState.showSnackbar(qrFailedSaveText)
 //                      }
 //                    }
                   },
