@@ -87,7 +87,6 @@ internal fun ActionQrUI(
   snackbarHostState: SnackbarHostState? = null,
   modifier: Modifier = Modifier
 ) {
-  val qrString = "00020101021126610014COM.GO-JEK.WWW01189360091435456007810210G5456007810303UMI51440014ID.CO.QRIS.WWW0215ID10190000023280303UMI5204581253033605802ID5916Kantin Ibu Lilik6013Jakarta Pusat61051031062070703A0163044C6B"
   val appearance = xenditAppearance
   val context = LocalContext.current
   val view = LocalView.current
@@ -96,7 +95,6 @@ internal fun ActionQrUI(
   val qrisImageUrl = "https://assets.xendit.co/payment-session/logos/QRIS.svg"
   val density = LocalDensity.current
   val qrSizePx = remember(density) { with(density) { 260.dp.roundToPx() } }
-  var downloadMenuExpanded by remember { mutableStateOf(false) }
   var hideDownloadButton by remember { mutableStateOf(false) }
   var borderedContentBounds by remember { mutableStateOf<Rect?>(null) }
   val window: Window? =

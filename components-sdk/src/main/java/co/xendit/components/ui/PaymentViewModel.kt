@@ -358,10 +358,11 @@ internal class PaymentViewModel(
   private fun onChallengeCompletedInternal(forceStart: Boolean = false) {
     val authKey = sessionAuthKey ?: return
     val tokenReqId = lastSessionTokenRequestId
+
+    if (forceStart) { cancelChallenge() }
+
     if (challengePollingJob?.isActive == true) return
-    if (forceStart) {
-      cancelChallenge()
-    }
+
     challengePollingJob =
       viewModelScope.launch {
         try {
@@ -418,7 +419,7 @@ internal class PaymentViewModel(
   fun stopLoading() {
     _state.update {
       it.copy(
-        isLoading = true,
+        isLoading = false,
       )
     }
   }
