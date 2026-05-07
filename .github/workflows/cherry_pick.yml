@@ -4,17 +4,25 @@ on:
     branches:
       - 'release/**'
     types: ["closed"]
+  workflow_dispatch:
 
 jobs:
   cherry_pick_develop:
     runs-on: ubuntu-latest
     name: Cherry pick into Develop
-    if: contains(github.event.pull_request.labels.*.name, 'Hotfix')
+    # This logic is key:
+    # 1. Run if I click the button (workflow_dispatch)
+    # 2. OR Run if the PR was merged AND has the label
+    if: |
+      github.event_name == 'workflow_dispatch' || 
+      (github.event.pull_request.merged == true && contains(github.event.pull_request.labels.*.name, 'Hotfix'))
+
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
       - name: Cherry pick into Main
         uses: carloscastrojumo/github-cherry-pick-action@v1.0.1
         with:
