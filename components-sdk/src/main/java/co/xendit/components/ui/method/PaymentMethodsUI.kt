@@ -88,7 +88,6 @@ internal fun PaymentMethodsUI(
     ).associateBy { it.uiGroup }
 
   val groups = remember(channels, rendererMap.keys) {
-    XLogger.d("GROUP PAYMENT ${channels.groupBy { it.uiGroup }.keys}")
     channels.groupBy { it.uiGroup }.filter { it.key in rendererMap.keys }
   }
   val filteredUiGroup = remember(groups.keys) {

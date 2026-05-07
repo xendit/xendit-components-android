@@ -1,5 +1,6 @@
 package co.xendit.components.ui.card
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -88,13 +89,14 @@ internal fun CardPaymentUI(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
           .fillMaxWidth()
+          .clickable {
+            isSaveChecked.value = !isSaveChecked.value
+            onFormStateChanged(formValues.toMap(), visibleFields.value, isSaveChecked.value)
+          }
       ) {
         Checkbox(
           checked = isSaveChecked.value,
-          onCheckedChange = {
-            isSaveChecked.value = it
-            onFormStateChanged(formValues.toMap(), visibleFields.value, isSaveChecked.value)
-          }
+          onCheckedChange = {}
         )
         Text(
           text = "Save card information for future use",

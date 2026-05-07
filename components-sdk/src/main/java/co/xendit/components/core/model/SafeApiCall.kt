@@ -23,12 +23,12 @@ internal class SafeApiCall(
     } catch (e: HttpException) {
       // This is the most important block. It catches API errors (4xx, 5xx).
       // The HttpException contains the original response with the error body.
-      XLogger.d("safeApiCall caught HttpException for code: ${e.code()}")
+      XLogger.e("safeApiCall caught HttpException for code: ${e.code()}")
       val errorBody = e.response()?.errorBody()?.string() ?: "{}"
       return Response.error(e.code(), errorBody.toResponseBody(null))
     } catch (e: IOException) {
       // Handles network failures (timeouts, no internet)
-      XLogger.d("safeApiCall caught IOException: ${e.message}")
+      XLogger.e("safeApiCall caught IOException: ${e.message}")
       globalErrorHandler.postError(
         errorCode = "NETWORK_ERROR",
         errorMessage = UiText.DynamicString("Network error. Please check your connection.")
@@ -40,7 +40,7 @@ internal class SafeApiCall(
       )
     } catch (e: JsonSyntaxException) {
       // This is a data mismatch error, not a server error.
-      XLogger.d("safeApiCall caught JsonSyntaxException: ${e.message}")
+      XLogger.e("safeApiCall caught JsonSyntaxException: ${e.message}")
       globalErrorHandler.postError(
         errorCode = "PARSE_ERROR",
         errorMessage = UiText.DynamicString("Failed to parse server response.")
