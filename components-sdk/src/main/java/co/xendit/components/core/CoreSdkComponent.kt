@@ -49,7 +49,6 @@ internal object CoreSdkComponent {
     baseHttpUrl = baseUrl.toHttpUrl()
     retrofitInstance = null
     apiInstance = null
-    XLogger.i("Base URL set to: $baseUrl")
   }
 
   val headerProvider: HeaderProvider by lazy { HeaderProvider() }
@@ -76,10 +75,6 @@ internal object CoreSdkComponent {
         addInterceptor(baseUrlInterceptor)
         addInterceptor(headerInterceptor)
         addInterceptor(errorInterceptor)
-        if (BuildConfig.DEBUG) {
-          addInterceptor(OkHttpProfilerInterceptor())
-          addInterceptor(OkHttpRequestModifierInterceptor(appContext))
-        }
       }
       .build()
   }

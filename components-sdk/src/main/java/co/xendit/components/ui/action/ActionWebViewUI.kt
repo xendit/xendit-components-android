@@ -55,8 +55,6 @@ internal fun ActionWebViewUI(
                 try {
                   val data = org.json.JSONObject(json)
                   val type = data.optString("type")
-                  XLogger.d("AcWeb:Iframe Data: $data")
-                  XLogger.d("AcWeb:Iframe Received type: $type")
 
                   if (type == "xendit-iframe-action-complete") {
                     emitOnce()
@@ -68,7 +66,6 @@ internal fun ActionWebViewUI(
 
               @JavascriptInterface
               fun onIframeLoad(url: String) {
-                XLogger.i("AcWeb:IframeLoad $url")
               }
             },
             "AndroidBridge"
@@ -80,19 +77,16 @@ internal fun ActionWebViewUI(
                 request: WebResourceRequest?
               ): Boolean {
                 val u = request?.url
-                XLogger.d("AcWeb:Redirect URL: $u")
                 return false
               }
 
               override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
                 super.onPageStarted(view, url, favicon)
-                XLogger.d("AcWeb:Started URL: $url")
               }
 
               override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
                 val currentUrl = view?.url ?: url
-                XLogger.d("AcWeb:Finished URL: $currentUrl")
                 val u = currentUrl?.let { Uri.parse(it) }
               }
 
@@ -100,7 +94,6 @@ internal fun ActionWebViewUI(
                 view: WebView?,
                 request: WebResourceRequest?
               ): WebResourceResponse? {
-                XLogger.d("AcWeb:Network Iframe requesting: ${request?.url}")
                 return super.shouldInterceptRequest(view, request)
               }
 
@@ -111,7 +104,7 @@ internal fun ActionWebViewUI(
               ) {
                 super.onReceivedError(view, request, error)
                 XLogger.e(
-                  "AcWeb:Error Resource Error: ${request?.url} | Desc: ${error?.description} (Code: ${error?.errorCode})"
+                  "AcWeb:Error Resource Desc: ${error?.description} (Code: ${error?.errorCode})"
                 )
               }
 
@@ -122,15 +115,14 @@ internal fun ActionWebViewUI(
               ) {
                 super.onReceivedHttpError(view, request, errorResponse)
                 XLogger.e(
-                  "AcWeb:Error HTTP Error: ${request?.url} | Status: ${errorResponse?.statusCode}"
+                  "AcWeb:Error HTTP Status: ${errorResponse?.statusCode}"
                 )
               }
             }
           val uri = runCatching { Uri.parse(url) }.getOrNull()
           val baseUrl =
             if (uri != null && uri.scheme != null && uri.host != null) "${uri.scheme}://${uri.host}" else "https://api.xendit.co"
-          // test
-//          loadUrl(url)
+
           if (iframeCapable) {
             val data = """
                 <!DOCTYPE html>
@@ -178,7 +170,6 @@ internal fun ActionWebViewUI(
             """.trimIndent()
             loadDataWithBaseURL(baseUrl, data, "text/html", "utf-8", null)
           } else {
-            XLogger.i("AcWeb:Load Direct URL: $url")
             loadUrl(url)
           }
         }
