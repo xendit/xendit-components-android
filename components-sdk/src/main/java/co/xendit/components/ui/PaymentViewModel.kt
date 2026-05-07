@@ -1,12 +1,10 @@
 package co.xendit.components.ui
 
-import co.xendit.components.util.XLogger
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import co.xendit.components.core.model.GlobalErrorHandler
 import co.xendit.components.core.model.asApiError
 import co.xendit.components.data.model.BffChannel
-import co.xendit.components.data.model.BffSession
 import co.xendit.components.data.model.BffSessionAllowSavePaymentMethod
 import co.xendit.components.data.model.BffSessionType
 import co.xendit.components.data.model.ChannelFormField
@@ -15,13 +13,14 @@ import co.xendit.components.data.model.InstallmentPlan
 import co.xendit.components.data.model.PaymentAction
 import co.xendit.components.data.model.PaymentDraft
 import co.xendit.components.data.model.PaymentRequest
-import co.xendit.components.data.model.PaymentResponse
 import co.xendit.components.data.model.PaymentRequestStatus
+import co.xendit.components.data.model.PaymentResponse
 import co.xendit.components.data.model.PollResponse
 import co.xendit.components.data.model.SessionResponse
 import co.xendit.components.data.network.repo.session.XenditRepository
 import co.xendit.components.ui.components.molecule.UiText
 import co.xendit.components.util.PaymentRequestMapper
+import co.xendit.components.util.XLogger
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -378,7 +377,6 @@ internal class PaymentViewModel(
                     isLoading = false,
                   )
                 }
-                XLogger.d("Challenge successResponse: ${poll.paymentRequest ?: poll.paymentToken}")
               }
             } else {
               // On unauthorized or errors, just backoff and retry within timeout
@@ -395,7 +393,7 @@ internal class PaymentViewModel(
           }
         } catch (e: Exception) {
           if (e is CancellationException) throw e
-          XLogger.d("Polling Error: ${e.message}")
+          XLogger.e("Polling Error: ${e.message}")
         }
       }
   }
