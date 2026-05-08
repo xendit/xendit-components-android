@@ -17,9 +17,7 @@ internal object FailureCodeMessageUtil {
     return if (resId != null) {
       context.getString(resId)
     } else {
-      val code = raw.ifBlank { "UNKNOWN" }
-      context.getString(R.string.sessionfailure_code_unknown)
-        .replace("{{failureCode}}", code)
+      context.getString(R.string.sessionpayment_token_status_failed_subtext)
     }
   }
 
