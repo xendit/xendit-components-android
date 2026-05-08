@@ -1,14 +1,14 @@
 package co.xendit.components
 
-import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
-import android.util.Log
 import android.view.ViewGroup
 import androidx.activity.ComponentActivity
 import androidx.annotation.VisibleForTesting
 import androidx.compose.ui.platform.ComposeView
 import co.xendit.components.util.XLogger
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.lifecycle.setViewTreeViewModelStoreOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
@@ -29,6 +29,8 @@ object XenditComponents {
   private var currentCallback: ((XenditPaymentResult) -> Unit)? = null
   private var xenditAppearance: XenditAppearance? = null
   private var merchantPreferredPaymentMethod: List<String>? = null
+  private var lifecycleOwner: LifecycleOwner? = null
+  private var lifecycleObserver: DefaultLifecycleObserver? = null
   private val scope = CoroutineScope(Dispatchers.Main)
 
   /**
@@ -99,10 +101,6 @@ object XenditComponents {
     merchantPreferredPaymentMethod: List<String>? = null,
     onPaymentResult: (XenditPaymentResult) -> Unit
   ) {
-    if (activity !is Activity) {
-      throw IllegalArgumentException("Context must be an Activity to show the Payment SDK.")
-    }
-
     CoreSdkComponent.headerProvider.setHostId(activity.packageName ?: "")
 
     this.merchantPreferredPaymentMethod = merchantPreferredPaymentMethod
@@ -127,6 +125,15 @@ object XenditComponents {
     CoreSdkComponent.setBaseUrl(resolveBaseUrlForHostId(keys.hostId))
 
     cleanup()
+
+    lifecycleOwner = activity
+    lifecycleObserver =
+      object : DefaultLifecycleObserver {
+        override fun onDestroy(owner: LifecycleOwner) {
+          cleanup()
+        }
+      }
+    activity.lifecycle.addObserver(checkNotNull(lifecycleObserver))
 
     currentCallback = onPaymentResult
 
@@ -169,6 +176,13 @@ object XenditComponents {
   }
 
   private fun cleanup() {
+    val owner = lifecycleOwner
+    val observer = lifecycleObserver
+    if (owner != null && observer != null) {
+      owner.lifecycle.removeObserver(observer)
+    }
+    lifecycleOwner = null
+    lifecycleObserver = null
     composeView?.let { view -> (view.parent as? ViewGroup)?.removeView(view) }
     composeView = null
     currentCallback = null

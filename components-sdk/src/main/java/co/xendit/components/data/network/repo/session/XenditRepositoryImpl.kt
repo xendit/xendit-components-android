@@ -9,6 +9,7 @@ import co.xendit.components.data.model.PaymentResponse
 import co.xendit.components.data.model.SessionResponse
 import co.xendit.components.data.model.PollResponse
 import co.xendit.components.data.model.PaymentOptionsResponse
+import co.xendit.components.data.model.SimulatePaymentRequest
 import co.xendit.components.data.network.remote.session.XenditApi
 import retrofit2.Response
 
@@ -64,6 +65,22 @@ internal class XenditRepositoryImpl(
     componentsVersion: String
   ): Response<PollResponse> {
     return safeApiCall.call { api.pollSession(sessionId, tokenRequestId, componentsVersion) }
+  }
+
+  override suspend fun simulatePaymentRequest(
+    sessionId: String,
+    paymentRequestId: String,
+    request: SimulatePaymentRequest,
+    componentsVersion: String
+  ): Response<PaymentResponse> {
+    return safeApiCall.call {
+      api.simulatePaymentRequest(
+        sessionId = sessionId,
+        paymentRequestId = paymentRequestId,
+        componentsVersion = componentsVersion,
+        request = request
+      )
+    }
   }
 
   override suspend fun getPaymentOptions(

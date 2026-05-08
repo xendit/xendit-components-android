@@ -210,4 +210,11 @@
   <!--  LOCAL UPDATE-->
   <string name="select_country">Seleccionar país</string>
   <string name="select_province">Seleccionar provincia</string>
+  <string name="sessionaction_qr_scan_to_pay">Escanea para pagar</string>
+  <string name="sessionaction_qr_nmid">NMID: %1$s</string>
+  <string name="sessionaction_qr_unable_generate_qr">No se puede generar el código QR</string>
+  <string name="sessionaction_qr_unable_download_qr">No se puede descargar el código QR</string>
+  <string name="sessionaction_qr_saved">Código QR guardado</string>
+  <string name="sessionaction_qr_failed_save">No se pudo guardar el código QR</string>
+  <string name="sessionaction_qr_failed_download">No se pudo descargar el QR</string>
 </resources>

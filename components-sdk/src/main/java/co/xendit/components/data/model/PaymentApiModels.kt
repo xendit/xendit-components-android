@@ -10,6 +10,11 @@ internal data class PaymentOptionsRequest(
 )
 
 @Keep
+internal data class SimulatePaymentRequest(
+  @SerializedName("channel_code") val channelCode: String
+)
+
+@Keep
 internal data class PaymentRequest(
   @SerializedName("session_id") val sessionId: String,
   @SerializedName("channel_code") val channelCode: String,

@@ -1,6 +1,5 @@
 package co.xendit.components.ui
 
-import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -40,6 +39,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -144,7 +144,7 @@ internal fun PaymentContainerHost(
     globalErrorHandler.apiErrorFlow.collect { (errorCode, message) ->
       val msg = message?.asString(context) ?: return@collect
       if (errorCode == "NETWORK_ERROR") {
-        Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+        snackbarHostState.showSnackbar(msg)
         onResult(
           XenditPaymentResult.Failed(
             XenditError(
@@ -216,7 +216,7 @@ internal fun PaymentContainerHost(
         onResult(
           XenditPaymentResult.Success(
             paymentRequestId = poll.session?.paymentSessionId,
-            channelCode = poll.succeededChannel?.channelCode
+            channelCode = poll.succeededChannel?.channelCode ?: poll.paymentRequest?.channelCode
           )
         )
         onCleanup()
@@ -349,6 +349,12 @@ internal fun PaymentContainerHost(
           modifier = Modifier
             .fillMaxWidth()
             .weight(1f)
+            .drawWithContent {
+              drawContent()
+              if (mviState.isLoading) {
+                drawRect(Color.Black.copy(alpha = 0.08f))
+              }
+            }
         ) {
           when {
             mviState.actionRedirectUrl != null -> {
@@ -364,15 +370,20 @@ internal fun PaymentContainerHost(
 
             mviState.presentToCustomerPaymentAction != null -> {
               val qrAction = mviState.presentToCustomerPaymentAction!!
+              val merchantName = mviState.sessionResponse?.business?.name
               ActionQrUI(
-                title = qrAction.actionSubtitle ?: qrAction.actionTitle,
+                title = merchantName,
                 channelName = mviState.selectedChannel?.brandName ?: "QR Code",
                 channelLogoUrl = mviState.selectedChannel?.brandLogoUrl,
                 qrString = qrAction.value.orEmpty(),
                 amount = mviState.sessionResponse?.session?.amount,
                 currency = mviState.sessionResponse?.session?.currency,
                 onClose = { viewModel.markClosed() },
-                onPaymentMade = { viewModel.dispatch(ActionIntent.ChallengeCompleted(true)) }
+                onPaymentMade = {
+                  viewModel.dispatch(ActionIntent.ChallengeCompleted(true))
+                  viewModel.showLoading()
+                },
+                snackbarHostState = snackbarHostState
               )
             }
 
@@ -481,11 +492,12 @@ internal fun PaymentContainerHost(
               }
             }
           }
-        }
-
-        if (mviState.isLoading) {
-          Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator()
+          if (mviState.isLoading) {
+            Box(
+              modifier = Modifier.align(Alignment.Center)
+            ) {
+              CircularProgressIndicator()
+            }
           }
         }
 

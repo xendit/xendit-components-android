@@ -4,6 +4,7 @@ import co.xendit.components.ui.helper.FormCheckerUtil.isValidEmail
 import com.google.i18n.phonenumbers.PhoneNumberUtil
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertEquals
 import org.junit.Test
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
@@ -112,5 +113,24 @@ class FormCheckerUtilTest {
     } finally {
       Locale.setDefault(original)
     }
+  }
+
+  @Test
+  fun formatAmount_returnsEmpty_whenAmountOrCurrencyMissing() {
+    assertEquals("", CurrencyUtil.formatAmount(null, "IDR"))
+    assertEquals("", CurrencyUtil.formatAmount(1000L, null))
+    assertEquals("", CurrencyUtil.formatAmount(1000L, ""))
+  }
+
+  @Test
+  fun formatAmount_formatsKnownCurrencies_withIndonesianGrouping() {
+    assertEquals("Rp300.000", CurrencyUtil.formatAmount(300_000L, "IDR"))
+    assertEquals("$300.000", CurrencyUtil.formatAmount(300_000L, "USD"))
+    assertEquals("₱300.000", CurrencyUtil.formatAmount(300_000L, "PHP"))
+  }
+
+  @Test
+  fun formatAmount_fallsBackToCurrencyCode_whenUnknownCurrency() {
+    assertEquals("EUR300.000", CurrencyUtil.formatAmount(300_000L, "EUR"))
   }
 }
