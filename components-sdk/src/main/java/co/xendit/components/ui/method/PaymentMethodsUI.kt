@@ -67,11 +67,11 @@ internal fun PaymentMethodsUI(
   modifier: Modifier = Modifier
 ) {
   val appearance = xenditAppearance
+  val showSaveCheckbox =
+    sessionType == BffSessionType.PAY && allowSavePaymentMethod == BffSessionAllowSavePaymentMethod.OPTIONAL
   val rendererMap =
     listOf(
       PaymentMethodRenderer(uiGroup = "cards") { _, currentSelected ->
-        val showSaveCheckbox =
-          sessionType == BffSessionType.PAY && allowSavePaymentMethod == BffSessionAllowSavePaymentMethod.OPTIONAL
         val initialValues = paymentDrafts[currentSelected.channelCode]?.formValues.orEmpty()
         CardPaymentUI(
           session = session,
@@ -92,9 +92,10 @@ internal fun PaymentMethodsUI(
           channels = groupChannels,
           selectedChannel = currentSelected,
           onSelectChannel = onSelectChannel,
-          onFormStateChanged = { formValues, visibleFields ->
-            onFormChanged(currentSelected.channelCode, formValues, visibleFields, false)
+          onFormStateChanged = { formValues, visibleFields, isSaveChecked->
+            onFormChanged(currentSelected.channelCode, formValues, visibleFields, isSaveChecked)
           },
+          showSaveCheckbox = showSaveCheckbox,
           modifier = Modifier.padding(bottom = 8.dp)
         )
       },
