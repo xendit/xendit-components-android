@@ -40,6 +40,7 @@ internal data class PaymentState(
   val channels: List<BffChannel> = emptyList(),
   val expandedUiGroup: String? = null,
   val selectedChannel: BffChannel? = null,
+  val lastSelectedChannelCodeByUiGroup: Map<String, String> = emptyMap(),
   val paymentSessionId: String? = null,
   val actionRedirectUrl: String? = null,
   val presentToCustomerPaymentAction: PaymentAction? = null,
@@ -217,20 +218,28 @@ internal class PaymentViewModel(
 
   private fun toggleUiGroupInternal(uiGroup: String) {
     val channels = _state.value.channels
-    val paymentDraft = _state.value.paymentDrafts
     val groups = channels.groupBy { it.uiGroup }
     val newExpandedUiGroup = if (_state.value.expandedUiGroup == uiGroup) null else uiGroup
+    val currentSelected = _state.value.selectedChannel
     val nextSelected =
       if (newExpandedUiGroup == null) {
-        null
+        currentSelected
+      } else if (currentSelected?.uiGroup == newExpandedUiGroup) {
+        currentSelected
       } else {
-        paymentDraft[newExpandedUiGroup]?.bffChannel ?: (groups[newExpandedUiGroup]?.firstOrNull().takeIf { groups[newExpandedUiGroup]?.size == 1 })
+        val lastSelectedCode = _state.value.lastSelectedChannelCodeByUiGroup[newExpandedUiGroup]
+        val lastSelected = lastSelectedCode?.let { code -> channels.firstOrNull { it.channelCode == code } }
+        lastSelected ?: (groups[newExpandedUiGroup]?.firstOrNull().takeIf { groups[newExpandedUiGroup]?.size == 1 })
       }
 
     _state.update {
       it.copy(
         expandedUiGroup = newExpandedUiGroup,
         selectedChannel = nextSelected,
+        lastSelectedChannelCodeByUiGroup =
+          it.lastSelectedChannelCodeByUiGroup.toMutableMap().apply {
+            if (nextSelected != null) put(nextSelected.uiGroup, nextSelected.channelCode)
+          },
         actionRedirectUrl = null,
         presentToCustomerPaymentAction = null,
         paymentResponse = null,
@@ -245,6 +254,10 @@ internal class PaymentViewModel(
     _state.update {
       it.copy(
         selectedChannel = selected,
+        lastSelectedChannelCodeByUiGroup =
+          it.lastSelectedChannelCodeByUiGroup.toMutableMap().apply {
+            put(selected.uiGroup, selected.channelCode)
+          },
         actionRedirectUrl = null,
         presentToCustomerPaymentAction = null,
         paymentResponse = null,
@@ -255,11 +268,11 @@ internal class PaymentViewModel(
   }
 
   private fun onUpdatePaymentDraft(paymentDraft: PaymentDraft) {
-    val bffChannel = paymentDraft.bffChannel ?: return
+    val channelCode = paymentDraft.channelCode ?: return
     _state.update {
       it.copy(
         paymentDrafts = it.paymentDrafts.toMutableMap().apply {
-          put(bffChannel.uiGroup, paymentDraft)
+          put(channelCode, paymentDraft)
         }
       )
     }

@@ -428,10 +428,10 @@ internal fun PaymentContainerHost(
 
                 val isPaymentSelected =
                   mviState.expandedUiGroup != null && mviState.selectedChannel != null
-                val selectedChannelCode = mviState.selectedChannel?.channelCode
-                val currentDraft = if (selectedChannelCode == null) PaymentDraft() else {
-                  mviState.paymentDrafts[selectedChannelCode]
-                    ?: PaymentDraft(channelCode = selectedChannelCode)
+                val selectedChannel = mviState.selectedChannel
+                val currentDraft = if (selectedChannel == null) PaymentDraft() else {
+                  mviState.paymentDrafts[selectedChannel.channelCode]
+                    ?: PaymentDraft(channelCode = selectedChannel.channelCode)
                 }
                 val isFormFilled = currentDraft.visibleFields
                 val formValue = currentDraft.formValues

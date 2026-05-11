@@ -24,6 +24,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -47,6 +48,9 @@ import coil.compose.AsyncImage
 internal fun EwalletPaymentUI(
   channels: List<BffChannel>,
   selectedChannel: BffChannel?,
+  initialValues: Map<String, String> = emptyMap(),
+  initialVisibleFields: List<ChannelFormField> = emptyList(),
+  initialSaveChecked: Boolean = false,
   onSelectChannel: (String) -> Unit,
   onFormStateChanged: (Map<String, String>, List<ChannelFormField>, Boolean) -> Unit = { _, _, _ -> },
   showSaveCheckbox: Boolean = false,
@@ -60,10 +64,14 @@ internal fun EwalletPaymentUI(
   val imageLoader = remember { SdkImageLoader.get(context) }
   val isSaveChecked = remember { mutableStateOf(false) }
 
-  LaunchedEffect(selectedChannel?.channelCode) {
+  LaunchedEffect(selectedChannel?.channelCode, initialValues, initialVisibleFields, initialSaveChecked) {
     formValues.clear()
-    visibleFields.value = emptyList()
-    onFormStateChanged(emptyMap(), emptyList(), false)
+    formValues.putAll(initialValues)
+    visibleFields.value = initialVisibleFields
+    isSaveChecked.value = initialSaveChecked
+    if (selectedChannel != null) {
+      onFormStateChanged(formValues.toMap(), visibleFields.value, isSaveChecked.value)
+    }
   }
 
   Column(
@@ -135,22 +143,25 @@ internal fun EwalletPaymentUI(
     val channelFormFields = selectedChannel?.form.orEmpty()
     if (channelFormFields.isNotEmpty()) {
       Spacer(modifier = Modifier.height(12.dp))
-      DynamicForm(
-        fields = channelFormFields,
-        cardDetails = null,
-        installmentPlans = null,
-        onValuesChanged = { updated ->
-          formValues.clear()
-          formValues.putAll(updated)
-          onFormStateChanged(formValues.toMap(), visibleFields.value, isSaveChecked.value)
-        },
-        onCardNumberChanged = {},
-        onVisibleFieldsChanged = {
-          visibleFields.value = it
-          onFormStateChanged(formValues.toMap(), visibleFields.value, isSaveChecked.value)
-        },
-        bffCardInfo = null
-      )
+      key(selectedChannel?.channelCode) {
+        DynamicForm(
+          fields = channelFormFields,
+          cardDetails = null,
+          initialValues = initialValues,
+          installmentPlans = null,
+          onValuesChanged = { updated ->
+            formValues.clear()
+            formValues.putAll(updated)
+            onFormStateChanged(formValues.toMap(), visibleFields.value, isSaveChecked.value)
+          },
+          onCardNumberChanged = {},
+          onVisibleFieldsChanged = {
+            visibleFields.value = it
+            onFormStateChanged(formValues.toMap(), visibleFields.value, isSaveChecked.value)
+          },
+          bffCardInfo = null
+        )
+      }
     }
 
     if (showSaveCheckbox && selectedChannel?.allowSave == true) {

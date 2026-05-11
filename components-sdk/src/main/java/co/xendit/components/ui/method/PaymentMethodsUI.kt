@@ -63,7 +63,7 @@ internal fun PaymentMethodsUI(
   onToggleGroup: (String) -> Unit,
   onSelectChannel: (String) -> Unit,
   onCardNumberChanged: (String) -> Unit,
-  onFormChanged: (BffChannel?, Map<String, String>, List<ChannelFormField>, Boolean) -> Unit,
+  onFormChanged: (String?, Map<String, String>, List<ChannelFormField>, Boolean) -> Unit,
   modifier: Modifier = Modifier
 ) {
   val appearance = xenditAppearance
@@ -72,7 +72,7 @@ internal fun PaymentMethodsUI(
   val rendererMap =
     listOf(
       PaymentMethodRenderer(uiGroup = "cards") { _, selectedBffChannel ->
-        val initialValues = paymentDrafts[selectedBffChannel?.uiGroup]?.formValues.orEmpty()
+        val initialValues = selectedBffChannel?.let { paymentDrafts[it.channelCode]?.formValues }.orEmpty()
         CardPaymentUI(
           session = session,
           channelData = selectedBffChannel,
@@ -81,19 +81,23 @@ internal fun PaymentMethodsUI(
           installmentPlans = installmentPlans,
           onCardNumberChanged = onCardNumberChanged,
           onFormStateChanged = { formValues, visibleFields, isSaveChecked ->
-            onFormChanged(selectedBffChannel, formValues, visibleFields, isSaveChecked)
+            onFormChanged(selectedBffChannel?.channelCode, formValues, visibleFields, isSaveChecked)
           },
           modifier = Modifier.padding(bottom = 8.dp),
           showSaveCheckbox = showSaveCheckbox
         )
       },
       PaymentMethodRenderer(uiGroup = "ewallet") { groupChannels, selectedBffChannel ->
+        val draft = selectedBffChannel?.let { paymentDrafts[it.channelCode] }
         EwalletPaymentUI(
           channels = groupChannels,
           selectedChannel = selectedBffChannel,
+          initialValues = draft?.formValues.orEmpty(),
+          initialVisibleFields = draft?.visibleFields ?: emptyList(),
+          initialSaveChecked = draft?.savePaymentMethod ?: false,
           onSelectChannel = onSelectChannel,
           onFormStateChanged = { formValues, visibleFields, isSaveChecked->
-            onFormChanged(selectedBffChannel, formValues, visibleFields, isSaveChecked)
+            onFormChanged(selectedBffChannel?.channelCode, formValues, visibleFields, isSaveChecked)
           },
           showSaveCheckbox = showSaveCheckbox,
           modifier = Modifier.padding(bottom = 8.dp)
@@ -105,7 +109,7 @@ internal fun PaymentMethodsUI(
           selectedChannel = selectedBffChannel,
           onSelectChannel = onSelectChannel,
           onFormStateChanged = { formValues, visibleFields ->
-            onFormChanged(selectedBffChannel, formValues, visibleFields, false)
+            onFormChanged(selectedBffChannel?.channelCode, formValues, visibleFields, false)
           },
           modifier = Modifier.padding(bottom = 8.dp)
         )
