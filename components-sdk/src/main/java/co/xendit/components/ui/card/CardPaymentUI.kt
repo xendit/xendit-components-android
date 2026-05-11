@@ -1,13 +1,9 @@
 package co.xendit.components.ui.card
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -15,7 +11,6 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import co.xendit.components.data.model.BffChannel
@@ -24,6 +19,7 @@ import co.xendit.components.data.model.CardDetails
 import co.xendit.components.data.model.ChannelFormField
 import co.xendit.components.data.model.InstallmentPlan
 import co.xendit.components.ui.components.DynamicForm
+import co.xendit.components.ui.components.molecule.CheckboxWithText
 import co.xendit.components.ui.style.xenditAppearance
 
 /** Card specific payment UI. This component specifically handles the Card payment flow. */
@@ -85,26 +81,15 @@ internal fun CardPaymentUI(
     Spacer(modifier = Modifier.height(16.dp))
 
     if (showSaveCheckbox) {
-      Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-          .fillMaxWidth()
-          .clickable {
-            isSaveChecked.value = !isSaveChecked.value
-            onFormStateChanged(formValues.toMap(), visibleFields.value, isSaveChecked.value)
-          }
-      ) {
-        Checkbox(
-          checked = isSaveChecked.value,
-          onCheckedChange = {}
-        )
-        Text(
-          text = "Save card information for future use",
-          style = MaterialTheme.typography.bodyMedium,
-          color = appearance.colorText,
-          modifier = Modifier.padding(start = 8.dp)
-        )
-      }
+      CheckboxWithText(
+        checked = isSaveChecked.value,
+        text = "Save card information for future use",
+        onCheckedChange = { nextChecked ->
+          isSaveChecked.value = nextChecked
+          onFormStateChanged(formValues.toMap(), visibleFields.value, isSaveChecked.value)
+        },
+        textColor = appearance.colorText
+      )
     }
   }
 }
