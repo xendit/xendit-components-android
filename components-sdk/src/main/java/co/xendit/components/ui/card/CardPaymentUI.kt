@@ -12,7 +12,9 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import co.xendit.components.R
 import co.xendit.components.data.model.BffChannel
 import co.xendit.components.data.model.BffSession
 import co.xendit.components.data.model.CardDetails
@@ -83,7 +85,7 @@ internal fun CardPaymentUI(
     if (showSaveCheckbox) {
       CheckboxWithText(
         checked = isSaveChecked.value,
-        text = "Save card information for future use",
+        text = stringResource(id = R.string.save_for_faster_payment_next_time),
         onCheckedChange = { nextChecked ->
           isSaveChecked.value = nextChecked
           onFormStateChanged(formValues.toMap(), visibleFields.value, isSaveChecked.value)
