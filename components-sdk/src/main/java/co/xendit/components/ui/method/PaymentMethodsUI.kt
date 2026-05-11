@@ -37,6 +37,7 @@ import co.xendit.components.data.model.ChannelFormField
 import co.xendit.components.data.model.InstallmentPlan
 import co.xendit.components.data.model.PaymentDraft
 import co.xendit.components.ui.card.CardPaymentUI
+import co.xendit.components.ui.ewallet.EwalletPaymentUI
 import co.xendit.components.ui.qrcode.QrPaymentUI
 import co.xendit.components.ui.style.xenditAppearance
 import co.xendit.components.ui.ui_util.CustomShape.createTopRoundedOpenShape
@@ -84,6 +85,17 @@ internal fun PaymentMethodsUI(
           },
           modifier = Modifier.padding(bottom = 8.dp),
           showSaveCheckbox = showSaveCheckbox
+        )
+      },
+      PaymentMethodRenderer(uiGroup = "ewallet") { groupChannels, currentSelected ->
+        EwalletPaymentUI(
+          channels = groupChannels,
+          selectedChannel = currentSelected,
+          onSelectChannel = onSelectChannel,
+          onFormStateChanged = { formValues, visibleFields ->
+            onFormChanged(currentSelected.channelCode, formValues, visibleFields, false)
+          },
+          modifier = Modifier.padding(bottom = 8.dp)
         )
       },
       PaymentMethodRenderer(uiGroup = "qr_code") { groupChannels, currentSelected ->
