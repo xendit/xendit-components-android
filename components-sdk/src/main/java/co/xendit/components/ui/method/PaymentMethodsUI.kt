@@ -45,7 +45,7 @@ import co.xendit.components.util.XLogger
 
 private data class PaymentMethodRenderer(
   val uiGroup: String,
-  val content: @Composable (groupChannels: List<BffChannel>, selectedChannel: BffChannel) -> Unit
+  val content: @Composable (groupChannels: List<BffChannel>, selectedBffChannel: BffChannel?) -> Unit
 )
 
 @Composable
@@ -63,7 +63,7 @@ internal fun PaymentMethodsUI(
   onToggleGroup: (String) -> Unit,
   onSelectChannel: (String) -> Unit,
   onCardNumberChanged: (String) -> Unit,
-  onFormChanged: (String, Map<String, String>, List<ChannelFormField>, Boolean) -> Unit,
+  onFormChanged: (BffChannel?, Map<String, String>, List<ChannelFormField>, Boolean) -> Unit,
   modifier: Modifier = Modifier
 ) {
   val appearance = xenditAppearance
@@ -71,41 +71,41 @@ internal fun PaymentMethodsUI(
     sessionType == BffSessionType.PAY && allowSavePaymentMethod == BffSessionAllowSavePaymentMethod.OPTIONAL
   val rendererMap =
     listOf(
-      PaymentMethodRenderer(uiGroup = "cards") { _, currentSelected ->
-        val initialValues = paymentDrafts[currentSelected.channelCode]?.formValues.orEmpty()
+      PaymentMethodRenderer(uiGroup = "cards") { _, selectedBffChannel ->
+        val initialValues = paymentDrafts[selectedBffChannel?.uiGroup]?.formValues.orEmpty()
         CardPaymentUI(
           session = session,
-          channelData = currentSelected,
+          channelData = selectedBffChannel,
           cardDetails = cardDetails,
           initialValues = initialValues,
           installmentPlans = installmentPlans,
           onCardNumberChanged = onCardNumberChanged,
           onFormStateChanged = { formValues, visibleFields, isSaveChecked ->
-            onFormChanged(currentSelected.channelCode, formValues, visibleFields, isSaveChecked)
+            onFormChanged(selectedBffChannel, formValues, visibleFields, isSaveChecked)
           },
           modifier = Modifier.padding(bottom = 8.dp),
           showSaveCheckbox = showSaveCheckbox
         )
       },
-      PaymentMethodRenderer(uiGroup = "ewallet") { groupChannels, currentSelected ->
+      PaymentMethodRenderer(uiGroup = "ewallet") { groupChannels, selectedBffChannel ->
         EwalletPaymentUI(
           channels = groupChannels,
-          selectedChannel = currentSelected,
+          selectedChannel = selectedBffChannel,
           onSelectChannel = onSelectChannel,
           onFormStateChanged = { formValues, visibleFields, isSaveChecked->
-            onFormChanged(currentSelected.channelCode, formValues, visibleFields, isSaveChecked)
+            onFormChanged(selectedBffChannel, formValues, visibleFields, isSaveChecked)
           },
           showSaveCheckbox = showSaveCheckbox,
           modifier = Modifier.padding(bottom = 8.dp)
         )
       },
-      PaymentMethodRenderer(uiGroup = "qr_code") { groupChannels, currentSelected ->
+      PaymentMethodRenderer(uiGroup = "qr_code") { groupChannels, selectedBffChannel ->
         QrPaymentUI(
           channels = groupChannels,
-          selectedChannel = currentSelected,
+          selectedChannel = selectedBffChannel,
           onSelectChannel = onSelectChannel,
           onFormStateChanged = { formValues, visibleFields ->
-            onFormChanged(currentSelected.channelCode, formValues, visibleFields, false)
+            onFormChanged(selectedBffChannel, formValues, visibleFields, false)
           },
           modifier = Modifier.padding(bottom = 8.dp)
         )
@@ -140,8 +140,6 @@ internal fun PaymentMethodsUI(
         val isExpanded = expandedUiGroup == uiGroup
         val displayNameIcon = displayNameIconForUiGroup(uiGroup)
         val groupChannels = groups[uiGroup].orEmpty()
-        val currentSelected =
-          selectedChannel?.takeIf { it.uiGroup == uiGroup } ?: groupChannels.firstOrNull()
 
         Box(
           modifier = Modifier
@@ -172,8 +170,8 @@ internal fun PaymentMethodsUI(
             if (isExpanded) {
               Spacer(modifier = Modifier.height(8.dp))
               val renderer = rendererMap[uiGroup]
-              if (renderer != null && currentSelected != null) {
-                renderer.content(groupChannels, currentSelected)
+              if (renderer != null) {
+                renderer.content(groupChannels, selectedChannel)
               } else {
                 Text(
                   text = "This payment method is not supported yet.",

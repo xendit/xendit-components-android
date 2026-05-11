@@ -217,20 +217,19 @@ internal class PaymentViewModel(
 
   private fun toggleUiGroupInternal(uiGroup: String) {
     val channels = _state.value.channels
-    val newExpanded = if (_state.value.expandedUiGroup == uiGroup) null else uiGroup
-    val existingSelected = _state.value.selectedChannel
+    val paymentDraft = _state.value.paymentDrafts
+    val groups = channels.groupBy { it.uiGroup }
+    val newExpandedUiGroup = if (_state.value.expandedUiGroup == uiGroup) null else uiGroup
     val nextSelected =
-      if (newExpanded == null) {
-        existingSelected
-      } else if (existingSelected?.uiGroup == newExpanded) {
-        existingSelected
+      if (newExpandedUiGroup == null) {
+        null
       } else {
-        channels.firstOrNull { it.uiGroup == newExpanded }
+        paymentDraft[newExpandedUiGroup]?.bffChannel ?: (groups[newExpandedUiGroup]?.firstOrNull().takeIf { groups[newExpandedUiGroup]?.size == 1 })
       }
 
     _state.update {
       it.copy(
-        expandedUiGroup = newExpanded,
+        expandedUiGroup = newExpandedUiGroup,
         selectedChannel = nextSelected,
         actionRedirectUrl = null,
         presentToCustomerPaymentAction = null,
@@ -256,11 +255,11 @@ internal class PaymentViewModel(
   }
 
   private fun onUpdatePaymentDraft(paymentDraft: PaymentDraft) {
-    val channelCode = paymentDraft.channelCode ?: return
+    val bffChannel = paymentDraft.bffChannel ?: return
     _state.update {
       it.copy(
         paymentDrafts = it.paymentDrafts.toMutableMap().apply {
-          put(channelCode, paymentDraft)
+          put(bffChannel.uiGroup, paymentDraft)
         }
       )
     }

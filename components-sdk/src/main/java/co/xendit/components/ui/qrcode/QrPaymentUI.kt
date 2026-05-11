@@ -38,7 +38,7 @@ import co.xendit.components.ui.style.xenditAppearance
 @Composable
 internal fun QrPaymentUI(
   channels: List<BffChannel>,
-  selectedChannel: BffChannel,
+  selectedChannel: BffChannel?,
   onSelectChannel: (String) -> Unit,
   onFormStateChanged: (Map<String, String>, List<ChannelFormField>) -> Unit,
   modifier: Modifier = Modifier
@@ -47,7 +47,7 @@ internal fun QrPaymentUI(
   val formValues = remember { mutableStateMapOf<String, String>() }
   val visibleFields = remember { mutableStateOf<List<ChannelFormField>>(emptyList()) }
 
-  LaunchedEffect(selectedChannel.channelCode) {
+  LaunchedEffect(selectedChannel?.channelCode) {
     formValues.clear()
     visibleFields.value = emptyList()
     onFormStateChanged(emptyMap(), emptyList())
@@ -78,7 +78,7 @@ internal fun QrPaymentUI(
       )
       Spacer(modifier = Modifier.width(12.dp))
       Column(modifier = Modifier.weight(1f)) {
-        selectedChannel.instructions?.forEachIndexed { index, instruction ->
+        selectedChannel?.instructions?.forEachIndexed { index, instruction ->
           Text(
             text = instruction,
             style = MaterialTheme.typography.titleSmall.takeIf { index == 0 } ?: MaterialTheme.typography.bodySmall,

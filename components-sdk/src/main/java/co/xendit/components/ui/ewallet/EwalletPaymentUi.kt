@@ -46,7 +46,7 @@ import coil.compose.AsyncImage
 @Composable
 internal fun EwalletPaymentUI(
   channels: List<BffChannel>,
-  selectedChannel: BffChannel,
+  selectedChannel: BffChannel?,
   onSelectChannel: (String) -> Unit,
   onFormStateChanged: (Map<String, String>, List<ChannelFormField>, Boolean) -> Unit = { _, _, _ -> },
   showSaveCheckbox: Boolean = false,
@@ -60,7 +60,7 @@ internal fun EwalletPaymentUI(
   val imageLoader = remember { SdkImageLoader.get(context) }
   val isSaveChecked = remember { mutableStateOf(false) }
 
-  LaunchedEffect(selectedChannel.channelCode) {
+  LaunchedEffect(selectedChannel?.channelCode) {
     formValues.clear()
     visibleFields.value = emptyList()
     onFormStateChanged(emptyMap(), emptyList(), false)
@@ -85,7 +85,7 @@ internal fun EwalletPaymentUI(
       modifier = Modifier.fillMaxWidth()
     ) {
       OutlinedTextField(
-        value = selectedChannel.brandName,
+        value = selectedChannel?.brandName ?: "",
         onValueChange = {},
         readOnly = true,
         placeholder = { Text("Select an E-Wallet") },
@@ -132,20 +132,11 @@ internal fun EwalletPaymentUI(
       }
     }
 
-    selectedChannel.instructions?.forEach { instruction ->
-      Spacer(modifier = Modifier.height(8.dp))
-      Text(
-        text = instruction,
-        style = MaterialTheme.typography.bodySmall,
-        color = appearance.colorTextSecondary
-      )
-    }
-
-    val fields = selectedChannel.form.orEmpty()
-    if (fields.isNotEmpty()) {
+    val channelFormFields = selectedChannel?.form.orEmpty()
+    if (channelFormFields.isNotEmpty()) {
       Spacer(modifier = Modifier.height(12.dp))
       DynamicForm(
-        fields = fields,
+        fields = channelFormFields,
         cardDetails = null,
         installmentPlans = null,
         onValuesChanged = { updated ->
@@ -160,30 +151,40 @@ internal fun EwalletPaymentUI(
         },
         bffCardInfo = null
       )
+    }
 
-      if (showSaveCheckbox) {
-        Row(
-          verticalAlignment = Alignment.CenterVertically,
-          modifier = Modifier
-            .fillMaxWidth()
-            .clickable {
-              isSaveChecked.value = !isSaveChecked.value
-              onFormStateChanged(formValues.toMap(), visibleFields.value, isSaveChecked.value)
-            }
-        ) {
-          Checkbox(
-            checked = isSaveChecked.value,
-            onCheckedChange = {}
-          )
-          Text(
-            text = "Save card information for future use",
-            style = MaterialTheme.typography.bodyMedium,
-            color = appearance.colorText,
-            modifier = Modifier.padding(start = 8.dp)
-          )
-        }
+    if (showSaveCheckbox && selectedChannel?.allowSave == true) {
+      Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+          .fillMaxWidth()
+          .clickable {
+            isSaveChecked.value = !isSaveChecked.value
+            onFormStateChanged(formValues.toMap(), visibleFields.value, isSaveChecked.value)
+          }
+      ) {
+        Checkbox(
+          checked = isSaveChecked.value,
+          onCheckedChange = {}
+        )
+        Text(
+          text = "Save card information for future use",
+          style = MaterialTheme.typography.bodyMedium,
+          color = appearance.colorText,
+          modifier = Modifier.padding(start = 8.dp)
+        )
       }
     }
+
+    selectedChannel?.instructions?.forEach { instruction ->
+      Spacer(modifier = Modifier.height(8.dp))
+      Text(
+        text = instruction,
+        style = MaterialTheme.typography.bodySmall,
+        color = appearance.colorTextSecondary
+      )
+    }
+
   }
 }
 

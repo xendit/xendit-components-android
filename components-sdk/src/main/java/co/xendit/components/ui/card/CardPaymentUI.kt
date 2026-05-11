@@ -30,7 +30,7 @@ import co.xendit.components.ui.style.xenditAppearance
 @Composable
 internal fun CardPaymentUI(
   session: BffSession?,
-  channelData: BffChannel,
+  channelData: BffChannel?,
   cardDetails: CardDetails?,
   initialValues: Map<String, String> = emptyMap(),
   installmentPlans: List<InstallmentPlan>?,
@@ -50,7 +50,7 @@ internal fun CardPaymentUI(
       .padding(bottom = 12.dp)
   ) {
     // Instructions if any
-    channelData.instructions?.forEach { instruction ->
+    channelData?.instructions?.forEach { instruction ->
       Text(
         text = instruction,
         style = MaterialTheme.typography.headlineMedium,
@@ -60,7 +60,7 @@ internal fun CardPaymentUI(
       Spacer(modifier = Modifier.height(8.dp))
     }
     // Dynamic Form for Card
-    channelData.form?.let { fields ->
+    channelData?.form?.let { fields ->
       key(channelData.channelCode) {
         DynamicForm(
           fields = fields,
