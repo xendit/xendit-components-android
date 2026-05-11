@@ -26,6 +26,7 @@ mockk = "1.14.9"
 libphonenumber = "9.0.27"
 vanniktech = "0.36.0"
 zxing = "3.5.3"
+lottie_version = "6.7.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -68,6 +69,7 @@ coil-svg = { group = "io.coil-kt", name = "coil-svg", version.ref = "coil" }
 coil = { group = "io.coil-kt", name = "coil", version.ref = "coil" }
 google-libphonenumber = { group = "com.googlecode.libphonenumber", name = "libphonenumber", version.ref = "libphonenumber" }
 zxing-core = { group = "com.google.zxing", name = "core", version.ref = "zxing" }
+lottie-compose = { group = "com.airbnb.android", name = "lottie-compose", version.ref = "lottie_version" }
 
 kotlin-stdlib = { group = "org.jetbrains.kotlin", name = "kotlin-stdlib", version.ref = "kotlin" }
 kotlin-reflect = { group = "org.jetbrains.kotlin", name = "kotlin-reflect", version.ref = "kotlin" }

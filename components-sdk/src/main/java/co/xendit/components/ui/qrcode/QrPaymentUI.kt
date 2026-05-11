@@ -33,6 +33,11 @@ import co.xendit.components.R
 import co.xendit.components.data.model.BffChannel
 import co.xendit.components.data.model.ChannelFormField
 import co.xendit.components.ui.style.xenditAppearance
+import com.airbnb.lottie.compose.LottieAnimation
+import com.airbnb.lottie.compose.LottieCompositionSpec
+import com.airbnb.lottie.compose.LottieConstants
+import com.airbnb.lottie.compose.animateLottieCompositionAsState
+import com.airbnb.lottie.compose.rememberLottieComposition
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -46,6 +51,15 @@ internal fun QrPaymentUI(
   val appearance = xenditAppearance
   val formValues = remember { mutableStateMapOf<String, String>() }
   val visibleFields = remember { mutableStateOf<List<ChannelFormField>>(emptyList()) }
+
+  val composition by rememberLottieComposition(
+    LottieCompositionSpec.RawRes(R.raw.qr_scanner)
+  )
+
+  val progress by animateLottieCompositionAsState(
+    composition = composition,
+    iterations = LottieConstants.IterateForever // Loop it!
+  )
 
   LaunchedEffect(selectedChannel.channelCode) {
     formValues.clear()
@@ -62,21 +76,19 @@ internal fun QrPaymentUI(
         .padding(horizontal = 16.dp),
       color = appearance.colorBorder
     )
-    Spacer(modifier = Modifier.height(12.dp))
+    Spacer(modifier = Modifier.height(6.dp))
 
     Row(
       modifier = Modifier
         .fillMaxWidth()
-        .padding(horizontal = 20.dp, vertical = 8.dp),
+        .padding(horizontal = 16.dp, vertical = 8.dp),
       verticalAlignment = Alignment.CenterVertically
     ) {
-      Icon(
-        painter = painterResource(id = R.drawable.ic_qris),
-        contentDescription = null,
-        tint = appearance.colorTextSecondary,
-        modifier = Modifier.size(28.dp)
+      LottieAnimation(
+        composition = composition,
+        progress = { progress }, // Using a lambda for better performance
+        modifier = Modifier.size(60.dp)
       )
-      Spacer(modifier = Modifier.width(12.dp))
       Column(modifier = Modifier.weight(1f)) {
         selectedChannel.instructions?.forEachIndexed { index, instruction ->
           Text(

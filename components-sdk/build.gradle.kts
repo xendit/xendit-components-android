@@ -76,6 +76,7 @@ dependencies {
   implementation(libs.kotlinx.coroutines.android)
   implementation(libs.kotlinx.coroutines.core)
   implementation(libs.okhttp.profiler)
+  implementation(libs.lottie.compose)
   releaseImplementation(libs.okhttp.requests.modifier.no.op)
   debugImplementation(libs.okhttp.requests.modifier.debug)
   // Standard Test Dependencies

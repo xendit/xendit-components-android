@@ -64,6 +64,7 @@ import co.xendit.components.ui.helper.CurrencyUtil
 import co.xendit.components.ui.helper.QrNmidSearcherUtil
 import co.xendit.components.ui.helper.SdkImageLoader
 import co.xendit.components.ui.style.xenditAppearance
+import co.xendit.components.ui.helper.QrCodeGenerator
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import kotlinx.coroutines.Dispatchers
