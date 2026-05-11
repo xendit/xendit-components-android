@@ -380,6 +380,7 @@ internal fun PaymentContainerHost(
                 currency = mviState.sessionResponse?.session?.currency,
                 onClose = { viewModel.markClosed() },
                 onPaymentMade = {
+                  viewModel.dispatch(ActionIntent.SimulatePayment)
                   viewModel.dispatch(ActionIntent.ChallengeCompleted(true))
                   viewModel.showLoading()
                 },

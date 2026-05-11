@@ -88,6 +88,12 @@ internal sealed class ActionIntent {
   ) : ActionIntent()
 
   /**
+   * Calls the simulate endpoint to advance the payment state before polling for the result.
+   * This is typically used for non-production and QR-based payment flows.
+   */
+  data object SimulatePayment : ActionIntent()
+
+  /**
    * This triggers a status check to verify the final result.
    */
   data class ChallengeCompleted(val forceStart: Boolean = false) : ActionIntent()
@@ -140,6 +146,7 @@ internal class PaymentViewModel(
         )
 
       is ActionIntent.UpdatePaymentDraft -> onUpdatePaymentDraft(intent.paymentDraft)
+      is ActionIntent.SimulatePayment -> onSimulatePayment()
       is ActionIntent.ChallengeCompleted -> onChallengeCompletedInternal(intent.forceStart)
       is ActionIntent.CloseWebPayment -> {
         _state.update {
@@ -367,24 +374,6 @@ internal class PaymentViewModel(
     challengePollingJob =
       viewModelScope.launch {
         try {
-          val isPaySession = _state.value.sessionType != BffSessionType.SAVE
-          val shouldSimulate = forceStart && isPaySession && !CoreSdkComponent.isProdLive()
-          if (shouldSimulate) {
-            val prId = lastPaymentRequestId
-            val channelCode = _state.value.selectedChannel?.channelCode
-            if (!prId.isNullOrBlank() && !channelCode.isNullOrBlank()) {
-              runCatching {
-                xenditRepository.simulatePaymentRequest(
-                  sessionId = authKey,
-                  paymentRequestId = prId,
-                  request = SimulatePaymentRequest(channelCode = channelCode)
-                )
-              }.onFailure { e ->
-                XLogger.d("Simulate Payment failed: ${e.message}")
-              }
-            }
-          }
-
           var delayMs = 3000L
           while (isActive) {
             val res = xenditRepository.pollSession(authKey, tokenReqId)
@@ -416,6 +405,29 @@ internal class PaymentViewModel(
           XLogger.e("Polling Error: ${e.message}")
         }
       }
+  }
+
+  private fun onSimulatePayment() {
+    val authKey = sessionAuthKey ?: return
+    viewModelScope.launch {
+      val isPaySession = _state.value.sessionType != BffSessionType.SAVE
+      val shouldSimulate = isPaySession && !CoreSdkComponent.isProdLive()
+      if (shouldSimulate) {
+        val prId = lastPaymentRequestId
+        val channelCode = _state.value.selectedChannel?.channelCode
+        if (!prId.isNullOrBlank() && !channelCode.isNullOrBlank()) {
+          runCatching {
+            xenditRepository.simulatePaymentRequest(
+              sessionId = authKey,
+              paymentRequestId = prId,
+              request = SimulatePaymentRequest(channelCode = channelCode)
+            )
+          }.onFailure { e ->
+            XLogger.d("Simulate Payment failed: ${e.message}")
+          }
+        }
+      }
+    }
   }
 
   fun resetForNewSession() {
