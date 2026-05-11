@@ -88,7 +88,8 @@ internal sealed class ActionIntent {
   ) : ActionIntent()
 
   /**
-   * This triggers a status check to verify the final result.
+   * Calls the simulate endpoint to advance the payment state before polling for the result.
+   * This is typically used for non-production and QR-based payment flows.
    */
   data object SimulatePayment : ActionIntent()
 
