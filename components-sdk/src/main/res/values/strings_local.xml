@@ -4,4 +4,11 @@
   <string name="select_country">Select Country</string>
   <string name="select_province">Select Province</string>
   <string name="save_for_faster_payment_next_time">Save for faster payment next time</string>
+  <string name="sessionaction_qr_scan_to_pay">Scan To Pay</string>
+  <string name="sessionaction_qr_nmid">NMID: %1$s</string>
+  <string name="sessionaction_qr_unable_generate_qr">Unable to generate QR code</string>
+  <string name="sessionaction_qr_unable_download_qr">Unable to download QR code</string>
+  <string name="sessionaction_qr_saved">QR code saved</string>
+  <string name="sessionaction_qr_failed_save">Failed to save QR code</string>
+  <string name="sessionaction_qr_failed_download">Failed to download QR</string>
 </resources>
