@@ -6,9 +6,12 @@
   <string name="sessionaction.simulate_payment">Mô phỏng Thanh toán</string>
   <string name="sessionaction.simulate_payment_instructions">Nhấp nút phía trên để mô phỏng việc thanh toán.</string>
   <string name="sessionaction_barcode.amount_to_pay">Số tiền cần thanh toán</string>
+  <string name="sessionaction_barcode.barcode_content"></string>
   <string name="sessionaction_barcode.download_barcode">Tải Mã vạch</string>
+  <string name="sessionaction_barcode.merchant_name"></string>
   <string name="sessionaction_barcode.payment_code">Mã thanh toán:</string>
   <string name="sessionaction_barcode.seller">Người bán:</string>
+  <string name="sessionaction_barcode.unable_to_generate"></string>
   <string name="sessionaction_deeplink.button">Mở ứng dụng</string>
   <string name="sessionaction_deeplink.instructions">Vui lòng hoàn tất thanh toán trên ứng dụng {{channelName}}.</string>
   <string name="sessionaction_deeplink.title">Đang chờ thanh toán...</string>
@@ -17,6 +20,7 @@
   <string name="sessionaction_otp.confirm_button">Xác nhận</string>
   <string name="sessionaction_otp.header_title">Nhập OTP 6 chữ số</string>
   <string name="sessionaction_otp.subtext">Chúng tôi đã gửi đến {{channelName}} số đã đăng ký {{phoneNumber}} để tiếp tục mua hàng.</string>
+  <string name="sessionaction_qr.unable_to_generate"></string>
   <string name="sessionaction_qr_code.amount_to_pay">Số tiền cần thanh toán</string>
   <string name="sessionaction_qr_code.download_qr">Tải QR</string>
   <string name="sessionaction_redirect.button">Đi đến trang của {{channelName}}</string>
@@ -24,8 +28,11 @@
   <string name="sessionaction_redirect.instructions_cards">Đang xử lý...</string>
   <string name="sessionaction_redirect.title">Bạn đang được chuyển hướng đến trang của {{channelName}}</string>
   <string name="sessionaction_va.amount_to_pay">Số tiền cần thanh toán</string>
+  <string name="sessionaction_va.copied_to_clipboard"></string>
+  <string name="sessionaction_va.copy"></string>
   <string name="sessionaction_va.copy_amount">Sao chép Số tiền</string>
   <string name="sessionaction_va.copy_number">Sao chép Số</string>
+  <string name="sessionaction_va.merchant_name"></string>
   <string name="sessionaction_va.virtual_account_number">Số tài khoản định danh (Virtual Account)</string>
   <string name="sessionchannel_selection.add_payment_method">Thêm phương thức thanh toán</string>
   <string name="sessionchannel_selection.complete_payment">Hoàn tất thanh toán</string>
@@ -121,6 +128,8 @@
   <string name="sessioninstallment_plan.pay_in_full"></string>
   <string name="sessioninstallment_plan.pay_in_installments"></string>
   <string name="sessionnavigation.back">Quay lại</string>
+  <string name="sessionnetwork_error.subtext"></string>
+  <string name="sessionnetwork_error.title"></string>
   <string name="sessionpage_title.pay">Thanh toán tại {{merchantName}}</string>
   <string name="sessionpage_title.save">Thêm phương thức thanh toán tại {{merchantName}}</string>
   <string name="sessionpayment.save_checkbox_label">Lưu phương thức thanh toán này cho các thanh toán định kỳ</string>
@@ -193,6 +202,11 @@
   <string name="sessionsession_status.save.expired.title">Phiên lưu phương thức thanh toán đã hết hạn</string>
   <string name="sessionsession_status.save.pending.subtext"></string>
   <string name="sessionsession_status.save.pending.title"></string>
+  <string name="sessionsimulation.see_all_scenarios"></string>
+  <string name="sessionsimulation.select_scenario"></string>
+  <string name="sessionsimulation.simulate_scenario"></string>
+  <string name="sessionsimulation.simulate_test_scenario"></string>
+  <string name="sessionsimulation.want_to_test_all_scenarios"></string>
   <string name="sessionvalidation.card_cvn_invalid">CVN không hợp lệ</string>
   <string name="sessionvalidation.card_expiry_invalid">Ngày hết hạn thẻ không hợp lệ</string>
   <string name="sessionvalidation.card_number_incomplete">Số thẻ chưa đầy đủ</string>
@@ -206,9 +220,4 @@
   <string name="sessionwaiting_payment.message_2_prefix">Lưu ý:</string>
   <string name="sessionwaiting_payment.simulate.message_1">Thanh toán mô phỏng của bạn sẽ được xử lý trong vài giây.</string>
   <string name="sessionwaiting_payment.title">Đang chờ thanh toán</string>
-
-  <!--  LOCAL UPDATE-->
-  <string name="select_country">Chọn quốc gia</string>
-  <string name="select_province">Chọn tỉnh</string>
-  <string name="save_for_faster_payment_next_time">Lưu để thanh toán nhanh hơn vào lần sau</string>
 </resources>

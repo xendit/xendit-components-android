@@ -1,5 +1,6 @@
 package co.xendit.components.core.model
 
+import co.xendit.components.R
 import co.xendit.components.util.XLogger
 import co.xendit.components.ui.components.molecule.UiText
 import com.google.gson.JsonSyntaxException
@@ -31,7 +32,7 @@ internal class SafeApiCall(
       XLogger.e("safeApiCall caught IOException: ${e.message}")
       globalErrorHandler.postError(
         errorCode = "NETWORK_ERROR",
-        errorMessage = UiText.DynamicString("Network error. Please check your connection.")
+        errorMessage = UiText.StringResource(R.string.sessionnetwork_error_subtext)
       )
       return Response.error(
         503,

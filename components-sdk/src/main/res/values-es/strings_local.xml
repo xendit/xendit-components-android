@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <!--  LOCAL UPDATE-->
+  <string name="select_country">Seleccionar país</string>
+  <string name="select_province">Seleccionar provincia</string>
+  <string name="save_for_faster_payment_next_time">Guardar para pagar más rápido la próxima vez</string>
+</resources>
