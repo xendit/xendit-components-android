@@ -6,9 +6,12 @@
   <string name="sessionaction.simulate_payment">Simulasi Pembayaran</string>
   <string name="sessionaction.simulate_payment_instructions">Klik tombol di atas untuk mensimulasikan pembayaran yang sedang dilakukan.</string>
   <string name="sessionaction_barcode.amount_to_pay">Jumlah Pembayaran</string>
+  <string name="sessionaction_barcode.barcode_content">Kode Pembayaran</string>
   <string name="sessionaction_barcode.download_barcode">Unduh Barcode</string>
+  <string name="sessionaction_barcode.merchant_name">Penjual</string>
   <string name="sessionaction_barcode.payment_code">Kode Pembayaran:</string>
   <string name="sessionaction_barcode.seller">Penjual:</string>
+  <string name="sessionaction_barcode.unable_to_generate">Tidak dapat membuat barcode</string>
   <string name="sessionaction_deeplink.button">Buka Aplikasi</string>
   <string name="sessionaction_deeplink.instructions">Silakan selesaikan pembayaran Anda di aplikasi {{channelName}}.</string>
   <string name="sessionaction_deeplink.title">Menunggu pembayaran...</string>
@@ -17,6 +20,7 @@
   <string name="sessionaction_otp.confirm_button">Konfirmasi</string>
   <string name="sessionaction_otp.header_title">Masukkan OTP 6 digit</string>
   <string name="sessionaction_otp.subtext">Kami mengirimkan OTP ke nomor terdaftar {{channelName}} Anda {{phoneNumber}} untuk melanjutkan pembelian.</string>
+  <string name="sessionaction_qr.unable_to_generate">Tidak dapat membuat kode QR</string>
   <string name="sessionaction_qr_code.amount_to_pay">Jumlah pembayaran</string>
   <string name="sessionaction_qr_code.download_qr">Unduh QR</string>
   <string name="sessionaction_redirect.button">Buka halaman {{channelName}}</string>
@@ -24,8 +28,11 @@
   <string name="sessionaction_redirect.instructions_cards">Memproses...</string>
   <string name="sessionaction_redirect.title">Anda akan dialihkan ke halaman {{channelName}}</string>
   <string name="sessionaction_va.amount_to_pay">Jumlah Pembayaran</string>
+  <string name="sessionaction_va.copied_to_clipboard">Disalin ke clipboard</string>
+  <string name="sessionaction_va.copy">Salin</string>
   <string name="sessionaction_va.copy_amount">Salin Jumlah</string>
   <string name="sessionaction_va.copy_number">Salin Nomor</string>
+  <string name="sessionaction_va.merchant_name">Nama Virtual Account</string>
   <string name="sessionaction_va.virtual_account_number">Nomor Virtual Account</string>
   <string name="sessionchannel_selection.add_payment_method">Tambah metode pembayaran</string>
   <string name="sessionchannel_selection.complete_payment">Selesaikan pembayaran Anda</string>
@@ -121,6 +128,8 @@
   <string name="sessioninstallment_plan.pay_in_full">Bayar penuh — {{amount}}</string>
   <string name="sessioninstallment_plan.pay_in_installments">{{installments}}x Cicilan — {{amount}}</string>
   <string name="sessionnavigation.back">Kembali</string>
+  <string name="sessionnetwork_error.subtext">Mohon cek koneksi internet dan coba lagi</string>
+  <string name="sessionnetwork_error.title">Belum terkoneksi</string>
   <string name="sessionpage_title.pay">Checkout di {{merchantName}}</string>
   <string name="sessionpage_title.save">Tambah metode pembayaran di {{merchantName}}</string>
   <string name="sessionpayment.save_checkbox_label">Simpan metode pembayaran ini untuk pembayaran berulang</string>
@@ -193,6 +202,11 @@
   <string name="sessionsession_status.save.expired.title">Sesi ini telah berakhir</string>
   <string name="sessionsession_status.save.pending.subtext">Kami sedang menunggu partner kami untuk mengonfirmasi metode pembayaran Anda. Ini mungkin membutuhkan waktu, tetapi status pembayaran Anda akan diperbarui secara otomatis setelah selesai.</string>
   <string name="sessionsession_status.save.pending.title">Menunggu konfirmasi...</string>
+  <string name="sessionsimulation.see_all_scenarios">Lihat daftar lengkap di sini.</string>
+  <string name="sessionsimulation.select_scenario">Pilih skenario</string>
+  <string name="sessionsimulation.simulate_scenario">Simulasikan skenario</string>
+  <string name="sessionsimulation.simulate_test_scenario">Simulasikan tes skenario</string>
+  <string name="sessionsimulation.want_to_test_all_scenarios">Ingin tes berbagai skenario?</string>
   <string name="sessionvalidation.card_cvn_invalid">CVN tidak valid</string>
   <string name="sessionvalidation.card_expiry_invalid">Tanggal kedaluwarsa kartu tidak valid</string>
   <string name="sessionvalidation.card_number_incomplete">Nomor kartu tidak lengkap</string>
@@ -206,8 +220,4 @@
   <string name="sessionwaiting_payment.message_2_prefix">Catatan:</string>
   <string name="sessionwaiting_payment.simulate.message_1">Pembayaran simulasi Anda akan diproses dalam beberapa detik.</string>
   <string name="sessionwaiting_payment.title">Menunggu pembayaran...</string>
-
-  <!--  LOCAL UPDATE-->
-  <string name="select_country">Pilih Negara</string>
-  <string name="select_province">Pilih Provinsi</string>
 </resources>

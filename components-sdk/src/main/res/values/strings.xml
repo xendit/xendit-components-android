@@ -6,9 +6,12 @@
   <string name="sessionaction.simulate_payment">Simulate Payment</string>
   <string name="sessionaction.simulate_payment_instructions">Click the button above to simulate a payment being made.</string>
   <string name="sessionaction_barcode.amount_to_pay">Amount to pay</string>
+  <string name="sessionaction_barcode.barcode_content">Payment Code</string>
   <string name="sessionaction_barcode.download_barcode">Download Barcode</string>
+  <string name="sessionaction_barcode.merchant_name">Seller</string>
   <string name="sessionaction_barcode.payment_code">Payment code:</string>
   <string name="sessionaction_barcode.seller">Seller:</string>
+  <string name="sessionaction_barcode.unable_to_generate">Unable to generate barcode</string>
   <string name="sessionaction_deeplink.button">Open App</string>
   <string name="sessionaction_deeplink.instructions">Please complete your payment on {{channelName}} app.</string>
   <string name="sessionaction_deeplink.title">Awaiting payment...</string>
@@ -17,6 +20,7 @@
   <string name="sessionaction_otp.confirm_button">Confirm</string>
   <string name="sessionaction_otp.header_title">Enter the 6-digit OTP</string>
   <string name="sessionaction_otp.subtext">We sent an OTP to your {{channelName}} registered number {{phoneNumber}} to continue with your purchase.</string>
+  <string name="sessionaction_qr.unable_to_generate">Unable to generate QR code</string>
   <string name="sessionaction_qr_code.amount_to_pay">Amount to pay</string>
   <string name="sessionaction_qr_code.download_qr">Download QR</string>
   <string name="sessionaction_redirect.button">Go to {{channelName}}\'s page</string>
@@ -24,8 +28,11 @@
   <string name="sessionaction_redirect.instructions_cards">Processing...</string>
   <string name="sessionaction_redirect.title">You\'re being redirected to {{channelName}}\'s page</string>
   <string name="sessionaction_va.amount_to_pay">Amount to Pay</string>
+  <string name="sessionaction_va.copied_to_clipboard">Copied to clipboard</string>
+  <string name="sessionaction_va.copy">Copy</string>
   <string name="sessionaction_va.copy_amount">Copy Amount</string>
   <string name="sessionaction_va.copy_number">Copy Number</string>
+  <string name="sessionaction_va.merchant_name">Virtual Account Name</string>
   <string name="sessionaction_va.virtual_account_number">Virtual Account Number</string>
   <string name="sessionchannel_selection.add_payment_method">Add your payment method</string>
   <string name="sessionchannel_selection.complete_payment">Complete your payment</string>
@@ -121,6 +128,8 @@
   <string name="sessioninstallment_plan.pay_in_full">Pay in full — {{amount}}</string>
   <string name="sessioninstallment_plan.pay_in_installments">{{installments}}x Installments — {{amount}}</string>
   <string name="sessionnavigation.back">Back</string>
+  <string name="sessionnetwork_error.subtext">Please check your internet connection and try again</string>
+  <string name="sessionnetwork_error.title">Unable to Connect</string>
   <string name="sessionpage_title.pay">Checkout at {{merchantName}}</string>
   <string name="sessionpage_title.save">Add payment method at {{merchantName}}</string>
   <string name="sessionpayment.save_checkbox_label">Save this payment method for recurring payments</string>
@@ -137,8 +146,8 @@
   <string name="sessionpayment_items.total">Total</string>
   <string name="sessionpayment_items.upcoming_charge">Upcoming Charge</string>
   <string name="sessionpayment_methods.add_payment_method">Add payment method</string>
-  <string name="sessionpayment_methods.channel_disabled_amount_too_large">Not available for this payment</string>
-  <string name="sessionpayment_methods.channel_disabled_amount_too_small">Not available for this payment</string>
+  <string name="sessionpayment_methods.channel_disabled_amount_too_large">The payment amount is above the max. transaction limit</string>
+  <string name="sessionpayment_methods.channel_disabled_amount_too_small">The payment amount is below the min. transaction limit</string>
   <string name="sessionpayment_methods.digital_wallet_or">or</string>
   <string name="sessionpayment_methods.header">Payment Methods</string>
   <string name="sessionpayment_methods.no_available_payment_methods">No payment methods available</string>
@@ -193,6 +202,11 @@
   <string name="sessionsession_status.save.expired.title">This session has expired</string>
   <string name="sessionsession_status.save.pending.subtext">We\'re waiting for our partner to confirm your payment method. This may take a while, but your payment status will update automatically once it’s done.</string>
   <string name="sessionsession_status.save.pending.title">Waiting for confirmation...</string>
+  <string name="sessionsimulation.see_all_scenarios">See the full list here.</string>
+  <string name="sessionsimulation.select_scenario">Select a scenario</string>
+  <string name="sessionsimulation.simulate_scenario">Simulate scenario</string>
+  <string name="sessionsimulation.simulate_test_scenario">Simulate a test scenario</string>
+  <string name="sessionsimulation.want_to_test_all_scenarios">Want to test different scenarios?</string>
   <string name="sessionvalidation.card_cvn_invalid">CVN is not valid</string>
   <string name="sessionvalidation.card_expiry_invalid">Card expiry is not valid</string>
   <string name="sessionvalidation.card_number_incomplete">Card number is incomplete</string>
@@ -206,8 +220,4 @@
   <string name="sessionwaiting_payment.message_2_prefix">Note:</string>
   <string name="sessionwaiting_payment.simulate.message_1">Your simulated payment will be processed in a few seconds.</string>
   <string name="sessionwaiting_payment.title">Still awaiting your payment</string>
-
-  <!--  LOCAL UPDATE-->
-  <string name="select_country">Select Country</string>
-  <string name="select_province">Select Province</string>
 </resources>
