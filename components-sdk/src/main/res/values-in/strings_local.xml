@@ -4,4 +4,11 @@
   <string name="select_country">Pilih Negara</string>
   <string name="select_province">Pilih Provinsi</string>
   <string name="save_for_faster_payment_next_time">Simpan untuk pembayaran lebih cepat nanti</string>
+  <string name="sessionaction_qr_scan_to_pay">Pindai untuk Membayar</string>
+  <string name="sessionaction_qr_nmid">NMID: %1$s</string>
+  <string name="sessionaction_qr_unable_generate_qr">Tidak dapat membuat kode QR</string>
+  <string name="sessionaction_qr_unable_download_qr">Tidak dapat mengunduh kode QR</string>
+  <string name="sessionaction_qr_saved">Kode QR tersimpan</string>
+  <string name="sessionaction_qr_failed_save">Gagal menyimpan kode QR</string>
+  <string name="sessionaction_qr_failed_download">Gagal mengunduh QR</string>
 </resources>
