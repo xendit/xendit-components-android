@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import co.xendit.components.R
 import co.xendit.components.data.model.BffChannel
 import co.xendit.components.data.model.ChannelFormField
+import co.xendit.components.ui.components.molecule.DashedDivider
 import co.xendit.components.ui.style.xenditAppearance
 import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
@@ -98,23 +99,5 @@ internal fun QrPaymentUI(
         }
       }
     }
-  }
-}
-
-@Composable
-private fun DashedDivider(
-  modifier: Modifier = Modifier,
-  color: Color
-) {
-  Canvas(modifier = modifier.height(1.dp)) {
-    val y = size.height / 2f
-    drawLine(
-      color = color,
-      start = Offset(0f, y),
-      end = Offset(size.width, y),
-      strokeWidth = size.height,
-      cap = StrokeCap.Round,
-      pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f)
-    )
   }
 }

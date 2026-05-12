@@ -1,10 +1,11 @@
 package co.xendit.components.ui.ewallet
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -13,7 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -21,6 +21,7 @@ import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -34,10 +35,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import co.xendit.components.R
 import co.xendit.components.data.model.BffChannel
 import co.xendit.components.data.model.ChannelFormField
 import co.xendit.components.ui.components.DynamicForm
+import co.xendit.components.ui.components.molecule.CheckboxWithText
+import co.xendit.components.ui.components.molecule.DashedDivider
 import co.xendit.components.ui.helper.SdkImageLoader
 import co.xendit.components.ui.style.xenditAppearance
 import coil.ImageLoader
@@ -64,7 +70,12 @@ internal fun EwalletPaymentUI(
   val imageLoader = remember { SdkImageLoader.get(context) }
   val isSaveChecked = remember { mutableStateOf(false) }
 
-  LaunchedEffect(selectedChannel?.channelCode, initialValues, initialVisibleFields, initialSaveChecked) {
+  LaunchedEffect(
+    selectedChannel?.channelCode,
+    initialValues,
+    initialVisibleFields,
+    initialSaveChecked
+  ) {
     formValues.clear()
     formValues.putAll(initialValues)
     visibleFields.value = initialVisibleFields
@@ -78,7 +89,7 @@ internal fun EwalletPaymentUI(
     modifier = modifier
       .padding(top = 16.dp)
       .padding(horizontal = 24.dp)
-      .padding(bottom = 32.dp)
+      .padding(bottom = 12.dp)
   ) {
     Text(
       text = "Pay with",
@@ -97,6 +108,28 @@ internal fun EwalletPaymentUI(
         onValueChange = {},
         readOnly = true,
         placeholder = { Text("Select an E-Wallet") },
+        leadingIcon = selectedChannel?.let { channel ->
+          {
+            Row(
+              modifier = Modifier.height(IntrinsicSize.Min),
+              verticalAlignment = Alignment.CenterVertically
+            ) {
+              Spacer(modifier = Modifier.width(8.dp))
+              AsyncImage(
+                model = channel.brandLogoUrl, // Use the scoped 'channel' variable
+                imageLoader = imageLoader,
+                contentDescription = "E-wallet Logo",
+                contentScale = ContentScale.Fit,
+                modifier = Modifier.size(width = 36.dp, height = 24.dp)
+              )
+              VerticalDivider(
+                modifier = Modifier.padding(horizontal = 8.dp),
+                thickness = 1.dp,
+                color = appearance.colorBorder
+              )
+            }
+          }
+        },
         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
         colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(
           focusedBorderColor = appearance.colorBorder,
@@ -165,35 +198,44 @@ internal fun EwalletPaymentUI(
     }
 
     if (showSaveCheckbox && selectedChannel?.allowSave == true) {
-      Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-          .fillMaxWidth()
-          .clickable {
-            isSaveChecked.value = !isSaveChecked.value
-            onFormStateChanged(formValues.toMap(), visibleFields.value, isSaveChecked.value)
-          }
-      ) {
-        Checkbox(
-          checked = isSaveChecked.value,
-          onCheckedChange = {}
-        )
-        Text(
-          text = "Save card information for future use",
-          style = MaterialTheme.typography.bodyMedium,
-          color = appearance.colorText,
-          modifier = Modifier.padding(start = 8.dp)
-        )
-      }
+      CheckboxWithText(
+        checked = isSaveChecked.value,
+        text = stringResource(id = R.string.save_for_faster_payment_next_time),
+        onCheckedChange = { nextChecked ->
+          isSaveChecked.value = nextChecked
+          onFormStateChanged(formValues.toMap(), visibleFields.value, isSaveChecked.value)
+        },
+        textColor = appearance.colorText
+      )
     }
 
-    selectedChannel?.instructions?.forEach { instruction ->
-      Spacer(modifier = Modifier.height(8.dp))
-      Text(
-        text = instruction,
-        style = MaterialTheme.typography.bodySmall,
-        color = appearance.colorTextSecondary
+    if (!selectedChannel?.instructions.isNullOrEmpty()) {
+      Spacer(modifier = Modifier.height(16.dp))
+      DashedDivider(
+        modifier = Modifier
+          .fillMaxWidth(),
+        color = appearance.colorBorder
       )
+      Spacer(modifier = Modifier.height(8.dp))
+      Row(
+        verticalAlignment = Alignment.CenterVertically
+      ) {
+        Image(
+          painter = painterResource(R.drawable.img_phone_app),
+          contentDescription = null,
+          modifier = Modifier.size(60.dp)
+        )
+        Column() {
+          selectedChannel.instructions.forEachIndexed { index, instruction ->
+            Text(
+              text = instruction,
+              style = MaterialTheme.typography.titleSmall.takeIf { index == 0 }
+                ?: MaterialTheme.typography.bodySmall,
+              color = appearance.colorText.takeIf { index == 0 } ?: appearance.colorTextSecondary
+            )
+          }
+        }
+      }
     }
 
   }
