@@ -1,4 +1,4 @@
-package co.xendit.components.ui.action
+package co.xendit.components.ui.helper
 
 import android.graphics.Bitmap
 import androidx.compose.ui.graphics.Color
