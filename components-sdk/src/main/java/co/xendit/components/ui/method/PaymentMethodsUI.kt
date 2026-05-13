@@ -28,6 +28,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import co.xendit.components.R
+import co.xendit.components.data.model.BffBusiness
 import co.xendit.components.data.model.BffChannel
 import co.xendit.components.data.model.BffSession
 import co.xendit.components.data.model.BffSessionAllowSavePaymentMethod
@@ -51,6 +52,7 @@ private data class PaymentMethodRenderer(
 @Composable
 internal fun PaymentMethodsUI(
   session: BffSession?,
+  bffBusiness: BffBusiness?,
   merchantPreferredPaymentMethod: List<String>? = null,
   channels: List<BffChannel>,
   expandedUiGroup: String?,
@@ -91,6 +93,7 @@ internal fun PaymentMethodsUI(
         val draft = selectedBffChannel?.let { paymentDrafts[it.channelCode] }
         EwalletPaymentUI(
           channels = groupChannels,
+          bffBusiness = bffBusiness,
           selectedChannel = selectedBffChannel,
           initialValues = draft?.formValues.orEmpty(),
           initialVisibleFields = draft?.visibleFields ?: emptyList(),

@@ -39,6 +39,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import co.xendit.components.R
+import co.xendit.components.data.model.BffBusiness
 import co.xendit.components.data.model.BffChannel
 import co.xendit.components.data.model.ChannelFormField
 import co.xendit.components.ui.components.DynamicForm
@@ -53,6 +54,7 @@ import coil.compose.AsyncImage
 @Composable
 internal fun EwalletPaymentUI(
   channels: List<BffChannel>,
+  bffBusiness: BffBusiness?,
   selectedChannel: BffChannel?,
   initialValues: Map<String, String> = emptyMap(),
   initialVisibleFields: List<ChannelFormField> = emptyList(),
@@ -92,7 +94,7 @@ internal fun EwalletPaymentUI(
       .padding(bottom = 12.dp)
   ) {
     Text(
-      text = "Pay with",
+      text = stringResource(id = R.string.ewallet_pay_with),
       style = MaterialTheme.typography.titleSmall,
       color = appearance.colorTextSecondary
     )
@@ -107,7 +109,7 @@ internal fun EwalletPaymentUI(
         value = selectedChannel?.brandName ?: "",
         onValueChange = {},
         readOnly = true,
-        placeholder = { Text("Select an E-Wallet") },
+        placeholder = { Text(stringResource(id = R.string.ewallet_select_placeholder)) },
         leadingIcon = selectedChannel?.let { channel ->
           {
             Row(
@@ -118,7 +120,7 @@ internal fun EwalletPaymentUI(
               AsyncImage(
                 model = channel.brandLogoUrl, // Use the scoped 'channel' variable
                 imageLoader = imageLoader,
-                contentDescription = "E-wallet Logo",
+                contentDescription = null,
                 contentScale = ContentScale.Fit,
                 modifier = Modifier.size(width = 36.dp, height = 24.dp)
               )
@@ -201,7 +203,11 @@ internal fun EwalletPaymentUI(
       Spacer(modifier = Modifier.height(16.dp))
       CheckboxWithText(
         checked = isSaveChecked.value,
-        text = stringResource(id = R.string.save_for_faster_payment_next_time),
+        text = stringResource(
+          id = R.string.ewallet_link_for_future_purchase,
+          selectedChannel.brandName,
+          bffBusiness?.name.orEmpty()
+        ),
         onCheckedChange = { nextChecked ->
           isSaveChecked.value = nextChecked
           onFormStateChanged(formValues.toMap(), visibleFields.value, isSaveChecked.value)
@@ -268,7 +274,7 @@ internal fun EwalletLogo(
     AsyncImage(
       model = logoUrl,
       imageLoader = imageLoader,
-      contentDescription = "E-wallet Logo",
+      contentDescription = null,
       // 2. Use Fit or Inside to prevent "trimming"
       contentScale = ContentScale.Fit,
       modifier = Modifier

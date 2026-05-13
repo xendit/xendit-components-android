@@ -11,4 +11,7 @@
   <string name="sessionaction_qr_saved">Đã lưu mã QR</string>
   <string name="sessionaction_qr_failed_save">Không thể lưu mã QR</string>
   <string name="sessionaction_qr_failed_download">Không thể tải xuống QR</string>
+  <string name="ewallet_pay_with">Thanh toán bằng</string>
+  <string name="ewallet_select_placeholder">Chọn ví điện tử</string>
+  <string name="ewallet_link_for_future_purchase">Liên kết %1$s của bạn với %2$s cho lần mua tiếp theo</string>
 </resources>

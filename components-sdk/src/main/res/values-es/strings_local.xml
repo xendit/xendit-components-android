@@ -11,4 +11,7 @@
   <string name="sessionaction_qr_saved">Código QR guardado</string>
   <string name="sessionaction_qr_failed_save">No se pudo guardar el código QR</string>
   <string name="sessionaction_qr_failed_download">No se pudo descargar el QR</string>
+  <string name="ewallet_pay_with">Pagar con</string>
+  <string name="ewallet_select_placeholder">Selecciona un monedero digital</string>
+  <string name="ewallet_link_for_future_purchase">Vincula tu %1$s con %2$s para futuras compras</string>
 </resources>
