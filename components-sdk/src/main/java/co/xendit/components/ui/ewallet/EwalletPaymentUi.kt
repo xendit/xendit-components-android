@@ -114,7 +114,7 @@ internal fun EwalletPaymentUI(
               modifier = Modifier.height(IntrinsicSize.Min),
               verticalAlignment = Alignment.CenterVertically
             ) {
-              Spacer(modifier = Modifier.width(8.dp))
+              Spacer(modifier = Modifier.width(12.dp))
               AsyncImage(
                 model = channel.brandLogoUrl, // Use the scoped 'channel' variable
                 imageLoader = imageLoader,
@@ -198,6 +198,7 @@ internal fun EwalletPaymentUI(
     }
 
     if (showSaveCheckbox && selectedChannel?.allowSave == true) {
+      Spacer(modifier = Modifier.height(16.dp))
       CheckboxWithText(
         checked = isSaveChecked.value,
         text = stringResource(id = R.string.save_for_faster_payment_next_time),
