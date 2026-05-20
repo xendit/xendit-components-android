@@ -3,7 +3,6 @@ package co.xendit.components
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
-import android.util.Log
 import android.view.ViewGroup
 import androidx.activity.ComponentActivity
 import androidx.annotation.VisibleForTesting
@@ -103,7 +102,7 @@ object XenditComponents {
       throw IllegalArgumentException("Context must be an Activity to show the Payment SDK.")
     }
 
-    CoreSdkComponent.headerProvider.setHostId(activity.packageName ?: "")
+    CoreSdkComponent.headerProvider.setMerchantAppId(activity.packageName ?: "")
 
     this.merchantPreferredPaymentMethod = merchantPreferredPaymentMethod
 
