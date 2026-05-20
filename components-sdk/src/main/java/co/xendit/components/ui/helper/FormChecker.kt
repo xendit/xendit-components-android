@@ -1,10 +1,12 @@
 package co.xendit.components.ui.helper
 
+import co.xendit.components.R
 import co.xendit.components.data.model.BffCardInfo
 import co.xendit.components.data.model.CardDetails
 import co.xendit.components.data.model.ChannelFormField
 import co.xendit.components.data.model.FieldType
 import co.xendit.components.data.model.primaryChannelPropertyKey
+import co.xendit.components.ui.components.molecule.UiText
 import co.xendit.components.ui.helper.FormCheckerUtil.isValidCardExpiry
 import co.xendit.components.ui.helper.FormCheckerUtil.isValidCreditCard
 import co.xendit.components.ui.helper.FormCheckerUtil.isValidEmail
@@ -12,9 +14,6 @@ import co.xendit.components.ui.helper.FormCheckerUtil.isValidPhoneNumber
 import kotlin.collections.forEach
 
 internal object FormChecker {
-
-  private const val CARD_BRAND_NOT_SUPPORTED_MESSAGE =
-    "This card brand is not supported for this transaction."
 
   fun validateAllField(
     fields: List<ChannelFormField>,
@@ -44,24 +43,24 @@ internal object FormChecker {
     values: Map<String, String>? = null,
     cardDetails: CardDetails? = null,
     bffCardInfo: BffCardInfo? = null
-  ): String? {
+  ): UiText? {
     if (field.required && value.isBlank()) {
-      return "${field.label} is required"
+      return UiText.StringResource(R.string.form_validation_required, field.label)
     }
 
     when (field.type) {
       is FieldType.CreditCardNumber -> {
         if (!isValidCreditCard(value)) {
-          return "${field.label} is not valid"
+          return UiText.StringResource(R.string.sessionvalidation_card_number_invalid)
         }
         val scheme = cardDetails?.schemes?.firstOrNull()
         if (scheme != null && !isCardBrandSupported(scheme, bffCardInfo)) {
-          return CARD_BRAND_NOT_SUPPORTED_MESSAGE
+          return UiText.StringResource(R.string.card_brand_not_supported)
         }
       }
       is FieldType.CreditCardExpiry -> {
         if (!isValidCardExpiry(value)) {
-          return "${field.label} is not valid"
+          return UiText.StringResource(R.string.sessionvalidation_card_expiry_invalid)
         }
       }
       is FieldType.PhoneNumber -> {
@@ -70,26 +69,26 @@ internal object FormChecker {
           val countryCodeKey = "${propertyKey}_country_code"
           val regionCode = values?.get(countryCodeKey) ?: "ID"
           if (!isValidPhoneNumber(value, regionCode)) {
-            return "${field.label} is not valid"
+            return UiText.StringResource(R.string.form_validation_invalid, field.label)
           }
         }
       }
       is FieldType.Email -> {
         if (value.isNotBlank() && !isValidEmail(value)) {
-          return "${field.label} is not valid"
+          return UiText.StringResource(R.string.form_validation_invalid, field.label)
         }
       }
       else -> {
         if (field.type is FieldType.Text) {
           if (field.type.autocomplete == "email") {
             if (value.isNotBlank() && !isValidEmail(value)) {
-              return "${field.label} is not valid"
+              return UiText.StringResource(R.string.form_validation_invalid, field.label)
             }
           }
           field.type.regexValidators?.forEach { validator ->
             val regex = Regex(validator.regex.removeSurrounding("/"))
             if (!regex.matches(value)) {
-              return validator.message
+              return UiText.DynamicString(validator.message)
             }
           }
         }

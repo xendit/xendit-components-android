@@ -42,6 +42,7 @@ import co.xendit.components.ui.components.molecule.ExpiryDateField
 import co.xendit.components.ui.components.molecule.InstallmentPlanField
 import co.xendit.components.ui.components.molecule.PhoneNumberField
 import co.xendit.components.ui.components.molecule.ProvinceField
+import co.xendit.components.ui.components.molecule.UiText
 import co.xendit.components.ui.components.molecule.XenditTextField
 import co.xendit.components.ui.helper.FormChecker.validateField
 import co.xendit.components.ui.helper.toLabelDisplay
@@ -72,7 +73,7 @@ internal fun DynamicForm(
         putAll(initialValues)
       }
     }
-  val formErrors = remember { mutableStateMapOf<String, String?>() }
+  val formErrors = remember { mutableStateMapOf<String, UiText?>() }
 
   LaunchedEffect(mockData) {
     if (mockData.isNotEmpty()) {
@@ -233,7 +234,7 @@ internal fun DynamicForm(
         )
         val listPropertyKey = groupFields.map { it.primaryChannelPropertyKey() }
         val filteredFormError = formErrors.filterKeys { it in listPropertyKey }
-        val groupHaveError = filteredFormError.any { !it.value.isNullOrEmpty() }
+        val groupHaveError = filteredFormError.any { it.value != null }
 
         Column(
           modifier = Modifier
@@ -307,7 +308,7 @@ private data class DynamicFormRenderContext(
   val currency: String?,
   val allFields: List<ChannelFormField>,
   val values: Map<String, String>,
-  val errors: Map<String, String?>,
+  val errors: Map<String, UiText?>,
   val cardDetails: CardDetails?,
   val bffCardInfo: BffCardInfo?,
   val installmentPlans: List<InstallmentPlan>?,
@@ -350,14 +351,14 @@ private fun collectDynamicFormGroupFields(
 @Composable
 private fun DynamicFormErrorDisplay(
   modifier: Modifier,
-  filteredFormError: Map<String, String?>,
+  filteredFormError: Map<String, UiText?>,
   appearance: co.xendit.components.ui.style.XenditAppearance
 ) {
   Column(modifier = modifier) {
-    val firstError = filteredFormError.values.firstOrNull { !it.isNullOrEmpty() }
+    val firstError = filteredFormError.values.firstOrNull { it != null }
     if (firstError != null) {
       Text(
-        text = firstError,
+        text = firstError.asString(),
         style = MaterialTheme.typography.labelSmall,
         color = appearance.colorDanger,
         modifier = modifier.padding(top = 2.dp)
@@ -378,7 +379,7 @@ private fun DynamicFormFieldItem(
     currency = context.currency,
     allFields = context.allFields,
     values = context.values,
-    errors = if (isDisplayError) context.errors else emptyMap(),
+    errors = if (isDisplayError) context.errors else emptyMap<String, UiText?>(),
     onValueChange = { key, value -> context.onFieldValueChange(field, key, value) },
     cardDetails = context.cardDetails,
     bffCardInfo = context.bffCardInfo,
@@ -506,7 +507,7 @@ private fun FormFieldItem(
   currency: String?,
   allFields: List<ChannelFormField>,
   values: Map<String, String>,
-  errors: Map<String, String?>,
+  errors: Map<String, UiText?>,
   onValueChange: (String, String) -> Unit,
   cardDetails: CardDetails? = null,
   bffCardInfo: BffCardInfo? = null,
@@ -519,7 +520,7 @@ private fun FormFieldItem(
   val context = LocalContext.current
 
   val currentValue = values[propertyKey] ?: ""
-  val errorMessage = errors[propertyKey]
+  val errorMessage = errors[propertyKey]?.asString()
   val isError = errorMessage != null
   val labelDisplay = if (field.span == 2) {
     field.label
