@@ -113,7 +113,7 @@ internal object AmountFormat {
     "TZS" to "TSh",
     "UAH" to "₴",
     "UGX" to "USh",
-    "UYU" to "$"+"U",
+    "UYU" to "\$U",
     "UZS" to "сум",
     "VND" to "₫",
     "XAF" to "FCFA",
@@ -124,26 +124,26 @@ internal object AmountFormat {
   )
 
   private val currencySymbolPosition: Map<String, String> = mapOf(
-    "ALL" to "1 \$",
-    "BAM" to "1 \$",
-    "BYN" to "1 \$",
-    "CZK" to "1 \$",
-    "DKK" to "1 \$",
-    "GEL" to "1 \$",
-    "HUF" to "1 \$",
-    "ISK" to "1 \$",
-    "IRR" to "1 \$",
-    "KHR" to "1\$",
-    "MDL" to "1 \$",
-    "MKD" to "1 \$",
-    "NOK" to "1 \$",
-    "PLN" to "1 \$",
-    "RON" to "1 \$",
-    "RSD" to "1 \$",
-    "RUB" to "1\$",
-    "SEK" to "1 \$",
-    "UZS" to "1 \$",
-    "VND" to "1\$"
+    "ALL" to "{amt} {sym}",
+    "BAM" to "{amt} {sym}",
+    "BYN" to "{amt} {sym}",
+    "CZK" to "{amt} {sym}",
+    "DKK" to "{amt} {sym}",
+    "GEL" to "{amt} {sym}",
+    "HUF" to "{amt} {sym}",
+    "ISK" to "{amt} {sym}",
+    "IRR" to "{amt} {sym}",
+    "KHR" to "{amt}{sym}",
+    "MDL" to "{amt} {sym}",
+    "MKD" to "{amt} {sym}",
+    "NOK" to "{amt} {sym}",
+    "PLN" to "{amt} {sym}",
+    "RON" to "{amt} {sym}",
+    "RSD" to "{amt} {sym}",
+    "RUB" to "{amt}{sym}",
+    "SEK" to "{amt} {sym}",
+    "UZS" to "{amt} {sym}",
+    "VND" to "{amt}{sym}"
   )
 
   private val currencySymbolDecimals: Map<String, Int> = mapOf(
@@ -193,12 +193,22 @@ internal object AmountFormat {
     val formatted =
       if (currencySymbols.containsKey(currencyCode)) {
         val symbol = currencySymbols[currencyCode] ?: currencyCode
-        val positioning = currencySymbolPosition[currencyCode] ?: "\$1"
-        positioning.replace("\$", symbol).replace("1", str)
+        val positioning = currencySymbolPosition[currencyCode] ?: "{sym}{amt}"
+        applyPositioning(pattern = positioning, symbol = symbol, amount = str)
       } else {
         "$currencyCode $str"
       }
 
     return if (isNegative) "-$formatted" else formatted
+  }
+
+  private fun applyPositioning(
+    pattern: String,
+    symbol: String,
+    amount: String,
+  ): String {
+    return pattern
+      .replace("{sym}", symbol)
+      .replace("{amt}", amount)
   }
 }
