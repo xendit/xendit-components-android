@@ -3,6 +3,9 @@ package co.xendit.components.ui.helper
 import co.xendit.components.data.model.ChannelFormField
 import co.xendit.components.data.model.FieldType
 import co.xendit.components.data.model.RegexValidator
+import co.xendit.components.data.model.BffCardBrand
+import co.xendit.components.data.model.BffCardInfo
+import co.xendit.components.data.model.CardDetails
 import com.google.i18n.phonenumbers.PhoneNumberUtil
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -165,5 +168,41 @@ class FormCheckerTest {
       "Phone is not valid",
       FormChecker.validateField(field, usNationalNumber, invalidValues)
     )
+  }
+
+  @Test
+  fun `validateField returns error when card brand is not supported`() {
+    val field = ChannelFormField(
+      label = "Card Number",
+      placeholder = "",
+      type = FieldType.CreditCardNumber(),
+      channelProperty = "card_number",
+      required = true,
+      span = 1
+    )
+
+    val cardDetails = CardDetails(
+      requireBillingInformation = false,
+      countryCodes = listOf("ID"),
+      schemes = listOf("amex")
+    )
+    val bffCardInfo =
+      BffCardInfo(
+        brands = listOf(
+          BffCardBrand(name = "visa", logoUrl = "https://example.com/visa.png"),
+          BffCardBrand(name = "mastercard", logoUrl = "https://example.com/mc.png")
+        )
+      )
+
+    val result =
+      FormChecker.validateField(
+        field = field,
+        value = "4111111111111111",
+        values = mapOf("card_number" to "4111111111111111"),
+        cardDetails = cardDetails,
+        bffCardInfo = bffCardInfo
+      )
+
+    assertEquals("This card brand is not supported for this transaction.", result)
   }
 }

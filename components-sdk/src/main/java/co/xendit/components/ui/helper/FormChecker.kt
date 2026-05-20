@@ -1,5 +1,7 @@
 package co.xendit.components.ui.helper
 
+import co.xendit.components.data.model.BffCardInfo
+import co.xendit.components.data.model.CardDetails
 import co.xendit.components.data.model.ChannelFormField
 import co.xendit.components.data.model.FieldType
 import co.xendit.components.data.model.primaryChannelPropertyKey
@@ -11,16 +13,38 @@ import kotlin.collections.forEach
 
 internal object FormChecker {
 
-  fun validateAllField(fields: List<ChannelFormField>, values: Map<String, String>): Boolean {
+  private const val CARD_BRAND_NOT_SUPPORTED_MESSAGE =
+    "This card brand is not supported for this transaction."
+
+  fun validateAllField(
+    fields: List<ChannelFormField>,
+    values: Map<String, String>,
+    cardDetails: CardDetails? = null,
+    bffCardInfo: BffCardInfo? = null
+  ): Boolean {
     fields.forEach { field ->
-      if (validateField(field, values[field.primaryChannelPropertyKey()] ?: "", values) != null) {
+      if (
+        validateField(
+          field = field,
+          value = values[field.primaryChannelPropertyKey()] ?: "",
+          values = values,
+          cardDetails = cardDetails,
+          bffCardInfo = bffCardInfo
+        ) != null
+      ) {
         return false
       }
     }
     return true
   }
 
-  fun validateField(field: ChannelFormField, value: String, values: Map<String, String>? = null): String? {
+  fun validateField(
+    field: ChannelFormField,
+    value: String,
+    values: Map<String, String>? = null,
+    cardDetails: CardDetails? = null,
+    bffCardInfo: BffCardInfo? = null
+  ): String? {
     if (field.required && value.isBlank()) {
       return "${field.label} is required"
     }
@@ -29,6 +53,10 @@ internal object FormChecker {
       is FieldType.CreditCardNumber -> {
         if (!isValidCreditCard(value)) {
           return "${field.label} is not valid"
+        }
+        val scheme = cardDetails?.schemes?.firstOrNull()
+        if (scheme != null && !isCardBrandSupported(scheme, bffCardInfo)) {
+          return CARD_BRAND_NOT_SUPPORTED_MESSAGE
         }
       }
       is FieldType.CreditCardExpiry -> {
@@ -68,5 +96,16 @@ internal object FormChecker {
       }
     }
     return null
+  }
+
+  private fun isCardBrandSupported(selectedCardScheme: String, bffCardInfo: BffCardInfo?): Boolean {
+    val brands = bffCardInfo?.brands.orEmpty()
+    if (brands.isEmpty()) return true
+    val normalizedScheme = normalizeCardBrand(selectedCardScheme)
+    return brands.any { normalizeCardBrand(it.name) == normalizedScheme }
+  }
+
+  private fun normalizeCardBrand(value: String): String {
+    return value.lowercase().replace(Regex("[^a-z0-9]"), "")
   }
 }

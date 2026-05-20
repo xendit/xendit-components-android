@@ -158,7 +158,14 @@ internal fun DynamicForm(
       if (propertyKey.isNotEmpty()) {
         val currentValue = formValues[propertyKey] ?: ""
         if (currentValue.isNotBlank()) {
-          formErrors[propertyKey] = validateField(field, currentValue, formValues)
+          formErrors[propertyKey] =
+            validateField(
+              field = field,
+              value = currentValue,
+              values = formValues,
+              cardDetails = cardDetails,
+              bffCardInfo = bffCardInfo
+            )
         }
       }
     }
@@ -171,7 +178,14 @@ internal fun DynamicForm(
       remember(formValues, formErrors, onValuesChangedRef, onCardNumberChangedRef) {
         { changedField: ChannelFormField, key: String, value: String ->
           formValues[key] = value
-          formErrors[key] = validateField(changedField, value, formValues)
+          formErrors[key] =
+            validateField(
+              field = changedField,
+              value = value,
+              values = formValues,
+              cardDetails = cardDetails,
+              bffCardInfo = bffCardInfo
+            )
           onValuesChangedRef.value(formValues.toMap())
           if (changedField.type is FieldType.CreditCardNumber) {
             onCardNumberChangedRef.value(value)
