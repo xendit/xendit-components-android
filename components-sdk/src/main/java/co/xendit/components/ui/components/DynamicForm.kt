@@ -47,7 +47,6 @@ import co.xendit.components.ui.components.molecule.XenditTextField
 import co.xendit.components.ui.helper.FormChecker.validateField
 import co.xendit.components.ui.helper.toLabelDisplay
 import co.xendit.components.ui.style.xenditAppearance
-import java.util.Currency
 
 @Composable
 internal fun DynamicForm(
@@ -144,8 +143,9 @@ internal fun DynamicForm(
           val countryCodeKey = "${propertyKey}_country_code"
           if (!formValues.containsKey(countryCodeKey)) {
             // Default to ID or first country if no initial country code
-            formValues[countryCodeKey] = initialValues[countryCodeKey] ?:
-              Country.fromCode("ID")?.code ?: Country.countries.first().code
+            formValues[countryCodeKey] =
+              initialValues[countryCodeKey] ?: Country.fromCode("ID")?.code
+                  ?: Country.countries.first().code
           }
         }
         if (!formErrors.containsKey(propertyKey)) {
