@@ -101,7 +101,11 @@ object XenditComponents {
     merchantPreferredPaymentMethod: List<String>? = null,
     onPaymentResult: (XenditPaymentResult) -> Unit
   ) {
-    CoreSdkComponent.headerProvider.setHostId(activity.packageName ?: "")
+    if (activity !is Activity) {
+      throw IllegalArgumentException("Context must be an Activity to show the Payment SDK.")
+    }
+
+    CoreSdkComponent.headerProvider.setMerchantAppId(activity.packageName ?: "")
 
     this.merchantPreferredPaymentMethod = merchantPreferredPaymentMethod
 
