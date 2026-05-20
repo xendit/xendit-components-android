@@ -397,6 +397,7 @@ internal fun PaymentContainerHost(
                 ) {
                   PaymentMethodsUI(
                     session = mviState.sessionResponse?.session,
+                    bffBusiness = mviState.sessionResponse?.business,
                     merchantPreferredPaymentMethod = merchantPreferredPaymentMethod,
                     channels = mviState.channels,
                     expandedUiGroup = mviState.expandedUiGroup,
