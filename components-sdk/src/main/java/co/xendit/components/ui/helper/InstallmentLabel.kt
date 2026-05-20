@@ -4,18 +4,10 @@ import android.content.Context
 import co.xendit.components.R
 import co.xendit.components.data.model.InstallmentPlan
 import co.xendit.components.ui.components.molecule.UiText
-import java.text.NumberFormat
-import java.util.Locale
+import co.xendit.components.util.AmountFormat
 
 internal fun InstallmentPlan.toLabelDisplay(context: Context, currency: String?): UiText {
-  val symbol = when (currency) {
-    "IDR" -> "Rp"
-    "USD" -> "$"
-    "PHP" -> "₱"
-    else -> currency
-  }
-  val formattedAmount = symbol + NumberFormat.getNumberInstance(Locale("id", "ID"))
-    .format(this.installmentAmount)
+  val formattedAmount = AmountFormat.format(this.installmentAmount ?: 0, currency)
   return when (this.terms) {
     0 -> {
       val rawString = context.getString(R.string.sessioninstallment_plan_pay_in_full)

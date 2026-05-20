@@ -15,8 +15,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.text.NumberFormat
-import java.util.Locale
+import co.xendit.components.util.AmountFormat
 
 internal data class CardState(
   val cardDetails: CardDetails? = null,
@@ -112,8 +111,8 @@ internal class CardViewModel(
                 val plans = optionsResponse.body()?.installmentPlans
                 if (!plans.isNullOrEmpty()) {
                   val amount = optionsResponse.body()?.amount ?: plans.first().totalAmount ?: 0L
-                  val formattedAmount =
-                    NumberFormat.getNumberInstance(Locale("id", "ID")).format(amount)
+                  val currencyCode = optionsResponse.body()?.currency ?: "IDR"
+                  val formattedAmount = AmountFormat.format(amount, currencyCode)
                   val dummyPlan =
                     InstallmentPlan(
                       interval = "MONTH",
@@ -121,7 +120,7 @@ internal class CardViewModel(
                       terms = 0,
                       installmentAmount = amount,
                       totalAmount = amount,
-                      description = "Pay in Full — Rp$formattedAmount",
+                      description = "Pay in Full — $formattedAmount",
                       interestRate = 0.0
                     )
                   listOf(dummyPlan) + plans
@@ -141,6 +140,5 @@ internal class CardViewModel(
   }
 
 }
-
 
 

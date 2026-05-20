@@ -37,8 +37,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.Image
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import java.text.NumberFormat
-import java.util.Locale
+import co.xendit.components.util.AmountFormat
 
 @Composable
 internal fun ActionQrUI(
@@ -69,15 +68,7 @@ internal fun ActionQrUI(
     }
 
   val formattedAmount = remember(amount, currency) {
-    if (amount == null || currency.isNullOrBlank()) return@remember ""
-    val symbol = when (currency) {
-      "IDR" -> "Rp"
-      "USD" -> "$"
-      "PHP" -> "₱"
-      else -> currency
-    }
-    val number = NumberFormat.getNumberInstance(Locale("id", "ID"))
-    "$symbol${number.format(amount)}"
+    AmountFormat.format(amount, currency)
   }
 
   Box(
@@ -198,4 +189,3 @@ internal fun ActionQrUI(
     }
   }
 }
-
