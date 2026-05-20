@@ -23,10 +23,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import co.xendit.components.data.model.BffCardInfo
+import co.xendit.components.data.model.BffSession
 import co.xendit.components.data.model.CardDetails
 import co.xendit.components.data.model.ChannelFormField
 import co.xendit.components.data.model.Country
@@ -44,9 +46,11 @@ import co.xendit.components.ui.components.molecule.XenditTextField
 import co.xendit.components.ui.helper.FormChecker.validateField
 import co.xendit.components.ui.helper.toLabelDisplay
 import co.xendit.components.ui.style.xenditAppearance
+import java.util.Currency
 
 @Composable
 internal fun DynamicForm(
+  session: BffSession? = null,
   fields: List<ChannelFormField>,
   cardDetails: CardDetails?,
   initialValues: Map<String, String> = emptyMap(),
@@ -184,6 +188,7 @@ internal fun DynamicForm(
         handleValueChange
       ) {
         DynamicFormRenderContext(
+          currency = session?.currency,
           allFields = filteredFields,
           values = formValues,
           errors = formErrors,
@@ -285,6 +290,7 @@ private fun canRenderDynamicFormAsTwoColumnRow(
 }
 
 private data class DynamicFormRenderContext(
+  val currency: String?,
   val allFields: List<ChannelFormField>,
   val values: Map<String, String>,
   val errors: Map<String, String?>,
@@ -355,6 +361,7 @@ private fun DynamicFormFieldItem(
 ) {
   FormFieldItem(
     field = field,
+    currency = context.currency,
     allFields = context.allFields,
     values = context.values,
     errors = if (isDisplayError) context.errors else emptyMap(),
@@ -482,6 +489,7 @@ private fun filterFormFields(
 @Composable
 private fun FormFieldItem(
   field: ChannelFormField,
+  currency: String?,
   allFields: List<ChannelFormField>,
   values: Map<String, String>,
   errors: Map<String, String?>,
@@ -494,6 +502,7 @@ private fun FormFieldItem(
 ) {
   val appearance = xenditAppearance
   val propertyKey = field.primaryChannelPropertyKey()
+  val context = LocalContext.current
 
   val currentValue = values[propertyKey] ?: ""
   val errorMessage = errors[propertyKey]
@@ -603,8 +612,9 @@ private fun FormFieldItem(
       val selectedPlan = installmentPlans?.find { it.terms.toString() == currentValue }
 
       InstallmentPlanField(
+        currency = currency,
         plans = installmentPlans ?: emptyList(),
-        selectedPlanDesc = selectedPlan?.toLabelDisplay()?.asString() ?: "",
+        selectedPlanDesc = selectedPlan?.toLabelDisplay(context, currency)?.asString() ?: "",
         onPlanSelected = { plan ->
           onValueChange(propertyKey, plan.terms.toString())
         },
