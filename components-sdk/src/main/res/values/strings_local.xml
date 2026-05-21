@@ -7,4 +7,11 @@
   <string name="card_brand_not_supported">This card brand is not supported for this transaction.</string>
   <string name="form_validation_required">%1$s is required</string>
   <string name="form_validation_invalid">%1$s is not valid</string>
+  <string name="sessionaction_qr_scan_to_pay">Scan To Pay</string>
+  <string name="sessionaction_qr_nmid">NMID: %1$s</string>
+  <string name="sessionaction_qr_unable_generate_qr">Unable to generate QR code</string>
+  <string name="sessionaction_qr_unable_download_qr">Unable to download QR code</string>
+  <string name="sessionaction_qr_saved">QR code saved</string>
+  <string name="sessionaction_qr_failed_save">Failed to save QR code</string>
+  <string name="sessionaction_qr_failed_download">Failed to download QR</string>
 </resources>
