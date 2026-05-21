@@ -13,6 +13,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.platform.LocalContext
 import co.xendit.components.data.model.InstallmentPlan
 import co.xendit.components.ui.helper.toLabelDisplay
 import co.xendit.components.ui.style.xenditAppearance
@@ -20,6 +21,7 @@ import co.xendit.components.ui.style.xenditAppearance
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun InstallmentPlanField(
+  currency: String?,
   plans: List<InstallmentPlan>,
   selectedPlanDesc: String,
   onPlanSelected: (InstallmentPlan) -> Unit,
@@ -32,6 +34,7 @@ internal fun InstallmentPlanField(
   noBorder: Boolean = false,
 ) {
   val appearance = xenditAppearance
+  val context = LocalContext.current
   var expanded by remember { mutableStateOf(false) }
 
   ExposedDropdownMenuBox(
@@ -58,7 +61,7 @@ internal fun InstallmentPlanField(
     ) {
       plans.forEach { plan ->
         DropdownMenuItem(
-          text = { Text(plan.toLabelDisplay().asString(), color = appearance.colorText) },
+          text = { Text(plan.toLabelDisplay(context, currency).asString(), color = appearance.colorText) },
           onClick = {
             onPlanSelected(plan)
             expanded = false

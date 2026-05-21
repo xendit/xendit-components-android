@@ -1,5 +1,6 @@
 package co.xendit.components
 
+import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
 import android.view.ViewGroup
@@ -101,7 +102,11 @@ object XenditComponents {
     merchantPreferredPaymentMethod: List<String>? = null,
     onPaymentResult: (XenditPaymentResult) -> Unit
   ) {
-    CoreSdkComponent.headerProvider.setHostId(activity.packageName ?: "")
+    if (activity !is Activity) {
+      throw IllegalArgumentException("Context must be an Activity to show the Payment SDK.")
+    }
+
+    CoreSdkComponent.headerProvider.setMerchantAppId(activity.packageName ?: "")
 
     this.merchantPreferredPaymentMethod = merchantPreferredPaymentMethod
 

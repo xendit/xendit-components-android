@@ -61,6 +61,7 @@ internal fun CardPaymentUI(
     channelData?.form?.let { fields ->
       key(channelData.channelCode) {
         DynamicForm(
+          session = session,
           fields = fields,
           cardDetails = cardDetails,
           initialValues = initialValues,

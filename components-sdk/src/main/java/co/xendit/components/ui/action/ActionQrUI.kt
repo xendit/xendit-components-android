@@ -93,7 +93,6 @@ internal fun ActionQrUI(
   val view = LocalView.current
   val scope = rememberCoroutineScope()
   val hostState = snackbarHostState ?: remember { SnackbarHostState() }
-  val qrisImageUrl = "https://assets.xendit.co/payment-session/logos/QRIS.svg"
   val density = LocalDensity.current
   val qrSizePx = remember(density) { with(density) { 260.dp.roundToPx() } }
   var hideDownloadButton by remember { mutableStateOf(false) }
@@ -153,7 +152,7 @@ internal fun ActionQrUI(
           AsyncImage(
             model =
               ImageRequest.Builder(context)
-                .data(qrisImageUrl)
+                .data(channelLogoUrl)
                 .crossfade(true)
                 .build(),
             imageLoader = SdkImageLoader.get(context),

@@ -439,7 +439,9 @@ internal fun PaymentContainerHost(
                 val isPayEnabled =
                   isPaymentSelected && !mviState.isLoading && validateAllField(
                     isFormFilled,
-                    formValue
+                    formValue,
+                    cardDetails = cardState.cardDetails,
+                    bffCardInfo = mviState.selectedChannel?.card
                   )
                 val payText =
                   if (mviState.sessionType == BffSessionType.SAVE) {

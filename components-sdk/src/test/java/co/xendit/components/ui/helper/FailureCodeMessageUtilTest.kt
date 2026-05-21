@@ -22,36 +22,35 @@ class FailureCodeMessageUtilTest {
   }
 
   @Test
-  fun resolveFailureMessage_unknownCode_usesUnknownTemplateAndReplacesFailureCode() {
+  fun resolveFailureMessage_unknownCode_returnsDefaultFailedSubtext() {
     val context = mockk<Context>()
-    every { context.getString(R.string.sessionfailure_code_unknown) } returns "Failure {{failureCode}}"
+    every { context.getString(R.string.sessionpayment_token_status_failed_subtext) } returns "Payment failed"
 
     val result = FailureCodeMessageUtil.resolveFailureMessage(context, "SOME_NEW_CODE")
 
-    assertEquals("Failure SOME_NEW_CODE", result)
-    verify(exactly = 1) { context.getString(R.string.sessionfailure_code_unknown) }
+    assertEquals("Payment failed", result)
+    verify(exactly = 1) { context.getString(R.string.sessionpayment_token_status_failed_subtext) }
   }
 
   @Test
-  fun resolveFailureMessage_blankCode_usesUNKNOWNReplacement() {
+  fun resolveFailureMessage_blankCode_returnsDefaultFailedSubtext() {
     val context = mockk<Context>()
-    every { context.getString(R.string.sessionfailure_code_unknown) } returns "Failure {{failureCode}}"
+    every { context.getString(R.string.sessionpayment_token_status_failed_subtext) } returns "Payment failed"
 
     val result = FailureCodeMessageUtil.resolveFailureMessage(context, "   ")
 
-    assertEquals("Failure UNKNOWN", result)
-    verify(exactly = 1) { context.getString(R.string.sessionfailure_code_unknown) }
+    assertEquals("Payment failed", result)
+    verify(exactly = 1) { context.getString(R.string.sessionpayment_token_status_failed_subtext) }
   }
 
   @Test
-  fun resolveFailureMessage_nullCode_usesUNKNOWNReplacement() {
+  fun resolveFailureMessage_nullCode_returnsDefaultFailedSubtext() {
     val context = mockk<Context>()
-    every { context.getString(R.string.sessionfailure_code_unknown) } returns "Failure {{failureCode}}"
+    every { context.getString(R.string.sessionpayment_token_status_failed_subtext) } returns "Payment failed"
 
     val result = FailureCodeMessageUtil.resolveFailureMessage(context, null)
 
-    assertEquals("Failure UNKNOWN", result)
-    verify(exactly = 1) { context.getString(R.string.sessionfailure_code_unknown) }
+    assertEquals("Payment failed", result)
+    verify(exactly = 1) { context.getString(R.string.sessionpayment_token_status_failed_subtext) }
   }
 }
-
