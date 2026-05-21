@@ -44,9 +44,8 @@ internal data class PaymentState(
   val selectedChannel: BffChannel? = null,
   val lastSelectedChannelCodeByUiGroup: Map<String, String> = emptyMap(),
   val paymentSessionId: String? = null,
-  val actionRedirectUrl: String? = null,
+  val paymentActionRedirect: PaymentAction? = null,
   val presentToCustomerPaymentAction: PaymentAction? = null,
-  val iframeCapable: Boolean = true,
   val errorMessage: String? = null,
   val paymentResponse: PaymentResponse? = null,
   val sessionResponse: SessionResponse? = null,
@@ -110,6 +109,8 @@ internal sealed class ActionIntent {
    * Close Webview
    */
   data object CloseWebPayment : ActionIntent()
+
+  data object ClearPaymentActionRedirect : ActionIntent()
 }
 
 internal class PaymentViewModel(
@@ -159,13 +160,16 @@ internal class PaymentViewModel(
       is ActionIntent.CloseWebPayment -> {
         _state.update {
           it.copy(
-            actionRedirectUrl = null,
+            paymentActionRedirect = null,
             presentToCustomerPaymentAction = null,
             paymentResponse = null,
             pollResponse = null
           )
         }
         markClosed()
+      }
+      is ActionIntent.ClearPaymentActionRedirect -> {
+        _state.update { it.copy(paymentActionRedirect = null) }
       }
     }
   }
@@ -312,7 +316,7 @@ internal class PaymentViewModel(
           it.lastSelectedChannelCodeByUiGroup.toMutableMap().apply {
             if (nextSelected != null) put(nextSelected.uiGroup, nextSelected.channelCode)
           },
-        actionRedirectUrl = null,
+        paymentActionRedirect = null,
         presentToCustomerPaymentAction = null,
         paymentResponse = null,
         pollResponse = null,
@@ -330,7 +334,7 @@ internal class PaymentViewModel(
           it.lastSelectedChannelCodeByUiGroup.toMutableMap().apply {
             put(selected.uiGroup, selected.channelCode)
           },
-        actionRedirectUrl = null,
+        paymentActionRedirect = null,
         presentToCustomerPaymentAction = null,
         paymentResponse = null,
         pollResponse = null,
@@ -363,7 +367,7 @@ internal class PaymentViewModel(
           isLoading = true,
           errorMessage = null,
           paymentResponse = null,
-          actionRedirectUrl = null,
+          paymentActionRedirect = null,
           presentToCustomerPaymentAction = null,
           pollResponse = null
         )
@@ -427,8 +431,7 @@ internal class PaymentViewModel(
             _state.update {
               it.copy(
                 isLoading = false,
-                actionRedirectUrl = redirect.value,
-                iframeCapable = redirect.iframeCapable ?: true
+                paymentActionRedirect = redirect,
               )
             }
           } else if (body.status == PaymentRequestStatus.REQUIRES_ACTION) {
@@ -439,7 +442,7 @@ internal class PaymentViewModel(
                 it.copy(
                   isLoading = false,
                   presentToCustomerPaymentAction = presentToCustomer,
-                  actionRedirectUrl = null
+                  paymentActionRedirect = null
                 )
               }
             } else {

@@ -1,5 +1,7 @@
 package co.xendit.components.ui
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -103,11 +105,11 @@ internal fun PaymentContainerHost(
 
   LaunchedEffect(
     pendingSnackbarMessage,
-    mviState.actionRedirectUrl,
+    mviState.paymentActionRedirect,
     mviState.presentToCustomerPaymentAction
   ) {
     val message = pendingSnackbarMessage ?: return@LaunchedEffect
-    if (mviState.actionRedirectUrl != null || mviState.presentToCustomerPaymentAction != null) {
+    if (mviState.paymentActionRedirect != null || mviState.presentToCustomerPaymentAction != null) {
       return@LaunchedEffect
     }
     snackbarHostState.showSnackbar(message)
@@ -360,15 +362,33 @@ internal fun PaymentContainerHost(
             }
         ) {
           when {
-            mviState.actionRedirectUrl != null -> {
-              ActionWebViewUI(
-                url = mviState.actionRedirectUrl!!,
-                onClose = {
-                  viewModel.dispatch(ActionIntent.CloseWebPayment)
-                },
-                onChallengeCompleted = { viewModel.dispatch(ActionIntent.ChallengeCompleted(true)) },
-                iframeCapable = mviState.iframeCapable
-              )
+            mviState.paymentActionRedirect != null -> {
+              val redirect = mviState.paymentActionRedirect!!
+              val url = redirect.value.orEmpty()
+              if (redirect.descriptor == "DEEPLINK_URL") {
+                LaunchedEffect(url) {
+                  if (url.isNotBlank()) {
+                    runCatching {
+                      context.startActivity(
+                        Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
+                          addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        }
+                      )
+                    }
+                    viewModel.showLoading()
+                  }
+                  viewModel.dispatch(ActionIntent.ClearPaymentActionRedirect)
+                }
+              } else {
+                ActionWebViewUI(
+                  url = url,
+                  onClose = {
+                    viewModel.dispatch(ActionIntent.CloseWebPayment)
+                  },
+                  onChallengeCompleted = { viewModel.dispatch(ActionIntent.ChallengeCompleted(true)) },
+                  iframeCapable = redirect.iframeCapable == true
+                )
+              }
             }
 
             mviState.presentToCustomerPaymentAction != null -> {
