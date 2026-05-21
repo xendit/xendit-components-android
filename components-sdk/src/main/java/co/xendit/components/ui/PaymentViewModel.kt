@@ -19,6 +19,7 @@ import co.xendit.components.data.model.PaymentResponse
 import co.xendit.components.data.model.PollResponse
 import co.xendit.components.data.model.SessionResponse
 import co.xendit.components.data.model.SimulatePaymentRequest
+import co.xendit.components.data.model.primaryChannelPropertyKey
 import co.xendit.components.data.network.repo.session.XenditRepository
 import co.xendit.components.ui.components.molecule.UiText
 import co.xendit.components.util.PaymentRequestMapper
@@ -38,6 +39,7 @@ import kotlinx.coroutines.launch
 internal data class PaymentState(
   val isLoading: Boolean = false,
   val channels: List<BffChannel> = emptyList(),
+  val channelVariantsByDisplayCode: Map<String, ChannelVariantChannels> = emptyMap(),
   val expandedUiGroup: String? = null,
   val selectedChannel: BffChannel? = null,
   val lastSelectedChannelCodeByUiGroup: Map<String, String> = emptyMap(),
@@ -52,6 +54,11 @@ internal data class PaymentState(
   val sessionType: BffSessionType? = null,
   val allowSavePaymentMethod: BffSessionAllowSavePaymentMethod? = null,
   val paymentDrafts: Map<String, PaymentDraft> = emptyMap()
+)
+
+internal data class ChannelVariantChannels(
+  val saveChannel: BffChannel? = null,
+  val nonSaveChannel: BffChannel? = null
 )
 
 /**
@@ -172,16 +179,18 @@ internal class PaymentViewModel(
           val body = response.body()
           val session = body?.session
           val channels = body?.paymentChannels.orEmpty()
+          val combined = combinePairedChannels(channels)
           this@PaymentViewModel.paymentSessionId =
             session?.paymentSessionId ?: session?.id
           val sessionType = body?.session?.sessionType
           val allowSavePaymentMethod = body?.session?.allowSavePaymentMethod
 
-          if (channels.isNotEmpty()) {
+          if (combined.channels.isNotEmpty()) {
             _state.update {
               it.copy(
                 isLoading = false,
-                channels = channels,
+                channels = combined.channels,
+                channelVariantsByDisplayCode = combined.variantsByDisplayCode,
                 paymentSessionId = this@PaymentViewModel.paymentSessionId,
                 sessionResponse = body,
                 errorMessage = null,
@@ -214,6 +223,69 @@ internal class PaymentViewModel(
         }
       }
     }
+  }
+
+  private data class CombinedChannelsResult(
+    val channels: List<BffChannel>,
+    val variantsByDisplayCode: Map<String, ChannelVariantChannels>
+  )
+
+  private fun combinePairedChannels(channels: List<BffChannel>): CombinedChannelsResult {
+    if (channels.isEmpty()) return CombinedChannelsResult(emptyList(), emptyMap())
+
+    data class ChannelCombineKey(
+      val uiGroup: String,
+      val brandName: String,
+      val pmType: String?,
+      val allowPayWithoutSave: Boolean,
+      val minAmount: Long?,
+      val maxAmount: Long?,
+      val requiresCustomerDetails: Boolean?,
+      val brandColor: String
+    )
+
+    fun toKey(channel: BffChannel): ChannelCombineKey {
+      return ChannelCombineKey(
+        uiGroup = channel.uiGroup,
+        brandName = channel.brandName,
+        pmType = channel.pmType,
+        allowPayWithoutSave = channel.allowPayWithoutSave,
+        minAmount = channel.minAmount,
+        maxAmount = channel.maxAmount,
+        requiresCustomerDetails = channel.requiresCustomerDetails,
+        brandColor = channel.brandColor
+      )
+    }
+
+    val grouped = channels.groupBy(::toKey)
+    val pairByKey: Map<ChannelCombineKey, Pair<BffChannel, BffChannel>> =
+      grouped.mapNotNull { (key, group) ->
+        if (group.size != 2) return@mapNotNull null
+        val save = group.firstOrNull { it.allowSave }
+        val nonSave = group.firstOrNull { !it.allowSave }
+        if (save != null && nonSave != null) key to (nonSave to save) else null
+      }.toMap()
+
+    val combinedChannels = mutableListOf<BffChannel>()
+    val variants = mutableMapOf<String, ChannelVariantChannels>()
+    val addedDisplayCodes = mutableSetOf<String>()
+
+    channels.forEach { channel ->
+      val key = toKey(channel)
+      val pair = pairByKey[key]
+      if (pair == null) {
+        combinedChannels.add(channel)
+      } else {
+        val display = pair.first
+        if (addedDisplayCodes.add(display.channelCode)) {
+          combinedChannels.add(display)
+          variants[display.channelCode] =
+            ChannelVariantChannels(saveChannel = pair.second, nonSaveChannel = pair.first)
+        }
+      }
+    }
+
+    return CombinedChannelsResult(combinedChannels, variants.toMap())
   }
 
   private fun toggleUiGroupInternal(uiGroup: String) {
@@ -300,11 +372,26 @@ internal class PaymentViewModel(
         val key = publicKey ?: throw IllegalStateException("Public Key not set")
         val authKey = sessionAuthKey ?: throw IllegalStateException("Session ID not set")
         val paySid = paymentSessionId ?: throw IllegalStateException("Payment Session ID not set")
+        val variantsForDisplay = _state.value.channelVariantsByDisplayCode[channelCode]
+        val effectiveChannel =
+          variantsForDisplay?.let { variants ->
+            when {
+              savePaymentMethod && variants.saveChannel != null -> variants.saveChannel
+              !savePaymentMethod && variants.nonSaveChannel != null -> variants.nonSaveChannel
+              else -> null
+            }
+          }
+        val effectiveChannelCode = effectiveChannel?.channelCode ?: channelCode
+        val allowedKeys = effectiveChannel?.form.orEmpty().map { it.primaryChannelPropertyKey() }.toSet()
+        val filteredFields =
+          if (allowedKeys.isEmpty()) emptyList() else fields.filter { it.primaryChannelPropertyKey() in allowedKeys }
+        val filteredFormValues =
+          if (allowedKeys.isEmpty()) emptyMap() else formValues.filterKeys { it in allowedKeys }
 
         val channelProperties =
           PaymentRequestMapper.mapFormValuesToChannelProperties(
-            formValues = formValues,
-            fields = fields,
+            formValues = filteredFormValues,
+            fields = filteredFields,
             publicKey = key,
             sessionId = paySid, // Use paymentSessionId for encryption
             installmentPlans = installmentPlans
@@ -313,7 +400,7 @@ internal class PaymentViewModel(
         val request =
           PaymentRequest(
             sessionId = authKey, // Use sessionAuthKey for the request sessionId
-            channelCode = channelCode,
+            channelCode = effectiveChannelCode,
             channelProperties = channelProperties,
             savePaymentMethod = if (savePaymentMethod) true else null
           )

@@ -199,13 +199,14 @@ internal fun EwalletPaymentUI(
       }
     }
 
-    if (showSaveCheckbox && selectedChannel?.allowSave == true) {
+    if (showSaveCheckbox && selectedChannel != null) {
+      val channel = selectedChannel
       Spacer(modifier = Modifier.height(16.dp))
       CheckboxWithText(
         checked = isSaveChecked.value,
         text = stringResource(
           id = R.string.ewallet_link_for_future_purchase,
-          selectedChannel.brandName,
+          channel.brandName,
           bffBusiness?.name.orEmpty()
         ),
         onCheckedChange = { nextChecked ->

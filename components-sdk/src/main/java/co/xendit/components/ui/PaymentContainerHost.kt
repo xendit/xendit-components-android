@@ -325,6 +325,9 @@ internal fun PaymentContainerHost(
               .clip(RoundedCornerShape(appearance.borderRadius))
               .background(Color(0xFFF7F7F7))
               .padding(horizontal = 12.dp, vertical = 6.dp)
+              .clickable {
+                context.startActivity(OkHttpProfilerSettingsActivity.getIntent(context))
+              }
           ) {
             Column {
               Text(
@@ -400,6 +403,7 @@ internal fun PaymentContainerHost(
                     bffBusiness = mviState.sessionResponse?.business,
                     merchantPreferredPaymentMethod = merchantPreferredPaymentMethod,
                     channels = mviState.channels,
+                    channelVariantsByDisplayCode = mviState.channelVariantsByDisplayCode,
                     expandedUiGroup = mviState.expandedUiGroup,
                     selectedChannel = mviState.selectedChannel,
                     paymentDrafts = mviState.paymentDrafts,

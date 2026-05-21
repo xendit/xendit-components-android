@@ -37,12 +37,12 @@ import co.xendit.components.data.model.CardDetails
 import co.xendit.components.data.model.ChannelFormField
 import co.xendit.components.data.model.InstallmentPlan
 import co.xendit.components.data.model.PaymentDraft
+import co.xendit.components.ui.ChannelVariantChannels
 import co.xendit.components.ui.card.CardPaymentUI
 import co.xendit.components.ui.ewallet.EwalletPaymentUI
 import co.xendit.components.ui.qrcode.QrPaymentUI
 import co.xendit.components.ui.style.xenditAppearance
 import co.xendit.components.ui.ui_util.CustomShape.createTopRoundedOpenShape
-import co.xendit.components.util.XLogger
 
 private data class PaymentMethodRenderer(
   val uiGroup: String,
@@ -55,6 +55,7 @@ internal fun PaymentMethodsUI(
   bffBusiness: BffBusiness?,
   merchantPreferredPaymentMethod: List<String>? = null,
   channels: List<BffChannel>,
+  channelVariantsByDisplayCode: Map<String, ChannelVariantChannels> = emptyMap(),
   expandedUiGroup: String?,
   selectedChannel: BffChannel?,
   paymentDrafts: Map<String, PaymentDraft> = emptyMap(),
@@ -69,12 +70,32 @@ internal fun PaymentMethodsUI(
   modifier: Modifier = Modifier
 ) {
   val appearance = xenditAppearance
-  val showSaveCheckbox =
+  val isSaveOptionalSession =
     sessionType == BffSessionType.PAY && allowSavePaymentMethod == BffSessionAllowSavePaymentMethod.OPTIONAL
+  fun canShowSaveCheckbox(channel: BffChannel?): Boolean {
+    if (!isSaveOptionalSession || channel == null) return false
+    return channel.allowSave || channelVariantsByDisplayCode[channel.channelCode]?.saveChannel != null
+  }
+
+  fun effectiveSelectedChannel(displaySelected: BffChannel?): BffChannel? {
+    if (displaySelected == null) return null
+    val draft = paymentDrafts[displaySelected.channelCode]
+    val saveChecked = draft?.savePaymentMethod ?: false
+    val variants = channelVariantsByDisplayCode[displaySelected.channelCode]
+    return when {
+      saveChecked && variants?.saveChannel != null -> variants.saveChannel
+      !saveChecked && variants?.nonSaveChannel != null -> variants.nonSaveChannel
+      else -> displaySelected
+    }
+  }
+
+  val displaySelectedChannel = selectedChannel
+  val effectiveSelected = effectiveSelectedChannel(displaySelectedChannel)
+  val selectedDraft = displaySelectedChannel?.let { paymentDrafts[it.channelCode] }
   val rendererMap =
     listOf(
       PaymentMethodRenderer(uiGroup = "cards") { _, selectedBffChannel ->
-        val initialValues = selectedBffChannel?.let { paymentDrafts[it.channelCode]?.formValues }.orEmpty()
+        val initialValues = selectedDraft?.formValues.orEmpty()
         CardPaymentUI(
           session = session,
           channelData = selectedBffChannel,
@@ -83,24 +104,25 @@ internal fun PaymentMethodsUI(
           installmentPlans = installmentPlans,
           onCardNumberChanged = onCardNumberChanged,
           onFormStateChanged = { formValues, visibleFields, isSaveChecked ->
-            onFormChanged(selectedBffChannel?.channelCode, formValues, visibleFields, isSaveChecked)
+            onFormChanged(displaySelectedChannel?.channelCode, formValues, visibleFields, isSaveChecked)
           },
           modifier = Modifier.padding(bottom = 8.dp),
-          showSaveCheckbox = showSaveCheckbox
+          showSaveCheckbox = canShowSaveCheckbox(displaySelectedChannel)
         )
       },
       PaymentMethodRenderer(uiGroup = "ewallet") { groupChannels, selectedBffChannel ->
-        val draft = selectedBffChannel?.let { paymentDrafts[it.channelCode] }
+        val draft = selectedDraft
+        val showSaveCheckbox = canShowSaveCheckbox(displaySelectedChannel)
         EwalletPaymentUI(
           channels = groupChannels,
           bffBusiness = bffBusiness,
           selectedChannel = selectedBffChannel,
           initialValues = draft?.formValues.orEmpty(),
           initialVisibleFields = draft?.visibleFields ?: emptyList(),
-          initialSaveChecked = draft?.savePaymentMethod ?: false,
+          initialSaveChecked = if (showSaveCheckbox) (draft?.savePaymentMethod ?: false) else false,
           onSelectChannel = onSelectChannel,
           onFormStateChanged = { formValues, visibleFields, isSaveChecked->
-            onFormChanged(selectedBffChannel?.channelCode, formValues, visibleFields, isSaveChecked)
+            onFormChanged(displaySelectedChannel?.channelCode, formValues, visibleFields, isSaveChecked)
           },
           showSaveCheckbox = showSaveCheckbox,
           modifier = Modifier.padding(bottom = 8.dp)
@@ -178,7 +200,7 @@ internal fun PaymentMethodsUI(
               Spacer(modifier = Modifier.height(8.dp))
               val renderer = rendererMap[uiGroup]
               if (renderer != null) {
-                renderer.content(groupChannels, selectedChannel)
+                renderer.content(groupChannels, effectiveSelected)
               } else {
                 Text(
                   text = "This payment method is not supported yet.",
