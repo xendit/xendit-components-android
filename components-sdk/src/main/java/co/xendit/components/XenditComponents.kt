@@ -1,5 +1,6 @@
 package co.xendit.components
 
+import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
 import android.view.ViewGroup

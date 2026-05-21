@@ -35,7 +35,7 @@ internal fun CardNumberField(
   onValueChange: (String) -> Unit,
   isError: Boolean = false,
   errorMessage: String? = null,
-  selectedScheme: String? = null,
+  selectedCardScheme: String? = null,
   bffCardInfo: BffCardInfo? = null,
   shape: Shape? = null,
   noBorder: Boolean = false,
@@ -45,10 +45,11 @@ internal fun CardNumberField(
   val imageLoader = remember { SdkImageLoader.get(context) }
   val groupedDigitsTransformation =
     remember { GroupedDigitsTransformation(groupSize = 4, maxDigits = 16) }
-  val logoUrl = if (selectedScheme != null) {
+
+  val logoUrl = if (selectedCardScheme != null) {
     bffCardInfo?.brands?.firstOrNull {
       it.name.equals(
-        selectedScheme,
+        selectedCardScheme,
         ignoreCase = true
       )
     }?.logoUrl
@@ -79,12 +80,10 @@ internal fun CardNumberField(
         verticalAlignment = Alignment.CenterVertically
       ) {
         if (logoUrl != null) {
-          logoUrl?.let {
-            CardLogo(
-              logoUrl = logoUrl,
-              imageLoader = imageLoader,
-            )
-          }
+          CardLogo(
+            logoUrl = logoUrl,
+            imageLoader = imageLoader,
+          )
         } else {
           bffCardInfo?.brands?.forEach { logo ->
             CardLogo(

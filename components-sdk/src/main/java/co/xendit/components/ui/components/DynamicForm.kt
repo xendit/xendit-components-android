@@ -23,10 +23,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import co.xendit.components.data.model.BffCardInfo
+import co.xendit.components.data.model.BffSession
 import co.xendit.components.data.model.CardDetails
 import co.xendit.components.data.model.ChannelFormField
 import co.xendit.components.data.model.Country
@@ -40,6 +42,7 @@ import co.xendit.components.ui.components.molecule.ExpiryDateField
 import co.xendit.components.ui.components.molecule.InstallmentPlanField
 import co.xendit.components.ui.components.molecule.PhoneNumberField
 import co.xendit.components.ui.components.molecule.ProvinceField
+import co.xendit.components.ui.components.molecule.UiText
 import co.xendit.components.ui.components.molecule.XenditTextField
 import co.xendit.components.ui.helper.FormChecker.validateField
 import co.xendit.components.ui.helper.toLabelDisplay
@@ -47,6 +50,7 @@ import co.xendit.components.ui.style.xenditAppearance
 
 @Composable
 internal fun DynamicForm(
+  session: BffSession? = null,
   fields: List<ChannelFormField>,
   cardDetails: CardDetails?,
   initialValues: Map<String, String> = emptyMap(),
@@ -68,7 +72,7 @@ internal fun DynamicForm(
         putAll(initialValues)
       }
     }
-  val formErrors = remember { mutableStateMapOf<String, String?>() }
+  val formErrors = remember { mutableStateMapOf<String, UiText?>() }
 
   LaunchedEffect(mockData) {
     if (mockData.isNotEmpty()) {
@@ -139,8 +143,9 @@ internal fun DynamicForm(
           val countryCodeKey = "${propertyKey}_country_code"
           if (!formValues.containsKey(countryCodeKey)) {
             // Default to ID or first country if no initial country code
-            formValues[countryCodeKey] = initialValues[countryCodeKey] ?:
-              Country.fromCode("ID")?.code ?: Country.countries.first().code
+            formValues[countryCodeKey] =
+              initialValues[countryCodeKey] ?: Country.fromCode("ID")?.code
+                  ?: Country.countries.first().code
           }
         }
         if (!formErrors.containsKey(propertyKey)) {
@@ -154,7 +159,14 @@ internal fun DynamicForm(
       if (propertyKey.isNotEmpty()) {
         val currentValue = formValues[propertyKey] ?: ""
         if (currentValue.isNotBlank()) {
-          formErrors[propertyKey] = validateField(field, currentValue, formValues)
+          formErrors[propertyKey] =
+            validateField(
+              field = field,
+              value = currentValue,
+              values = formValues,
+              cardDetails = cardDetails,
+              bffCardInfo = bffCardInfo
+            )
         }
       }
     }
@@ -167,7 +179,14 @@ internal fun DynamicForm(
       remember(formValues, formErrors, onValuesChangedRef, onCardNumberChangedRef) {
         { changedField: ChannelFormField, key: String, value: String ->
           formValues[key] = value
-          formErrors[key] = validateField(changedField, value, formValues)
+          formErrors[key] =
+            validateField(
+              field = changedField,
+              value = value,
+              values = formValues,
+              cardDetails = cardDetails,
+              bffCardInfo = bffCardInfo
+            )
           onValuesChangedRef.value(formValues.toMap())
           if (changedField.type is FieldType.CreditCardNumber) {
             onCardNumberChangedRef.value(value)
@@ -184,6 +203,7 @@ internal fun DynamicForm(
         handleValueChange
       ) {
         DynamicFormRenderContext(
+          currency = session?.currency,
           allFields = filteredFields,
           values = formValues,
           errors = formErrors,
@@ -214,7 +234,7 @@ internal fun DynamicForm(
         )
         val listPropertyKey = groupFields.map { it.primaryChannelPropertyKey() }
         val filteredFormError = formErrors.filterKeys { it in listPropertyKey }
-        val groupHaveError = filteredFormError.any { !it.value.isNullOrEmpty() }
+        val groupHaveError = filteredFormError.any { it.value != null }
 
         Column(
           modifier = Modifier
@@ -285,9 +305,10 @@ private fun canRenderDynamicFormAsTwoColumnRow(
 }
 
 private data class DynamicFormRenderContext(
+  val currency: String?,
   val allFields: List<ChannelFormField>,
   val values: Map<String, String>,
-  val errors: Map<String, String?>,
+  val errors: Map<String, UiText?>,
   val cardDetails: CardDetails?,
   val bffCardInfo: BffCardInfo?,
   val installmentPlans: List<InstallmentPlan>?,
@@ -330,14 +351,14 @@ private fun collectDynamicFormGroupFields(
 @Composable
 private fun DynamicFormErrorDisplay(
   modifier: Modifier,
-  filteredFormError: Map<String, String?>,
+  filteredFormError: Map<String, UiText?>,
   appearance: co.xendit.components.ui.style.XenditAppearance
 ) {
   Column(modifier = modifier) {
-    val firstError = filteredFormError.values.firstOrNull { !it.isNullOrEmpty() }
+    val firstError = filteredFormError.values.firstOrNull { it != null }
     if (firstError != null) {
       Text(
-        text = firstError,
+        text = firstError.asString(),
         style = MaterialTheme.typography.labelSmall,
         color = appearance.colorDanger,
         modifier = modifier.padding(top = 2.dp)
@@ -355,9 +376,10 @@ private fun DynamicFormFieldItem(
 ) {
   FormFieldItem(
     field = field,
+    currency = context.currency,
     allFields = context.allFields,
     values = context.values,
-    errors = if (isDisplayError) context.errors else emptyMap(),
+    errors = if (isDisplayError) context.errors else emptyMap<String, UiText?>(),
     onValueChange = { key, value -> context.onFieldValueChange(field, key, value) },
     cardDetails = context.cardDetails,
     bffCardInfo = context.bffCardInfo,
@@ -482,9 +504,10 @@ private fun filterFormFields(
 @Composable
 private fun FormFieldItem(
   field: ChannelFormField,
+  currency: String?,
   allFields: List<ChannelFormField>,
   values: Map<String, String>,
-  errors: Map<String, String?>,
+  errors: Map<String, UiText?>,
   onValueChange: (String, String) -> Unit,
   cardDetails: CardDetails? = null,
   bffCardInfo: BffCardInfo? = null,
@@ -494,9 +517,10 @@ private fun FormFieldItem(
 ) {
   val appearance = xenditAppearance
   val propertyKey = field.primaryChannelPropertyKey()
+  val context = LocalContext.current
 
   val currentValue = values[propertyKey] ?: ""
-  val errorMessage = errors[propertyKey]
+  val errorMessage = errors[propertyKey]?.asString()
   val isError = errorMessage != null
   val labelDisplay = if (field.span == 2) {
     field.label
@@ -513,7 +537,7 @@ private fun FormFieldItem(
         onValueChange = { onValueChange(propertyKey, it) },
         isError = isError,
         errorMessage = errorMessage,
-        selectedScheme = cardDetails?.schemes?.firstOrNull(),
+        selectedCardScheme = cardDetails?.schemes?.firstOrNull(),
         bffCardInfo = bffCardInfo,
         shape = shape,
         noBorder = noBorder
@@ -603,8 +627,9 @@ private fun FormFieldItem(
       val selectedPlan = installmentPlans?.find { it.terms.toString() == currentValue }
 
       InstallmentPlanField(
+        currency = currency,
         plans = installmentPlans ?: emptyList(),
-        selectedPlanDesc = selectedPlan?.toLabelDisplay()?.asString() ?: "",
+        selectedPlanDesc = selectedPlan?.toLabelDisplay(context, currency)?.asString() ?: "",
         onPlanSelected = { plan ->
           onValueChange(propertyKey, plan.terms.toString())
         },
