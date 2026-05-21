@@ -1,8 +1,13 @@
 package co.xendit.components.ui.helper
 
+import co.xendit.components.R
 import co.xendit.components.data.model.ChannelFormField
 import co.xendit.components.data.model.FieldType
 import co.xendit.components.data.model.RegexValidator
+import co.xendit.components.data.model.BffCardBrand
+import co.xendit.components.data.model.BffCardInfo
+import co.xendit.components.data.model.CardDetails
+import co.xendit.components.ui.components.molecule.UiText
 import com.google.i18n.phonenumbers.PhoneNumberUtil
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -25,7 +30,10 @@ class FormCheckerTest {
 
     val result = FormChecker.validateField(field, "")
 
-    assertEquals("Test Label is required", result)
+    assertTrue(result is UiText.StringResource)
+    val res = result as UiText.StringResource
+    assertEquals(R.string.form_validation_required, res.resId)
+    assertEquals("Test Label", res.args.first())
   }
 
   @Test
@@ -61,7 +69,8 @@ class FormCheckerTest {
 
     val result = FormChecker.validateField(field, "invalid-email")
 
-    assertEquals("Invalid email", result)
+    assertTrue(result is UiText.DynamicString)
+    assertEquals("Invalid email", (result as UiText.DynamicString).value)
   }
 
   @Test
@@ -131,7 +140,10 @@ class FormCheckerTest {
 
     val result = FormChecker.validateField(field, "invalid-email")
 
-    assertEquals("Email is not valid", result)
+    assertTrue(result is UiText.StringResource)
+    val res = result as UiText.StringResource
+    assertEquals(R.string.form_validation_invalid, res.resId)
+    assertEquals("Email", res.args.first())
   }
 
   @Test
@@ -161,9 +173,47 @@ class FormCheckerTest {
         "phone" to usNationalNumber,
         "phone_country_code" to "ID"
       )
-    assertEquals(
-      "Phone is not valid",
-      FormChecker.validateField(field, usNationalNumber, invalidValues)
+    val invalidResult = FormChecker.validateField(field, usNationalNumber, invalidValues)
+    assertTrue(invalidResult is UiText.StringResource)
+    val res = invalidResult as UiText.StringResource
+    assertEquals(R.string.form_validation_invalid, res.resId)
+    assertEquals("Phone", res.args.first())
+  }
+
+  @Test
+  fun `validateField returns error when card brand is not supported`() {
+    val field = ChannelFormField(
+      label = "Card Number",
+      placeholder = "",
+      type = FieldType.CreditCardNumber(),
+      channelProperty = "card_number",
+      required = true,
+      span = 1
     )
+
+    val cardDetails = CardDetails(
+      requireBillingInformation = false,
+      countryCodes = listOf("ID"),
+      schemes = listOf("amex")
+    )
+    val bffCardInfo =
+      BffCardInfo(
+        brands = listOf(
+          BffCardBrand(name = "visa", logoUrl = "https://example.com/visa.png"),
+          BffCardBrand(name = "mastercard", logoUrl = "https://example.com/mc.png")
+        )
+      )
+
+    val result =
+      FormChecker.validateField(
+        field = field,
+        value = "4111111111111111",
+        values = mapOf("card_number" to "4111111111111111"),
+        cardDetails = cardDetails,
+        bffCardInfo = bffCardInfo
+      )
+
+    assertTrue(result is UiText.StringResource)
+    assertEquals(R.string.card_brand_not_supported, (result as UiText.StringResource).resId)
   }
 }

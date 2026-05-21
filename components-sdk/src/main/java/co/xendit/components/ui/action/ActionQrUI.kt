@@ -67,13 +67,11 @@ import co.xendit.components.ui.style.xenditAppearance
 import co.xendit.components.ui.helper.QrCodeGenerator
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlinx.coroutines.withContext
-import java.io.File
-import kotlin.coroutines.resume
-import kotlin.math.roundToInt
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.Image
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import co.xendit.components.util.AmountFormat
 
 @Composable
 internal fun ActionQrUI(
@@ -110,8 +108,9 @@ internal fun ActionQrUI(
         )
       }.getOrNull()
     }
-  val nmid = remember {
-    QrNmidSearcherUtil.getNationalMerchantID(qrString)
+
+  val formattedAmount = remember(amount, currency) {
+    AmountFormat.format(amount, currency)
   }
 
   val formattedAmount = remember(amount, currency) { CurrencyUtil.formatAmount(amount, currency) }
@@ -368,107 +367,5 @@ internal fun ActionQrUI(
         )
       }
     }
-  }
-}
-
-private suspend fun captureBitmapFromWindow(
-  window: Window,
-  rect: Rect
-): Bitmap? {
-  return suspendCancellableCoroutine { cont ->
-    val decorView = window.decorView
-    val safeRect =
-      Rect(rect).apply {
-        val maxW = decorView.width
-        val maxH = decorView.height
-        if (maxW > 0 && maxH > 0) {
-          intersect(0, 0, maxW, maxH)
-        }
-      }
-
-    if (safeRect.width() <= 0 || safeRect.height() <= 0) {
-      cont.resume(null)
-      return@suspendCancellableCoroutine
-    }
-
-    val bitmap =
-      runCatching {
-        Bitmap.createBitmap(safeRect.width(), safeRect.height(), Bitmap.Config.ARGB_8888)
-      }.getOrNull()
-
-    if (bitmap == null) {
-      cont.resume(null)
-      return@suspendCancellableCoroutine
-    }
-
-    PixelCopy.request(
-      window,
-      safeRect,
-      bitmap,
-      { result ->
-        if (cont.isActive) {
-          cont.resume(if (result == PixelCopy.SUCCESS) bitmap else null)
-        }
-      },
-      Handler(Looper.getMainLooper())
-    )
-  }
-}
-
-private fun Context.findActivity(): Activity? {
-  var current: Context? = this
-  while (current != null) {
-    if (current is Activity) return current
-    current = if (current is ContextWrapper) current.baseContext else null
-  }
-  return null
-}
-
-private fun saveBitmapToGallery(
-  context: Context,
-  bitmap: Bitmap
-): android.net.Uri? {
-  val displayName = "xendit_qr_${System.currentTimeMillis()}.png"
-  val resolver = context.contentResolver
-  val values =
-    ContentValues().apply {
-      put(MediaStore.Images.Media.DISPLAY_NAME, displayName)
-      put(MediaStore.Images.Media.MIME_TYPE, "image/png")
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-        put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES)
-      }
-    }
-
-  val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
-  if (uri == null) {
-    val dir = context.getExternalFilesDir(Environment.DIRECTORY_PICTURES) ?: return null
-    val file = File(dir, displayName)
-    return try {
-      file.outputStream().use { out ->
-        if (!bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)) {
-          throw IllegalStateException("Bitmap compress failed")
-        }
-      }
-      MediaScannerConnection.scanFile(
-        context,
-        arrayOf(file.absolutePath),
-        arrayOf("image/png"),
-        null
-      )
-      file.toUri()
-    } catch (_: Exception) {
-      null
-    }
-  }
-  return try {
-    resolver.openOutputStream(uri)?.use { out ->
-      if (!bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)) {
-        throw IllegalStateException("Bitmap compress failed")
-      }
-    } ?: throw IllegalStateException("OutputStream is null")
-    uri
-  } catch (_: Exception) {
-    runCatching { resolver.delete(uri, null, null) }
-    null
   }
 }
