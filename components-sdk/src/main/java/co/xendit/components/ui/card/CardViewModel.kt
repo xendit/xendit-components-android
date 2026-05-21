@@ -120,7 +120,7 @@ internal class CardViewModel(
                       terms = 0,
                       installmentAmount = amount,
                       totalAmount = amount,
-                      description = "Pay in Full — $formattedAmount",
+                      description = formattedAmount,
                       interestRate = 0.0
                     )
                   listOf(dummyPlan) + plans
