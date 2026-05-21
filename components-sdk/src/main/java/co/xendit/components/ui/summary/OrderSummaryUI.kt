@@ -21,6 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import co.xendit.components.data.model.BffItem
+import co.xendit.components.util.AmountFormat
 
 @Composable
 internal fun OrderSummaryUI(
@@ -30,13 +31,6 @@ internal fun OrderSummaryUI(
   items: List<BffItem>?,
   modifier: Modifier = Modifier
 ) {
-  val currencySymbol = when (currency) {
-    "IDR" -> "Rp"
-    "USD" -> "$"
-    "PHP" -> "₱"
-    else -> currency ?: ""
-  }
-
   Column(
     modifier = modifier.fillMaxWidth(),
     horizontalAlignment = Alignment.CenterHorizontally
@@ -71,7 +65,7 @@ internal fun OrderSummaryUI(
                 modifier = Modifier.weight(1f)
               )
               Text(
-                text = "$currencySymbol${item.netUnitAmount ?: 0}",
+                text = AmountFormat.format(item.netUnitAmount ?: 0, currency),
                 style = MaterialTheme.typography.bodyMedium
               )
             }
@@ -94,7 +88,7 @@ internal fun OrderSummaryUI(
             modifier = Modifier.weight(1f)
           )
           Text(
-            text = "$currencySymbol${amount ?: 0}",
+            text = AmountFormat.format(amount ?: 0, currency),
             style = MaterialTheme.typography.bodyLarge,
             fontWeight = FontWeight.Bold
           )
