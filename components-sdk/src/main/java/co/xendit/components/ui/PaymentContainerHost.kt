@@ -327,9 +327,6 @@ internal fun PaymentContainerHost(
               .clip(RoundedCornerShape(appearance.borderRadius))
               .background(Color(0xFFF7F7F7))
               .padding(horizontal = 12.dp, vertical = 6.dp)
-              .clickable {
-                context.startActivity(OkHttpProfilerSettingsActivity.getIntent(context))
-              }
           ) {
             Column {
               Text(

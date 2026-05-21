@@ -241,11 +241,7 @@ internal class PaymentViewModel(
       val uiGroup: String,
       val brandName: String,
       val pmType: String?,
-      val allowPayWithoutSave: Boolean,
-      val minAmount: Long?,
-      val maxAmount: Long?,
       val requiresCustomerDetails: Boolean?,
-      val brandColor: String
     )
 
     fun toKey(channel: BffChannel): ChannelCombineKey {
@@ -253,11 +249,7 @@ internal class PaymentViewModel(
         uiGroup = channel.uiGroup,
         brandName = channel.brandName,
         pmType = channel.pmType,
-        allowPayWithoutSave = channel.allowPayWithoutSave,
-        minAmount = channel.minAmount,
-        maxAmount = channel.maxAmount,
         requiresCustomerDetails = channel.requiresCustomerDetails,
-        brandColor = channel.brandColor
       )
     }
 
