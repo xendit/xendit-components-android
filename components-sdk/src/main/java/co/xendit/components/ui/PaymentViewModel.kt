@@ -10,6 +10,7 @@ import co.xendit.components.data.model.BffSessionAllowSavePaymentMethod
 import co.xendit.components.data.model.BffSessionType
 import co.xendit.components.data.model.ChannelFormField
 import co.xendit.components.data.model.Country
+import co.xendit.components.data.model.FieldType
 import co.xendit.components.data.model.InstallmentPlan
 import co.xendit.components.data.model.PaymentAction
 import co.xendit.components.data.model.PaymentDraft
@@ -379,11 +380,40 @@ internal class PaymentViewModel(
             }
           }
         val effectiveChannelCode = effectiveChannel?.channelCode ?: channelCode
-        val allowedKeys = effectiveChannel?.form.orEmpty().map { it.primaryChannelPropertyKey() }.toSet()
+        val allowedKeysFromChannelForm =
+          effectiveChannel?.form
+            ?.map { it.primaryChannelPropertyKey() }
+            ?.filter { it.isNotBlank() }
+            ?.toSet()
+            .orEmpty()
+        val shouldFilterByChannelForm = allowedKeysFromChannelForm.isNotEmpty()
         val filteredFields =
-          if (allowedKeys.isEmpty()) emptyList() else fields.filter { it.primaryChannelPropertyKey() in allowedKeys }
+          if (shouldFilterByChannelForm) {
+            fields.filter { it.primaryChannelPropertyKey() in allowedKeysFromChannelForm }
+          } else {
+            fields
+          }
+        val allowedValueKeys =
+          if (shouldFilterByChannelForm) {
+            mutableSetOf<String>().apply {
+              addAll(allowedKeysFromChannelForm)
+              filteredFields.forEach { field ->
+                val primaryKey = field.primaryChannelPropertyKey()
+                if (primaryKey.isBlank()) return@forEach
+                if (field.type is FieldType.PhoneNumber) {
+                  add("${primaryKey}_country_code")
+                }
+              }
+            }
+          } else {
+            null
+          }
         val filteredFormValues =
-          if (allowedKeys.isEmpty()) emptyMap() else formValues.filterKeys { it in allowedKeys }
+          if (shouldFilterByChannelForm) {
+            formValues.filterKeys { it in allowedValueKeys.orEmpty() }
+          } else {
+            formValues
+          }
 
         val channelProperties =
           PaymentRequestMapper.mapFormValuesToChannelProperties(
