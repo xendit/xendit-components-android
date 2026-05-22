@@ -38,6 +38,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -53,7 +54,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import co.xendit.components.BuildConfig
 import co.xendit.components.R
+import co.xendit.components.XenditComponents
 import co.xendit.components.core.CoreSdkComponent.globalErrorHandler
+import co.xendit.components.data.model.ChannelFormField
 import co.xendit.components.data.model.BffSessionType
 import co.xendit.components.data.model.PaymentDraft
 import co.xendit.components.data.model.PaymentRequestStatus
@@ -415,6 +418,32 @@ internal fun PaymentContainerHost(
                     .weight(1f)
                     .verticalScroll(rememberScrollState())
                 ) {
+                  val selectedUiGroup by rememberUpdatedState(mviState.selectedChannel?.uiGroup)
+                  val installmentPlans by rememberUpdatedState(cardState.installmentPlans)
+                  val onToggleGroup: (String) -> Unit =
+                    remember(viewModel) { { viewModel.dispatch(ActionIntent.ToggleUiGroup(it)) } }
+                  val onSelectChannel: (String) -> Unit =
+                    remember(viewModel) { { viewModel.dispatch(ActionIntent.SelectChannel(it)) } }
+                  val onCardNumberChanged: (String) -> Unit =
+                    remember(cardViewModel) { { cardViewModel.dispatch(CardIntent.CardNumberChanged(it)) } }
+                  val onFormChanged:
+                    (String?, Map<String, String>, List<ChannelFormField>, Boolean) -> Unit =
+                    remember(viewModel) {
+                      { channelCode, formValues, visibleFields, save ->
+                        viewModel.dispatch(
+                          ActionIntent.UpdatePaymentDraft(
+                            PaymentDraft(
+                              channelCode = channelCode,
+                              formValues = formValues,
+                              visibleFields = visibleFields,
+                              savePaymentMethod = save,
+                              installmentPlans =
+                                if (selectedUiGroup == XenditComponents.UiGroup.CARDS) installmentPlans else null
+                            )
+                          )
+                        )
+                      }
+                    }
                   PaymentMethodsUI(
                     session = mviState.sessionResponse?.session,
                     bffBusiness = mviState.sessionResponse?.business,
@@ -428,23 +457,10 @@ internal fun PaymentContainerHost(
                     installmentPlans = cardState.installmentPlans,
                     sessionType = mviState.sessionType,
                     allowSavePaymentMethod = mviState.allowSavePaymentMethod,
-                    onToggleGroup = { viewModel.dispatch(ActionIntent.ToggleUiGroup(it)) },
-                    onSelectChannel = { viewModel.dispatch(ActionIntent.SelectChannel(it)) },
-                    onCardNumberChanged = { cardViewModel.dispatch(CardIntent.CardNumberChanged(it)) },
-                    onFormChanged = { channelCode, formValues, visibleFields, save ->
-                      viewModel.dispatch(
-                        ActionIntent.UpdatePaymentDraft(
-                          PaymentDraft(
-                            channelCode = channelCode,
-                            formValues = formValues,
-                            visibleFields = visibleFields,
-                            savePaymentMethod = save,
-                            installmentPlans =
-                              if (mviState.selectedChannel?.uiGroup == "cards") cardState.installmentPlans else null
-                          )
-                        )
-                      )
-                    }
+                    onToggleGroup = onToggleGroup,
+                    onSelectChannel = onSelectChannel,
+                    onCardNumberChanged = onCardNumberChanged,
+                    onFormChanged = onFormChanged
                   )
                 }
 
@@ -480,7 +496,7 @@ internal fun PaymentContainerHost(
                       val draft = mviState.paymentDrafts[selected.channelCode]
                         ?: PaymentDraft(channelCode = selected.channelCode)
                       val installmentPlans =
-                        if (selected.uiGroup == "cards") cardState.installmentPlans else draft.installmentPlans
+                        if (selected.uiGroup == XenditComponents.UiGroup.CARDS) cardState.installmentPlans else draft.installmentPlans
                       viewModel.dispatch(
                         ActionIntent.SubmitAction(
                           channelCode = selected.channelCode,

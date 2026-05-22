@@ -37,17 +37,13 @@ import co.xendit.components.data.model.CardDetails
 import co.xendit.components.data.model.ChannelFormField
 import co.xendit.components.data.model.InstallmentPlan
 import co.xendit.components.data.model.PaymentDraft
+import co.xendit.components.XenditComponents
 import co.xendit.components.ui.ChannelVariantChannels
 import co.xendit.components.ui.card.CardPaymentUI
 import co.xendit.components.ui.ewallet.EwalletPaymentUI
 import co.xendit.components.ui.qrcode.QrPaymentUI
 import co.xendit.components.ui.style.xenditAppearance
 import co.xendit.components.ui.ui_util.CustomShape.createTopRoundedOpenShape
-
-private data class PaymentMethodRenderer(
-  val uiGroup: String,
-  val content: @Composable (groupChannels: List<BffChannel>, selectedBffChannel: BffChannel?) -> Unit
-)
 
 @Composable
 internal fun PaymentMethodsUI(
@@ -92,59 +88,19 @@ internal fun PaymentMethodsUI(
   val displaySelectedChannel = selectedChannel
   val effectiveSelected = effectiveSelectedChannel(displaySelectedChannel)
   val selectedDraft = displaySelectedChannel?.let { paymentDrafts[it.channelCode] }
-  val rendererMap =
-    listOf(
-      PaymentMethodRenderer(uiGroup = "cards") { _, selectedBffChannel ->
-        val initialValues = selectedDraft?.formValues.orEmpty()
-        CardPaymentUI(
-          session = session,
-          channelData = selectedBffChannel,
-          cardDetails = cardDetails,
-          initialValues = initialValues,
-          installmentPlans = installmentPlans,
-          onCardNumberChanged = onCardNumberChanged,
-          onFormStateChanged = { formValues, visibleFields, isSaveChecked ->
-            onFormChanged(displaySelectedChannel?.channelCode, formValues, visibleFields, isSaveChecked)
-          },
-          modifier = Modifier.padding(bottom = 8.dp),
-          showSaveCheckbox = canShowSaveCheckbox(displaySelectedChannel)
-        )
-      },
-      PaymentMethodRenderer(uiGroup = "ewallet") { groupChannels, selectedBffChannel ->
-        val draft = selectedDraft
-        val showSaveCheckbox = canShowSaveCheckbox(displaySelectedChannel)
-        EwalletPaymentUI(
-          channels = groupChannels,
-          bffBusiness = bffBusiness,
-          selectedChannel = selectedBffChannel,
-          initialValues = draft?.formValues.orEmpty(),
-          initialVisibleFields = draft?.visibleFields ?: emptyList(),
-          initialSaveChecked = if (showSaveCheckbox) (draft?.savePaymentMethod ?: false) else false,
-          onSelectChannel = onSelectChannel,
-          onFormStateChanged = { formValues, visibleFields, isSaveChecked->
-            onFormChanged(displaySelectedChannel?.channelCode, formValues, visibleFields, isSaveChecked)
-          },
-          showSaveCheckbox = showSaveCheckbox,
-          modifier = Modifier.padding(bottom = 8.dp)
-        )
-      },
-      PaymentMethodRenderer(uiGroup = "qr_code") { groupChannels, selectedBffChannel ->
-        QrPaymentUI(
-          channels = groupChannels,
-          selectedChannel = selectedBffChannel,
-          onSelectChannel = onSelectChannel,
-          onFormStateChanged = { formValues, visibleFields ->
-            onFormChanged(selectedBffChannel?.channelCode, formValues, visibleFields, false)
-          },
-          modifier = Modifier.padding(bottom = 8.dp)
-        )
-      }
-    ).associateBy { it.uiGroup }
+  val supportedUiGroups =
+    remember {
+      setOf(
+        XenditComponents.UiGroup.CARDS,
+        XenditComponents.UiGroup.EWALLET,
+        XenditComponents.UiGroup.QR_CODE
+      )
+    }
 
-  val groups = remember(channels, rendererMap.keys) {
-    channels.groupBy { it.uiGroup }.filter { it.key in rendererMap.keys }
+  val groups = remember(channels) {
+    channels.groupBy { it.uiGroup }.filter { it.key in supportedUiGroups }
   }
-  val filteredUiGroup = remember(groups.keys) {
+  val filteredUiGroup = remember(groups.keys, merchantPreferredPaymentMethod) {
     if (merchantPreferredPaymentMethod.isNullOrEmpty()) {
       groups.keys
     } else {
@@ -198,16 +154,70 @@ internal fun PaymentMethodsUI(
             // expanded content here
             if (isExpanded) {
               Spacer(modifier = Modifier.height(8.dp))
-              val renderer = rendererMap[uiGroup]
-              if (renderer != null) {
-                renderer.content(groupChannels, effectiveSelected)
-              } else {
-                Text(
-                  text = "This payment method is not supported yet.",
-                  style = MaterialTheme.typography.bodyMedium,
-                  color = appearance.colorTextSecondary,
-                  modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
-                )
+              when (uiGroup) {
+                XenditComponents.UiGroup.CARDS -> {
+                  val initialValues = selectedDraft?.formValues.orEmpty()
+                  CardPaymentUI(
+                    session = session,
+                    channelData = effectiveSelected,
+                    cardDetails = cardDetails,
+                    initialValues = initialValues,
+                    installmentPlans = installmentPlans,
+                    onCardNumberChanged = onCardNumberChanged,
+                    onFormStateChanged = { formValues, visibleFields, isSaveChecked ->
+                      onFormChanged(
+                        displaySelectedChannel?.channelCode,
+                        formValues,
+                        visibleFields,
+                        isSaveChecked
+                      )
+                    },
+                    modifier = Modifier.padding(bottom = 8.dp),
+                    showSaveCheckbox = canShowSaveCheckbox(displaySelectedChannel)
+                  )
+                }
+
+                XenditComponents.UiGroup.EWALLET -> {
+                  val draft = selectedDraft
+                  val showSaveCheckbox = canShowSaveCheckbox(displaySelectedChannel)
+                  EwalletPaymentUI(
+                    channels = groupChannels,
+                    bffBusiness = bffBusiness,
+                    selectedChannel = effectiveSelected,
+                    initialValues = draft?.formValues.orEmpty(),
+                    initialVisibleFields = draft?.visibleFields ?: emptyList(),
+                    initialSaveChecked =
+                      if (showSaveCheckbox) (draft?.savePaymentMethod ?: false) else false,
+                    onSelectChannel = onSelectChannel,
+                    onFormStateChanged = { formValues, visibleFields, isSaveChecked ->
+                      onFormChanged(
+                        displaySelectedChannel?.channelCode,
+                        formValues,
+                        visibleFields,
+                        isSaveChecked
+                      )
+                    },
+                    showSaveCheckbox = showSaveCheckbox,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                  )
+                }
+
+                XenditComponents.UiGroup.QR_CODE -> {
+                  QrPaymentUI(
+                    channels = groupChannels,
+                    selectedChannel = effectiveSelected,
+                    onSelectChannel = onSelectChannel,
+                    onFormStateChanged = { formValues, visibleFields ->
+                      onFormChanged(
+                        effectiveSelected?.channelCode,
+                        formValues,
+                        visibleFields,
+                        false
+                      )
+                    },
+                    modifier = Modifier.padding(bottom = 8.dp)
+                  )
+                }
               }
             }
           }
@@ -267,9 +277,9 @@ private fun SelectableHeaderItem(
 
 private fun displayNameIconForUiGroup(uiGroup: String): Pair<String, Int> {
   return when (uiGroup.lowercase()) {
-    "cards" -> "Cards" to R.drawable.ic_cards
-    "ewallet", "e-wallet" -> "E-Wallet" to R.drawable.ic_e_wallet
-    "qrcode", "qr_code", "qr" -> "QR Code" to R.drawable.ic_qris
+    XenditComponents.UiGroup.CARDS -> "Cards" to R.drawable.ic_cards
+    XenditComponents.UiGroup.EWALLET -> "E-Wallet" to R.drawable.ic_e_wallet
+    XenditComponents.UiGroup.QR_CODE -> "QR Code" to R.drawable.ic_qris
     else -> uiGroup.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() } to R.drawable.ic_cards // Fallback icon
   }
 }
