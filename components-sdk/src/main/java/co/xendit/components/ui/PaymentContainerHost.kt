@@ -42,9 +42,9 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInteropFilter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -318,226 +318,215 @@ internal fun PaymentContainerHost(
         .fillMaxSize()
         .imePadding()
     ) { paddingValues ->
-      Column(
+      Box(
         modifier = Modifier
           .fillMaxSize()
           .padding(paddingValues)
       ) {
-        if (BuildConfig.DEBUG) {
-          Box(
-            modifier = Modifier
-              .fillMaxWidth()
-              .clip(RoundedCornerShape(appearance.borderRadius))
-              .background(Color(0xFFF7F7F7))
-              .padding(horizontal = 12.dp, vertical = 6.dp)
-          ) {
-            Column {
-              Text(
-                text = "Debug = ${BuildConfig.DEBUG}",
-                style = MaterialTheme.typography.bodySmall,
-                color = Color.Gray
-              )
-              Text(
-                text = mviState.sessionResponse?.session?.referenceId ?: "",
-                style = MaterialTheme.typography.bodySmall,
-                color = Color.Gray
-              )
-            }
-          }
-        }
-        GenericHeader(
-          title = stringResource(id = R.string.sessionpayment_methods_header),
-          onLeftClick = dismiss
-        )
-
-        Box(
-          modifier = Modifier
-            .fillMaxWidth()
-            .weight(1f)
-            .drawWithContent {
-              drawContent()
-              if (mviState.isLoading) {
-                drawRect(Color.Black.copy(alpha = 0.08f))
-              }
-            }
-        ) {
-          when {
-            mviState.paymentActionRedirect != null -> {
-              val redirect = mviState.paymentActionRedirect!!
-              val url = redirect.value.orEmpty()
-              if (redirect.descriptor == "DEEPLINK_URL") {
-                LaunchedEffect(url) {
-                  if (url.isNotBlank()) {
-                    runCatching {
-                      context.startActivity(
-                        Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
-                          addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                        }
-                      )
-                    }
-                    viewModel.showLoading()
-                  }
-                  viewModel.dispatch(ActionIntent.ClearPaymentActionRedirect)
-                }
-              } else {
-                ActionWebViewUI(
-                  url = url,
-                  onClose = {
-                    viewModel.dispatch(ActionIntent.CloseWebPayment)
-                  },
-                  onChallengeCompleted = { viewModel.dispatch(ActionIntent.ChallengeCompleted(true)) },
-                  iframeCapable = redirect.iframeCapable == true
+        Column(modifier = Modifier.fillMaxSize()) {
+          if (BuildConfig.DEBUG) {
+            Box(
+              modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(appearance.borderRadius))
+                .background(Color(0xFFF7F7F7))
+                .padding(horizontal = 12.dp, vertical = 6.dp)
+            ) {
+              Column {
+                Text(
+                  text = "Debug = ${BuildConfig.DEBUG}",
+                  style = MaterialTheme.typography.bodySmall,
+                  color = Color.Gray
+                )
+                Text(
+                  text = mviState.sessionResponse?.session?.referenceId ?: "",
+                  style = MaterialTheme.typography.bodySmall,
+                  color = Color.Gray
                 )
               }
             }
+          }
+          GenericHeader(
+            title = stringResource(id = R.string.sessionpayment_methods_header),
+            onLeftClick = dismiss
+          )
 
-            mviState.presentToCustomerPaymentAction != null -> {
-              val qrAction = mviState.presentToCustomerPaymentAction!!
-              val merchantName = mviState.sessionResponse?.business?.name
-              ActionQrUI(
-                title = merchantName,
-                channelName = mviState.selectedChannel?.brandName ?: "QR Code",
-                channelLogoUrl = mviState.selectedChannel?.brandLogoUrl,
-                qrString = qrAction.value.orEmpty(),
-                amount = mviState.sessionResponse?.session?.amount,
-                currency = mviState.sessionResponse?.session?.currency,
-                onClose = { viewModel.markClosed() },
-                onPaymentMade = {
-                  viewModel.dispatch(ActionIntent.SimulatePayment)
-                  viewModel.dispatch(ActionIntent.ChallengeCompleted(true))
-                  viewModel.showLoading()
-                },
-                snackbarHostState = snackbarHostState
-              )
-            }
-
-            mviState.channels.isNotEmpty() -> {
-              Column {
-                Column(
-                  modifier = Modifier
-                    .weight(1f)
-                    .verticalScroll(rememberScrollState())
-                ) {
-                  val selectedUiGroup by rememberUpdatedState(mviState.selectedChannel?.uiGroup)
-                  val installmentPlans by rememberUpdatedState(cardState.installmentPlans)
-                  val onToggleGroup: (String) -> Unit =
-                    remember(viewModel) { { viewModel.dispatch(ActionIntent.ToggleUiGroup(it)) } }
-                  val onSelectChannel: (String) -> Unit =
-                    remember(viewModel) { { viewModel.dispatch(ActionIntent.SelectChannel(it)) } }
-                  val onCardNumberChanged: (String) -> Unit =
-                    remember(cardViewModel) { { cardViewModel.dispatch(CardIntent.CardNumberChanged(it)) } }
-                  val onFormChanged:
-                    (String?, Map<String, String>, List<ChannelFormField>, Boolean) -> Unit =
-                    remember(viewModel) {
-                      { channelCode, formValues, visibleFields, save ->
-                        viewModel.dispatch(
-                          ActionIntent.UpdatePaymentDraft(
-                            PaymentDraft(
-                              channelCode = channelCode,
-                              formValues = formValues,
-                              visibleFields = visibleFields,
-                              savePaymentMethod = save,
-                              installmentPlans =
-                                if (selectedUiGroup == XenditComponents.UiGroup.CARDS) installmentPlans else null
-                            )
-                          )
+          Box(
+            modifier = Modifier
+              .fillMaxWidth()
+              .weight(1f)
+          ) {
+            when {
+              mviState.paymentActionRedirect != null -> {
+                val redirect = mviState.paymentActionRedirect!!
+                val url = redirect.value.orEmpty()
+                if (redirect.descriptor == "DEEPLINK_URL") {
+                  LaunchedEffect(url) {
+                    if (url.isNotBlank()) {
+                      runCatching {
+                        context.startActivity(
+                          Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                          }
                         )
                       }
+                      viewModel.showLoading()
                     }
-                  PaymentMethodsUI(
-                    session = mviState.sessionResponse?.session,
-                    bffBusiness = mviState.sessionResponse?.business,
-                    merchantPreferredPaymentMethod = merchantPreferredPaymentMethod,
-                    channels = mviState.channels,
-                    channelVariantsByDisplayCode = mviState.channelVariantsByDisplayCode,
-                    expandedUiGroup = mviState.expandedUiGroup,
-                    selectedChannel = mviState.selectedChannel,
-                    paymentDrafts = mviState.paymentDrafts,
-                    cardDetails = cardState.cardDetails,
-                    installmentPlans = cardState.installmentPlans,
-                    sessionType = mviState.sessionType,
-                    allowSavePaymentMethod = mviState.allowSavePaymentMethod,
-                    onToggleGroup = onToggleGroup,
-                    onSelectChannel = onSelectChannel,
-                    onCardNumberChanged = onCardNumberChanged,
-                    onFormChanged = onFormChanged
+                    viewModel.dispatch(ActionIntent.ClearPaymentActionRedirect)
+                  }
+                } else {
+                  ActionWebViewUI(
+                    url = url,
+                    onClose = {
+                      viewModel.dispatch(ActionIntent.CloseWebPayment)
+                    },
+                    onChallengeCompleted = { viewModel.dispatch(ActionIntent.ChallengeCompleted(true)) },
+                    iframeCapable = redirect.iframeCapable == true
                   )
                 }
+              }
 
-                val isPaymentSelected =
-                  mviState.expandedUiGroup != null && mviState.selectedChannel != null
-                val selectedChannel = mviState.selectedChannel
-                val currentDraft = if (selectedChannel == null) PaymentDraft() else {
-                  mviState.paymentDrafts[selectedChannel.channelCode]
-                    ?: PaymentDraft(channelCode = selectedChannel.channelCode)
-                }
-                val isFormFilled = currentDraft.visibleFields
-                val formValue = currentDraft.formValues
-                val isPayEnabled =
-                  isPaymentSelected && !mviState.isLoading && validateAllField(
-                    isFormFilled,
-                    formValue,
-                    cardDetails = cardState.cardDetails,
-                    bffCardInfo = mviState.selectedChannel?.card
-                  )
-                val payText =
-                  if (mviState.sessionType == BffSessionType.SAVE) {
-                    stringResource(id = R.string.sessionpayment_methods_submit_add_payment_method)
-                  } else {
-                    val channelName = mviState.selectedChannel?.brandName ?: "Payment"
-                    stringResource(id = R.string.sessionpayment_methods_submit_pay)
+              mviState.presentToCustomerPaymentAction != null -> {
+                val qrAction = mviState.presentToCustomerPaymentAction!!
+                val merchantName = mviState.sessionResponse?.business?.name
+                ActionQrUI(
+                  title = merchantName,
+                  channelName = mviState.selectedChannel?.brandName ?: "QR Code",
+                  channelLogoUrl = mviState.selectedChannel?.brandLogoUrl,
+                  qrString = qrAction.value.orEmpty(),
+                  amount = mviState.sessionResponse?.session?.amount,
+                  currency = mviState.sessionResponse?.session?.currency,
+                  onClose = { viewModel.markClosed() },
+                  onPaymentMade = {
+                    viewModel.dispatch(ActionIntent.SimulatePayment)
+                    viewModel.dispatch(ActionIntent.ChallengeCompleted(true))
+                    viewModel.showLoading()
+                  },
+                  snackbarHostState = snackbarHostState
+                )
+              }
+
+              mviState.channels.isNotEmpty() -> {
+                Column {
+                  Column(
+                    modifier = Modifier
+                      .weight(1f)
+                      .verticalScroll(rememberScrollState())
+                  ) {
+                    val selectedUiGroup by rememberUpdatedState(mviState.selectedChannel?.uiGroup)
+                    val installmentPlans by rememberUpdatedState(cardState.installmentPlans)
+                    val onToggleGroup: (String) -> Unit =
+                      remember(viewModel) { { viewModel.dispatch(ActionIntent.ToggleUiGroup(it)) } }
+                    val onSelectChannel: (String) -> Unit =
+                      remember(viewModel) { { viewModel.dispatch(ActionIntent.SelectChannel(it)) } }
+                    val onCardNumberChanged: (String) -> Unit =
+                      remember(cardViewModel) { { cardViewModel.dispatch(CardIntent.CardNumberChanged(it)) } }
+                    val onFormChanged:
+                      (String?, Map<String, String>, List<ChannelFormField>, Boolean) -> Unit =
+                      remember(viewModel) {
+                        { channelCode, formValues, visibleFields, save ->
+                          viewModel.dispatch(
+                            ActionIntent.UpdatePaymentDraft(
+                              PaymentDraft(
+                                channelCode = channelCode,
+                                formValues = formValues,
+                                visibleFields = visibleFields,
+                                savePaymentMethod = save,
+                                installmentPlans =
+                                  if (selectedUiGroup == XenditComponents.UiGroup.CARDS) installmentPlans else null
+                              )
+                            )
+                          )
+                        }
+                      }
+                    PaymentMethodsUI(
+                      session = mviState.sessionResponse?.session,
+                      bffBusiness = mviState.sessionResponse?.business,
+                      merchantPreferredPaymentMethod = merchantPreferredPaymentMethod,
+                      channels = mviState.channels,
+                      channelVariantsByDisplayCode = mviState.channelVariantsByDisplayCode,
+                      expandedUiGroup = mviState.expandedUiGroup,
+                      selectedChannel = mviState.selectedChannel,
+                      paymentDrafts = mviState.paymentDrafts,
+                      cardDetails = cardState.cardDetails,
+                      installmentPlans = cardState.installmentPlans,
+                      sessionType = mviState.sessionType,
+                      allowSavePaymentMethod = mviState.allowSavePaymentMethod,
+                      onToggleGroup = onToggleGroup,
+                      onSelectChannel = onSelectChannel,
+                      onCardNumberChanged = onCardNumberChanged,
+                      onFormChanged = onFormChanged
+                    )
                   }
 
-                Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
-                  Button(
-                    enabled = isPayEnabled,
-                    onClick = {
-                      val selected = mviState.selectedChannel ?: return@Button
-                      val draft = mviState.paymentDrafts[selected.channelCode]
-                        ?: PaymentDraft(channelCode = selected.channelCode)
-                      val installmentPlans =
-                        if (selected.uiGroup == XenditComponents.UiGroup.CARDS) cardState.installmentPlans else draft.installmentPlans
-                      viewModel.dispatch(
-                        ActionIntent.SubmitAction(
-                          channelCode = selected.channelCode,
-                          formValues = draft.formValues,
-                          fields = draft.visibleFields,
-                          savePaymentMethod = draft.savePaymentMethod,
-                          installmentPlans = installmentPlans
-                        )
-                      )
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(appearance.borderRadius),
-                    colors = ButtonDefaults.buttonColors(
-                      containerColor = style.colorPrimary,
-                      contentColor = style.colorBackground
+                  val isPaymentSelected =
+                    mviState.expandedUiGroup != null && mviState.selectedChannel != null
+                  val selectedChannel = mviState.selectedChannel
+                  val currentDraft = if (selectedChannel == null) PaymentDraft() else {
+                    mviState.paymentDrafts[selectedChannel.channelCode]
+                      ?: PaymentDraft(channelCode = selectedChannel.channelCode)
+                  }
+                  val isFormFilled = currentDraft.visibleFields
+                  val formValue = currentDraft.formValues
+                  val isPayEnabled =
+                    isPaymentSelected && !mviState.isLoading && validateAllField(
+                      isFormFilled,
+                      formValue,
+                      cardDetails = cardState.cardDetails,
+                      bffCardInfo = mviState.selectedChannel?.card
                     )
-                  ) {
-                    Row(
-                      verticalAlignment = Alignment.CenterVertically
+                  val payText =
+                    if (mviState.sessionType == BffSessionType.SAVE) {
+                      stringResource(id = R.string.sessionpayment_methods_submit_add_payment_method)
+                    } else {
+                      val channelName = mviState.selectedChannel?.brandName ?: "Payment"
+                      stringResource(id = R.string.sessionpayment_methods_submit_pay)
+                    }
+
+                  Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+                    Button(
+                      enabled = isPayEnabled,
+                      onClick = {
+                        val selected = mviState.selectedChannel ?: return@Button
+                        val draft = mviState.paymentDrafts[selected.channelCode]
+                          ?: PaymentDraft(channelCode = selected.channelCode)
+                        val installmentPlans =
+                          if (selected.uiGroup == XenditComponents.UiGroup.CARDS) cardState.installmentPlans else draft.installmentPlans
+                        viewModel.dispatch(
+                          ActionIntent.SubmitAction(
+                            channelCode = selected.channelCode,
+                            formValues = draft.formValues,
+                            fields = draft.visibleFields,
+                            savePaymentMethod = draft.savePaymentMethod,
+                            installmentPlans = installmentPlans
+                          )
+                        )
+                      },
+                      modifier = Modifier.fillMaxWidth(),
+                      shape = RoundedCornerShape(appearance.borderRadius),
+                      colors = ButtonDefaults.buttonColors(
+                        containerColor = style.colorPrimary,
+                        contentColor = style.colorBackground
+                      )
                     ) {
-                      Text(
-                        text = payText,
-                        style = MaterialTheme.typography.titleSmall,
-                        modifier = Modifier.padding(end = 8.dp)
-                      )
-                      Icon(
-                        imageVector = Icons.AutoMirrored.Default.ArrowForward,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp),
-                      )
+                      Row(
+                        verticalAlignment = Alignment.CenterVertically
+                      ) {
+                        Text(
+                          text = payText,
+                          style = MaterialTheme.typography.titleSmall,
+                          modifier = Modifier.padding(end = 8.dp)
+                        )
+                        Icon(
+                          imageVector = Icons.AutoMirrored.Default.ArrowForward,
+                          contentDescription = null,
+                          modifier = Modifier.size(16.dp),
+                        )
+                      }
                     }
                   }
                 }
               }
-            }
-          }
-          if (mviState.isLoading) {
-            Box(
-              modifier = Modifier.align(Alignment.Center)
-            ) {
-              CircularProgressIndicator()
             }
           }
         }
@@ -554,6 +543,17 @@ internal fun PaymentContainerHost(
                 }
               }
             )
+          }
+        }
+        if (mviState.isLoading) {
+          Box(
+            modifier = Modifier
+              .matchParentSize()
+              .background(Color.Black.copy(alpha = 0.08f))
+              .pointerInteropFilter { true },
+            contentAlignment = Alignment.Center
+          ) {
+            CircularProgressIndicator()
           }
         }
       }

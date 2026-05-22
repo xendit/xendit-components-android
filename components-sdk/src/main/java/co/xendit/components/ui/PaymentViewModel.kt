@@ -163,7 +163,8 @@ internal class PaymentViewModel(
             paymentActionRedirect = null,
             presentToCustomerPaymentAction = null,
             paymentResponse = null,
-            pollResponse = null
+            pollResponse = null,
+            isLoading = false
           )
         }
         markClosed()
@@ -422,7 +423,7 @@ internal class PaymentViewModel(
           if (body.status == PaymentRequestStatus.REQUIRES_ACTION && redirect?.value != null) {
             _state.update {
               it.copy(
-                isLoading = false,
+                isLoading = actions.isEmpty(),
                 paymentActionRedirect = redirect,
               )
             }
