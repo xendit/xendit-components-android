@@ -28,9 +28,21 @@ class CombinePairedChannelsTest {
         instructions = null
       )
     val save =
-      nonSave.copy(
+      BffChannel(
+        brandName = "OVO",
+        brandLogoUrl = null,
+        brandColor = "#000000",
+        pmType = "EWALLET",
+        uiGroup = "ewallet",
         channelCode = "EWALLET_OVO_SAVE",
-        allowSave = true
+        allowPayWithoutSave = true,
+        allowSave = true,
+        minAmount = null,
+        maxAmount = null,
+        requiresCustomerDetails = false,
+        card = null,
+        form = null,
+        instructions = null
       )
 
     val result = combinePairedChannels(listOf(nonSave, save))
@@ -71,4 +83,3 @@ class CombinePairedChannelsTest {
     assertNull(result.variantsByDisplayCode[onlyNonSave.channelCode])
   }
 }
-
