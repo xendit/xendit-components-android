@@ -363,14 +363,16 @@ internal fun PaymentContainerHost(
                 if (redirect.descriptor == "DEEPLINK_URL") {
                   LaunchedEffect(url) {
                     if (url.isNotBlank()) {
-                      runCatching {
+                      val didLaunch = runCatching {
                         context.startActivity(
                           Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
                             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                           }
                         )
+                      }.isSuccess
+                      if (didLaunch) {
+                        viewModel.showLoading()
                       }
-                      viewModel.showLoading()
                     }
                     viewModel.dispatch(ActionIntent.ClearPaymentActionRedirect)
                   }
@@ -381,7 +383,7 @@ internal fun PaymentContainerHost(
                       viewModel.dispatch(ActionIntent.CloseWebPayment)
                     },
                     onChallengeCompleted = { viewModel.dispatch(ActionIntent.ChallengeCompleted(true)) },
-                    iframeCapable = redirect.iframeCapable == true
+                    iframeCapable = redirect.iframeCapable ?: true
                   )
                 }
               }

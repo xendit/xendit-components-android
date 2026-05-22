@@ -82,18 +82,14 @@ internal fun ActionWebViewUI(
 
               override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
                 super.onPageStarted(view, url, favicon)
-                XLogger.e(
-                  "AcWeb:PageStarted: ${url})"
-                )
+                XLogger.e("AcWeb:PageStarted")
               }
 
               override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
                 val currentUrl = view?.url ?: url
                 val u = currentUrl?.let { Uri.parse(it) }
-                XLogger.e(
-                  "AcWeb:PageFinished: ${url})"
-                )
+                XLogger.e("AcWeb:PageFinished")
               }
 
               override fun shouldInterceptRequest(
