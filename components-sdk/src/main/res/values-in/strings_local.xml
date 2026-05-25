@@ -14,4 +14,7 @@
   <string name="sessionaction_qr_saved">Kode QR tersimpan</string>
   <string name="sessionaction_qr_failed_save">Gagal menyimpan kode QR</string>
   <string name="sessionaction_qr_failed_download">Gagal mengunduh QR</string>
+  <string name="ewallet_pay_with">Bayar dengan</string>
+  <string name="ewallet_select_placeholder">Pilih E-Wallet</string>
+  <string name="ewallet_link_for_future_purchase">Hubungkan %1$s Anda dengan %2$s untuk pembelian berikutnya</string>
 </resources>

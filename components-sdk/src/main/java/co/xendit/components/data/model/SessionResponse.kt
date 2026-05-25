@@ -68,7 +68,7 @@ internal data class BffItem(
 @Keep
 internal data class BffChannel(
   @SerializedName("brand_name") val brandName: String,
-  @SerializedName("brand_logo_url") val brandLogoUrl: String,
+  @SerializedName("brand_logo_url") val brandLogoUrl: String?,
   @SerializedName("brand_color") val brandColor: String,
   @SerializedName("pm_type") val pmType: String?,
   @SerializedName("ui_group") val uiGroup: String,

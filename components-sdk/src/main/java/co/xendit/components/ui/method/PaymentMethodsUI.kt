@@ -28,6 +28,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import co.xendit.components.R
+import co.xendit.components.data.model.BffBusiness
 import co.xendit.components.data.model.BffChannel
 import co.xendit.components.data.model.BffSession
 import co.xendit.components.data.model.BffSessionAllowSavePaymentMethod
@@ -36,22 +37,21 @@ import co.xendit.components.data.model.CardDetails
 import co.xendit.components.data.model.ChannelFormField
 import co.xendit.components.data.model.InstallmentPlan
 import co.xendit.components.data.model.PaymentDraft
+import co.xendit.components.XenditComponents
+import co.xendit.components.ui.ChannelVariantChannels
 import co.xendit.components.ui.card.CardPaymentUI
+import co.xendit.components.ui.ewallet.EwalletPaymentUI
 import co.xendit.components.ui.qrcode.QrPaymentUI
 import co.xendit.components.ui.style.xenditAppearance
 import co.xendit.components.ui.ui_util.CustomShape.createTopRoundedOpenShape
-import co.xendit.components.util.XLogger
-
-private data class PaymentMethodRenderer(
-  val uiGroup: String,
-  val content: @Composable (groupChannels: List<BffChannel>, selectedChannel: BffChannel) -> Unit
-)
 
 @Composable
 internal fun PaymentMethodsUI(
   session: BffSession?,
+  bffBusiness: BffBusiness?,
   merchantPreferredPaymentMethod: List<String>? = null,
   channels: List<BffChannel>,
+  channelVariantsByDisplayCode: Map<String, ChannelVariantChannels> = emptyMap(),
   expandedUiGroup: String?,
   selectedChannel: BffChannel?,
   paymentDrafts: Map<String, PaymentDraft> = emptyMap(),
@@ -62,47 +62,45 @@ internal fun PaymentMethodsUI(
   onToggleGroup: (String) -> Unit,
   onSelectChannel: (String) -> Unit,
   onCardNumberChanged: (String) -> Unit,
-  onFormChanged: (String, Map<String, String>, List<ChannelFormField>, Boolean) -> Unit,
+  onFormChanged: (String?, Map<String, String>, List<ChannelFormField>, Boolean) -> Unit,
   modifier: Modifier = Modifier
 ) {
   val appearance = xenditAppearance
-  val rendererMap =
-    listOf(
-      PaymentMethodRenderer(uiGroup = "cards") { _, currentSelected ->
-        val showSaveCheckbox =
-          sessionType == BffSessionType.PAY && allowSavePaymentMethod == BffSessionAllowSavePaymentMethod.OPTIONAL
-        val initialValues = paymentDrafts[currentSelected.channelCode]?.formValues.orEmpty()
-        CardPaymentUI(
-          session = session,
-          channelData = currentSelected,
-          cardDetails = cardDetails,
-          initialValues = initialValues,
-          installmentPlans = installmentPlans,
-          onCardNumberChanged = onCardNumberChanged,
-          onFormStateChanged = { formValues, visibleFields, isSaveChecked ->
-            onFormChanged(currentSelected.channelCode, formValues, visibleFields, isSaveChecked)
-          },
-          modifier = Modifier.padding(bottom = 8.dp),
-          showSaveCheckbox = showSaveCheckbox
-        )
-      },
-      PaymentMethodRenderer(uiGroup = "qr_code") { groupChannels, currentSelected ->
-        QrPaymentUI(
-          channels = groupChannels,
-          selectedChannel = currentSelected,
-          onSelectChannel = onSelectChannel,
-          onFormStateChanged = { formValues, visibleFields ->
-            onFormChanged(currentSelected.channelCode, formValues, visibleFields, false)
-          },
-          modifier = Modifier.padding(bottom = 8.dp)
-        )
-      }
-    ).associateBy { it.uiGroup }
-
-  val groups = remember(channels, rendererMap.keys) {
-    channels.groupBy { it.uiGroup }.filter { it.key in rendererMap.keys }
+  val isSaveOptionalSession =
+    sessionType == BffSessionType.PAY && allowSavePaymentMethod == BffSessionAllowSavePaymentMethod.OPTIONAL
+  fun canShowSaveCheckbox(channel: BffChannel?): Boolean {
+    if (!isSaveOptionalSession || channel == null) return false
+    return channel.allowSave || channelVariantsByDisplayCode[channel.channelCode]?.saveChannel != null
   }
-  val filteredUiGroup = remember(groups.keys) {
+
+  fun effectiveSelectedChannel(displaySelected: BffChannel?): BffChannel? {
+    if (displaySelected == null) return null
+    val draft = paymentDrafts[displaySelected.channelCode]
+    val saveChecked = draft?.savePaymentMethod ?: false
+    val variants = channelVariantsByDisplayCode[displaySelected.channelCode]
+    return when {
+      saveChecked && variants?.saveChannel != null -> variants.saveChannel
+      !saveChecked && variants?.nonSaveChannel != null -> variants.nonSaveChannel
+      else -> displaySelected
+    }
+  }
+
+  val displaySelectedChannel = selectedChannel
+  val effectiveSelected = effectiveSelectedChannel(displaySelectedChannel)
+  val selectedDraft = displaySelectedChannel?.let { paymentDrafts[it.channelCode] }
+  val supportedUiGroups =
+    remember {
+      setOf(
+        XenditComponents.UiGroup.CARDS,
+        XenditComponents.UiGroup.EWALLET,
+        XenditComponents.UiGroup.QR_CODE
+      )
+    }
+
+  val groups = remember(channels) {
+    channels.groupBy { it.uiGroup }.filter { it.key in supportedUiGroups }
+  }
+  val filteredUiGroup = remember(groups.keys, merchantPreferredPaymentMethod) {
     if (merchantPreferredPaymentMethod.isNullOrEmpty()) {
       groups.keys
     } else {
@@ -127,8 +125,6 @@ internal fun PaymentMethodsUI(
         val isExpanded = expandedUiGroup == uiGroup
         val displayNameIcon = displayNameIconForUiGroup(uiGroup)
         val groupChannels = groups[uiGroup].orEmpty()
-        val currentSelected =
-          selectedChannel?.takeIf { it.uiGroup == uiGroup } ?: groupChannels.firstOrNull()
 
         Box(
           modifier = Modifier
@@ -158,16 +154,70 @@ internal fun PaymentMethodsUI(
             // expanded content here
             if (isExpanded) {
               Spacer(modifier = Modifier.height(8.dp))
-              val renderer = rendererMap[uiGroup]
-              if (renderer != null && currentSelected != null) {
-                renderer.content(groupChannels, currentSelected)
-              } else {
-                Text(
-                  text = "This payment method is not supported yet.",
-                  style = MaterialTheme.typography.bodyMedium,
-                  color = appearance.colorTextSecondary,
-                  modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
-                )
+              when (uiGroup) {
+                XenditComponents.UiGroup.CARDS -> {
+                  val initialValues = selectedDraft?.formValues.orEmpty()
+                  CardPaymentUI(
+                    session = session,
+                    channelData = effectiveSelected,
+                    cardDetails = cardDetails,
+                    initialValues = initialValues,
+                    installmentPlans = installmentPlans,
+                    onCardNumberChanged = onCardNumberChanged,
+                    onFormStateChanged = { formValues, visibleFields, isSaveChecked ->
+                      onFormChanged(
+                        displaySelectedChannel?.channelCode,
+                        formValues,
+                        visibleFields,
+                        isSaveChecked
+                      )
+                    },
+                    modifier = Modifier.padding(bottom = 8.dp),
+                    showSaveCheckbox = canShowSaveCheckbox(displaySelectedChannel)
+                  )
+                }
+
+                XenditComponents.UiGroup.EWALLET -> {
+                  val draft = selectedDraft
+                  val showSaveCheckbox = canShowSaveCheckbox(displaySelectedChannel)
+                  EwalletPaymentUI(
+                    channels = groupChannels,
+                    bffBusiness = bffBusiness,
+                    selectedChannel = effectiveSelected,
+                    initialValues = draft?.formValues.orEmpty(),
+                    initialVisibleFields = draft?.visibleFields ?: emptyList(),
+                    initialSaveChecked =
+                      if (showSaveCheckbox) (draft?.savePaymentMethod ?: false) else false,
+                    onSelectChannel = onSelectChannel,
+                    onFormStateChanged = { formValues, visibleFields, isSaveChecked ->
+                      onFormChanged(
+                        displaySelectedChannel?.channelCode,
+                        formValues,
+                        visibleFields,
+                        isSaveChecked
+                      )
+                    },
+                    showSaveCheckbox = showSaveCheckbox,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                  )
+                }
+
+                XenditComponents.UiGroup.QR_CODE -> {
+                  QrPaymentUI(
+                    channels = groupChannels,
+                    selectedChannel = effectiveSelected,
+                    onSelectChannel = onSelectChannel,
+                    onFormStateChanged = { formValues, visibleFields ->
+                      onFormChanged(
+                        effectiveSelected?.channelCode,
+                        formValues,
+                        visibleFields,
+                        false
+                      )
+                    },
+                    modifier = Modifier.padding(bottom = 8.dp)
+                  )
+                }
               }
             }
           }
@@ -227,9 +277,9 @@ private fun SelectableHeaderItem(
 
 private fun displayNameIconForUiGroup(uiGroup: String): Pair<String, Int> {
   return when (uiGroup.lowercase()) {
-    "cards" -> "Cards" to R.drawable.ic_cards
-    "ewallet", "e-wallet" -> "E-Wallet" to R.drawable.ic_e_wallet
-    "qrcode", "qr_code", "qr" -> "QR Code" to R.drawable.ic_qris
+    XenditComponents.UiGroup.CARDS -> "Cards" to R.drawable.ic_cards
+    XenditComponents.UiGroup.EWALLET -> "E-Wallet" to R.drawable.ic_e_wallet
+    XenditComponents.UiGroup.QR_CODE -> "QR Code" to R.drawable.ic_qris
     else -> uiGroup.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() } to R.drawable.ic_cards // Fallback icon
   }
 }

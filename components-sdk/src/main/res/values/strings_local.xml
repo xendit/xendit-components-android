@@ -14,4 +14,7 @@
   <string name="sessionaction_qr_saved">QR code saved</string>
   <string name="sessionaction_qr_failed_save">Failed to save QR code</string>
   <string name="sessionaction_qr_failed_download">Failed to download QR</string>
+  <string name="ewallet_pay_with">Pay with</string>
+  <string name="ewallet_select_placeholder">Select an E-Wallet</string>
+  <string name="ewallet_link_for_future_purchase">Link your %1$s with %2$s for future purchase</string>
 </resources>

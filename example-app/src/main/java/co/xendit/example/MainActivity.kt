@@ -154,7 +154,12 @@ fun PaymentDemo(fontFamily: FontFamily, modifier: Modifier = Modifier) {
       XenditComponents.present(
         act,
         sessionId,
-        merchantPreferredPaymentMethod = listOf("cards", "qr_code")
+        merchantPreferredPaymentMethod =
+          listOf(
+            XenditComponents.UiGroup.CARDS,
+            XenditComponents.UiGroup.EWALLET,
+            XenditComponents.UiGroup.QR_CODE
+          )
       ) {
         paymentResultText = it.toString()
       }

@@ -10,6 +10,7 @@ import co.xendit.components.data.model.BffSessionAllowSavePaymentMethod
 import co.xendit.components.data.model.BffSessionType
 import co.xendit.components.data.model.ChannelFormField
 import co.xendit.components.data.model.Country
+import co.xendit.components.data.model.FieldType
 import co.xendit.components.data.model.InstallmentPlan
 import co.xendit.components.data.model.PaymentAction
 import co.xendit.components.data.model.PaymentDraft
@@ -19,6 +20,7 @@ import co.xendit.components.data.model.PaymentResponse
 import co.xendit.components.data.model.PollResponse
 import co.xendit.components.data.model.SessionResponse
 import co.xendit.components.data.model.SimulatePaymentRequest
+import co.xendit.components.data.model.primaryChannelPropertyKey
 import co.xendit.components.data.network.repo.session.XenditRepository
 import co.xendit.components.ui.components.molecule.UiText
 import co.xendit.components.util.PaymentRequestMapper
@@ -38,12 +40,13 @@ import kotlinx.coroutines.launch
 internal data class PaymentState(
   val isLoading: Boolean = false,
   val channels: List<BffChannel> = emptyList(),
+  val channelVariantsByDisplayCode: Map<String, ChannelVariantChannels> = emptyMap(),
   val expandedUiGroup: String? = null,
   val selectedChannel: BffChannel? = null,
+  val lastSelectedChannelCodeByUiGroup: Map<String, String> = emptyMap(),
   val paymentSessionId: String? = null,
-  val actionRedirectUrl: String? = null,
+  val paymentActionRedirect: PaymentAction? = null,
   val presentToCustomerPaymentAction: PaymentAction? = null,
-  val iframeCapable: Boolean = true,
   val errorMessage: String? = null,
   val paymentResponse: PaymentResponse? = null,
   val sessionResponse: SessionResponse? = null,
@@ -52,6 +55,66 @@ internal data class PaymentState(
   val allowSavePaymentMethod: BffSessionAllowSavePaymentMethod? = null,
   val paymentDrafts: Map<String, PaymentDraft> = emptyMap()
 )
+
+internal data class ChannelVariantChannels(
+  val saveChannel: BffChannel? = null,
+  val nonSaveChannel: BffChannel? = null
+)
+
+internal data class CombinedChannelsResult(
+  val channels: List<BffChannel>,
+  val variantsByDisplayCode: Map<String, ChannelVariantChannels>
+)
+
+internal fun combinePairedChannels(channels: List<BffChannel>): CombinedChannelsResult {
+  if (channels.isEmpty()) return CombinedChannelsResult(emptyList(), emptyMap())
+
+  data class ChannelCombineKey(
+    val uiGroup: String,
+    val brandName: String,
+    val pmType: String?,
+    val requiresCustomerDetails: Boolean?,
+  )
+
+  fun toKey(channel: BffChannel): ChannelCombineKey {
+    return ChannelCombineKey(
+      uiGroup = channel.uiGroup,
+      brandName = channel.brandName,
+      pmType = channel.pmType,
+      requiresCustomerDetails = channel.requiresCustomerDetails,
+    )
+  }
+
+  val grouped = channels.groupBy(::toKey)
+  val pairByKey: Map<ChannelCombineKey, Pair<BffChannel, BffChannel>> =
+    grouped.mapNotNull { (key, group) ->
+      if (group.size != 2) return@mapNotNull null
+      val save = group.firstOrNull { it.allowSave }
+      val nonSave = group.firstOrNull { !it.allowSave }
+      if (save != null && nonSave != null) key to (nonSave to save) else null
+    }.toMap()
+
+  val combinedChannels = mutableListOf<BffChannel>()
+  val variants = mutableMapOf<String, ChannelVariantChannels>()
+  val addedDisplayCodes = mutableSetOf<String>()
+
+  channels.forEach { channel ->
+    val key = toKey(channel)
+    val pair = pairByKey[key]
+    if (pair == null) {
+      combinedChannels.add(channel)
+    } else {
+      val display = pair.first
+      if (addedDisplayCodes.add(display.channelCode)) {
+        combinedChannels.add(display)
+        variants[display.channelCode] =
+          ChannelVariantChannels(saveChannel = pair.second, nonSaveChannel = pair.first)
+      }
+    }
+  }
+
+  return CombinedChannelsResult(combinedChannels, variants.toMap())
+}
 
 /**
  * Actions for system to update the payment state.
@@ -102,6 +165,8 @@ internal sealed class ActionIntent {
    * Close Webview
    */
   data object CloseWebPayment : ActionIntent()
+
+  data object ClearPaymentActionRedirect : ActionIntent()
 }
 
 internal class PaymentViewModel(
@@ -151,13 +216,17 @@ internal class PaymentViewModel(
       is ActionIntent.CloseWebPayment -> {
         _state.update {
           it.copy(
-            actionRedirectUrl = null,
+            paymentActionRedirect = null,
             presentToCustomerPaymentAction = null,
             paymentResponse = null,
-            pollResponse = null
+            pollResponse = null,
+            isLoading = false
           )
         }
         markClosed()
+      }
+      is ActionIntent.ClearPaymentActionRedirect -> {
+        _state.update { it.copy(paymentActionRedirect = null) }
       }
     }
   }
@@ -171,16 +240,18 @@ internal class PaymentViewModel(
           val body = response.body()
           val session = body?.session
           val channels = body?.paymentChannels.orEmpty()
+          val combined = combinePairedChannels(channels)
           this@PaymentViewModel.paymentSessionId =
             session?.paymentSessionId ?: session?.id
           val sessionType = body?.session?.sessionType
           val allowSavePaymentMethod = body?.session?.allowSavePaymentMethod
 
-          if (channels.isNotEmpty()) {
+          if (combined.channels.isNotEmpty()) {
             _state.update {
               it.copy(
                 isLoading = false,
-                channels = channels,
+                channels = combined.channels,
+                channelVariantsByDisplayCode = combined.variantsByDisplayCode,
                 paymentSessionId = this@PaymentViewModel.paymentSessionId,
                 sessionResponse = body,
                 errorMessage = null,
@@ -217,22 +288,29 @@ internal class PaymentViewModel(
 
   private fun toggleUiGroupInternal(uiGroup: String) {
     val channels = _state.value.channels
-    val newExpanded = if (_state.value.expandedUiGroup == uiGroup) null else uiGroup
-    val existingSelected = _state.value.selectedChannel
+    val groups = channels.groupBy { it.uiGroup }
+    val newExpandedUiGroup = if (_state.value.expandedUiGroup == uiGroup) null else uiGroup
+    val currentSelected = _state.value.selectedChannel
     val nextSelected =
-      if (newExpanded == null) {
-        existingSelected
-      } else if (existingSelected?.uiGroup == newExpanded) {
-        existingSelected
+      if (newExpandedUiGroup == null) {
+        currentSelected
+      } else if (currentSelected?.uiGroup == newExpandedUiGroup) {
+        currentSelected
       } else {
-        channels.firstOrNull { it.uiGroup == newExpanded }
+        val lastSelectedCode = _state.value.lastSelectedChannelCodeByUiGroup[newExpandedUiGroup]
+        val lastSelected = lastSelectedCode?.let { code -> channels.firstOrNull { it.channelCode == code } }
+        lastSelected ?: (groups[newExpandedUiGroup]?.firstOrNull().takeIf { groups[newExpandedUiGroup]?.size == 1 })
       }
 
     _state.update {
       it.copy(
-        expandedUiGroup = newExpanded,
+        expandedUiGroup = newExpandedUiGroup,
         selectedChannel = nextSelected,
-        actionRedirectUrl = null,
+        lastSelectedChannelCodeByUiGroup =
+          it.lastSelectedChannelCodeByUiGroup.toMutableMap().apply {
+            if (nextSelected != null) put(nextSelected.uiGroup, nextSelected.channelCode)
+          },
+        paymentActionRedirect = null,
         presentToCustomerPaymentAction = null,
         paymentResponse = null,
         pollResponse = null,
@@ -246,7 +324,11 @@ internal class PaymentViewModel(
     _state.update {
       it.copy(
         selectedChannel = selected,
-        actionRedirectUrl = null,
+        lastSelectedChannelCodeByUiGroup =
+          it.lastSelectedChannelCodeByUiGroup.toMutableMap().apply {
+            put(selected.uiGroup, selected.channelCode)
+          },
+        paymentActionRedirect = null,
         presentToCustomerPaymentAction = null,
         paymentResponse = null,
         pollResponse = null,
@@ -279,7 +361,7 @@ internal class PaymentViewModel(
           isLoading = true,
           errorMessage = null,
           paymentResponse = null,
-          actionRedirectUrl = null,
+          paymentActionRedirect = null,
           presentToCustomerPaymentAction = null,
           pollResponse = null
         )
@@ -288,22 +370,27 @@ internal class PaymentViewModel(
         val key = publicKey ?: throw IllegalStateException("Public Key not set")
         val authKey = sessionAuthKey ?: throw IllegalStateException("Session ID not set")
         val paySid = paymentSessionId ?: throw IllegalStateException("Payment Session ID not set")
-
-        val channelProperties =
-          PaymentRequestMapper.mapFormValuesToChannelProperties(
+        val variantsForDisplay = _state.value.channelVariantsByDisplayCode[channelCode]
+        val effectiveChannel =
+          variantsForDisplay?.let { variants ->
+            when {
+              savePaymentMethod && variants.saveChannel != null -> variants.saveChannel
+              !savePaymentMethod && variants.nonSaveChannel != null -> variants.nonSaveChannel
+              else -> null
+            }
+          }
+        val effectiveChannelCode = effectiveChannel?.channelCode ?: channelCode
+        val request =
+          buildPaymentRequest(
+            sessionAuthKey = authKey,
+            publicKey = key,
+            paymentSessionId = paySid,
+            effectiveChannelCode = effectiveChannelCode,
             formValues = formValues,
             fields = fields,
-            publicKey = key,
-            sessionId = paySid, // Use paymentSessionId for encryption
-            installmentPlans = installmentPlans
-          )
-
-        val request =
-          PaymentRequest(
-            sessionId = authKey, // Use sessionAuthKey for the request sessionId
-            channelCode = channelCode,
-            channelProperties = channelProperties,
-            savePaymentMethod = if (savePaymentMethod) true else null
+            savePaymentMethod = savePaymentMethod,
+            installmentPlans = installmentPlans,
+            effectiveChannelForm = effectiveChannel?.form
           )
 
         val response =
@@ -327,9 +414,8 @@ internal class PaymentViewModel(
           if (body.status == PaymentRequestStatus.REQUIRES_ACTION && redirect?.value != null) {
             _state.update {
               it.copy(
-                isLoading = false,
-                actionRedirectUrl = redirect.value,
-                iframeCapable = redirect.iframeCapable ?: true
+                isLoading = actions.isEmpty(),
+                paymentActionRedirect = redirect,
               )
             }
           } else if (body.status == PaymentRequestStatus.REQUIRES_ACTION) {
@@ -340,7 +426,7 @@ internal class PaymentViewModel(
                 it.copy(
                   isLoading = false,
                   presentToCustomerPaymentAction = presentToCustomer,
-                  actionRedirectUrl = null
+                  paymentActionRedirect = null
                 )
               }
             } else {
@@ -466,4 +552,67 @@ internal class PaymentViewModel(
     challengePollingJob = null
   }
 
+}
+
+internal fun buildPaymentRequest(
+  sessionAuthKey: String,
+  publicKey: String,
+  paymentSessionId: String,
+  effectiveChannelCode: String,
+  formValues: Map<String, String>,
+  fields: List<ChannelFormField>,
+  savePaymentMethod: Boolean,
+  installmentPlans: List<InstallmentPlan>?,
+  effectiveChannelForm: List<ChannelFormField>?
+): PaymentRequest {
+  val allowedKeysFromChannelForm =
+    effectiveChannelForm
+      ?.map { it.primaryChannelPropertyKey() }
+      ?.filter { it.isNotBlank() }
+      ?.toSet()
+      .orEmpty()
+  val shouldFilterByChannelForm = allowedKeysFromChannelForm.isNotEmpty()
+  val filteredFields =
+    if (shouldFilterByChannelForm) {
+      fields.filter { it.primaryChannelPropertyKey() in allowedKeysFromChannelForm }
+    } else {
+      fields
+    }
+  val allowedValueKeys =
+    if (shouldFilterByChannelForm) {
+      mutableSetOf<String>().apply {
+        addAll(allowedKeysFromChannelForm)
+        filteredFields.forEach { field ->
+          val primaryKey = field.primaryChannelPropertyKey()
+          if (primaryKey.isBlank()) return@forEach
+          if (field.type is FieldType.PhoneNumber) {
+            add("${primaryKey}_country_code")
+          }
+        }
+      }
+    } else {
+      null
+    }
+  val filteredFormValues =
+    if (shouldFilterByChannelForm) {
+      formValues.filterKeys { it in allowedValueKeys.orEmpty() }
+    } else {
+      formValues
+    }
+
+  val channelProperties =
+    PaymentRequestMapper.mapFormValuesToChannelProperties(
+      formValues = filteredFormValues,
+      fields = filteredFields,
+      publicKey = publicKey,
+      sessionId = paymentSessionId,
+      installmentPlans = installmentPlans
+    )
+
+  return PaymentRequest(
+    sessionId = sessionAuthKey,
+    channelCode = effectiveChannelCode,
+    channelProperties = channelProperties,
+    savePaymentMethod = if (savePaymentMethod) true else null
+  )
 }

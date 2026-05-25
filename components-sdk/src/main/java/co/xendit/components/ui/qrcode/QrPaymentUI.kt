@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import co.xendit.components.R
 import co.xendit.components.data.model.BffChannel
 import co.xendit.components.data.model.ChannelFormField
+import co.xendit.components.ui.components.molecule.DashedDivider
 import co.xendit.components.ui.style.xenditAppearance
 import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
@@ -38,7 +39,7 @@ import com.airbnb.lottie.compose.rememberLottieComposition
 @Composable
 internal fun QrPaymentUI(
   channels: List<BffChannel>,
-  selectedChannel: BffChannel,
+  selectedChannel: BffChannel?,
   onSelectChannel: (String) -> Unit,
   onFormStateChanged: (Map<String, String>, List<ChannelFormField>) -> Unit,
   modifier: Modifier = Modifier
@@ -56,7 +57,7 @@ internal fun QrPaymentUI(
     iterations = LottieConstants.IterateForever // Loop it!
   )
 
-  LaunchedEffect(selectedChannel.channelCode) {
+  LaunchedEffect(selectedChannel?.channelCode) {
     formValues.clear()
     visibleFields.value = emptyList()
     onFormStateChanged(emptyMap(), emptyList())
@@ -85,7 +86,7 @@ internal fun QrPaymentUI(
         modifier = Modifier.size(60.dp)
       )
       Column(modifier = Modifier.weight(1f)) {
-        selectedChannel.instructions?.forEachIndexed { index, instruction ->
+        selectedChannel?.instructions?.forEachIndexed { index, instruction ->
           Text(
             text = instruction,
             style = MaterialTheme.typography.titleSmall.takeIf { index == 0 }
@@ -98,23 +99,5 @@ internal fun QrPaymentUI(
         }
       }
     }
-  }
-}
-
-@Composable
-private fun DashedDivider(
-  modifier: Modifier = Modifier,
-  color: Color
-) {
-  Canvas(modifier = modifier.height(1.dp)) {
-    val y = size.height / 2f
-    drawLine(
-      color = color,
-      start = Offset(0f, y),
-      end = Offset(size.width, y),
-      strokeWidth = size.height,
-      cap = StrokeCap.Round,
-      pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f)
-    )
   }
 }
