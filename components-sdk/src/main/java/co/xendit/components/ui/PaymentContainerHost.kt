@@ -69,6 +69,7 @@ import co.xendit.components.ui.action.ActionQrUI
 import co.xendit.components.ui.action.ActionWebViewUI
 import co.xendit.components.ui.card.CardIntent
 import co.xendit.components.ui.card.CardViewModel
+import co.xendit.components.ui.components.molecule.AwaitingPaymentDialog
 import co.xendit.components.ui.components.molecule.GenericHeader
 import co.xendit.components.ui.helper.FailureCodeMessageUtil
 import co.xendit.components.ui.helper.FormChecker.validateAllField
@@ -546,6 +547,14 @@ internal fun PaymentContainerHost(
               }
             )
           }
+        }
+        if (mviState.isAwaitingPaymentAction) {
+          AwaitingPaymentDialog(
+            appearance = style,
+            channelName = mviState.selectedChannel?.brandName.orEmpty(),
+            channelLogoUrl = mviState.selectedChannel?.brandLogoUrl,
+            onClose = { viewModel.dispatch(ActionIntent.CloseWebPayment) }
+          )
         }
         if (mviState.isLoading) {
           Box(
