@@ -3,7 +3,6 @@ package co.xendit.components.ui
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -56,8 +55,8 @@ import co.xendit.components.BuildConfig
 import co.xendit.components.R
 import co.xendit.components.XenditComponents
 import co.xendit.components.core.CoreSdkComponent.globalErrorHandler
-import co.xendit.components.data.model.ChannelFormField
 import co.xendit.components.data.model.BffSessionType
+import co.xendit.components.data.model.ChannelFormField
 import co.xendit.components.data.model.PaymentDraft
 import co.xendit.components.data.model.PaymentRequestStatus
 import co.xendit.components.data.model.PaymentSessionStatus
@@ -76,7 +75,6 @@ import co.xendit.components.ui.helper.FormChecker.validateAllField
 import co.xendit.components.ui.method.PaymentMethodsUI
 import co.xendit.components.ui.style.XenditAppearance
 import co.xendit.components.ui.style.xenditAppearance
-import io.nerdythings.okhttp.modifier.settings.OkHttpProfilerSettingsActivity
 import kotlinx.coroutines.launch
 
 internal enum class PaymentContainerPresentation {
@@ -423,9 +421,17 @@ internal fun PaymentContainerHost(
                     val onSelectChannel: (String) -> Unit =
                       remember(viewModel) { { viewModel.dispatch(ActionIntent.SelectChannel(it)) } }
                     val onCardNumberChanged: (String) -> Unit =
-                      remember(cardViewModel) { { cardViewModel.dispatch(CardIntent.CardNumberChanged(it)) } }
+                      remember(cardViewModel) {
+                        {
+                          cardViewModel.dispatch(
+                            CardIntent.CardNumberChanged(
+                              it
+                            )
+                          )
+                        }
+                      }
                     val onFormChanged:
-                      (String?, Map<String, String>, List<ChannelFormField>, Boolean) -> Unit =
+                          (String?, Map<String, String>, List<ChannelFormField>, Boolean) -> Unit =
                       remember(viewModel) {
                         { channelCode, formValues, visibleFields, save ->
                           viewModel.dispatch(
@@ -550,6 +556,7 @@ internal fun PaymentContainerHost(
         }
         if (mviState.isAwaitingPaymentAction) {
           AwaitingPaymentDialog(
+            modifier = Modifier.matchParentSize(),
             appearance = style,
             channelName = mviState.selectedChannel?.brandName.orEmpty(),
             channelLogoUrl = mviState.selectedChannel?.brandLogoUrl,
