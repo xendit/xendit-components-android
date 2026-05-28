@@ -39,6 +39,7 @@ import kotlinx.coroutines.launch
 
 internal data class PaymentState(
   val isLoading: Boolean = false,
+  val isAwaitingPaymentAction: Boolean = false,
   val channels: List<BffChannel> = emptyList(),
   val channelVariantsByDisplayCode: Map<String, ChannelVariantChannels> = emptyMap(),
   val expandedUiGroup: String? = null,
@@ -220,7 +221,8 @@ internal class PaymentViewModel(
             presentToCustomerPaymentAction = null,
             paymentResponse = null,
             pollResponse = null,
-            isLoading = false
+            isLoading = false,
+            isAwaitingPaymentAction = false
           )
         }
         markClosed()
@@ -359,6 +361,7 @@ internal class PaymentViewModel(
       _state.update {
         it.copy(
           isLoading = true,
+          isAwaitingPaymentAction = false,
           errorMessage = null,
           paymentResponse = null,
           paymentActionRedirect = null,
@@ -411,40 +414,69 @@ internal class PaymentViewModel(
                       it.descriptor == "DEEPLINK_URL" ||
                       it.descriptor == "WEB_GOOGLE_PAYLINK")
             }
-          if (body.status == PaymentRequestStatus.REQUIRES_ACTION && redirect?.value != null) {
-            _state.update {
-              it.copy(
-                isLoading = actions.isEmpty(),
-                paymentActionRedirect = redirect,
-              )
-            }
-          } else if (body.status == PaymentRequestStatus.REQUIRES_ACTION) {
+          if (body.status == PaymentRequestStatus.REQUIRES_ACTION) {
             val presentToCustomer =
               actions.firstOrNull { it.type == "PRESENT_TO_CUSTOMER" && it.value != null }
-            if (presentToCustomer != null) {
-              _state.update {
-                it.copy(
-                  isLoading = false,
-                  presentToCustomerPaymentAction = presentToCustomer,
-                  paymentActionRedirect = null
-                )
+            when {
+              redirect?.value != null -> {
+                _state.update {
+                  it.copy(
+                    isLoading = false,
+                    isAwaitingPaymentAction = false,
+                    paymentActionRedirect = redirect,
+                    presentToCustomerPaymentAction = null,
+                    paymentResponse = null
+                  )
+                }
               }
-            } else {
-              _state.update { it.copy(isLoading = false, paymentResponse = body) }
+
+              presentToCustomer != null -> {
+                _state.update {
+                  it.copy(
+                    isLoading = false,
+                    isAwaitingPaymentAction = false,
+                    presentToCustomerPaymentAction = presentToCustomer,
+                    paymentActionRedirect = null,
+                    paymentResponse = null
+                  )
+                }
+              }
+
+              actions.isEmpty() -> {
+                _state.update {
+                  it.copy(
+                    isLoading = false,
+                    isAwaitingPaymentAction = true,
+                    paymentActionRedirect = null,
+                    presentToCustomerPaymentAction = null,
+                    paymentResponse = body
+                  )
+                }
+              }
+
+              else -> {
+                _state.update {
+                  it.copy(
+                    isLoading = false,
+                    isAwaitingPaymentAction = false,
+                    paymentResponse = body
+                  )
+                }
+              }
             }
           } else {
-            _state.update { it.copy(isLoading = false, paymentResponse = body) }
+            _state.update { it.copy(isLoading = false, isAwaitingPaymentAction = false, paymentResponse = body) }
           }
           onChallengeCompletedInternal() // start pooling here
         } else {
           val error = response.errorBody()?.asApiError()
           val errorMessage = error?.errorContent?.message1 ?: error?.message ?: "Payment Failed"
-          _state.update { it.copy(isLoading = false, errorMessage = errorMessage) }
+          _state.update { it.copy(isLoading = false, isAwaitingPaymentAction = false, errorMessage = errorMessage) }
         }
       } catch (e: Exception) {
         val errorMessage = e.message ?: "Payment Error"
         globalErrorHandler.postError(errorMessage = UiText.DynamicString(errorMessage))
-        _state.update { it.copy(isLoading = false, errorMessage = errorMessage) }
+        _state.update { it.copy(isLoading = false, isAwaitingPaymentAction = false, errorMessage = errorMessage) }
       }
     }
   }
@@ -542,7 +574,12 @@ internal class PaymentViewModel(
 
   fun markClosed() {
     _state.update {
-      it.copy(presentToCustomerPaymentAction = null, isLoading = false)
+      it.copy(
+        presentToCustomerPaymentAction = null,
+        paymentActionRedirect = null,
+        isLoading = false,
+        isAwaitingPaymentAction = false
+      )
     }
     cancelChallenge()
   }
