@@ -8,6 +8,7 @@ internal data class SessionResponse(
   @SerializedName("session") val session: BffSession?,
   @SerializedName("business") val business: BffBusiness? = null,
   @SerializedName("channels") val paymentChannels: List<BffChannel>?,
+  @SerializedName("channel_ui_groups") val channelUiGroups: List<BffChannelUiGroup>? = null,
   @SerializedName("succeeded_channel") val succeededChannel: SucceededChannel?
 )
 
@@ -29,6 +30,13 @@ internal data class BffBusiness(
   @SerializedName("name") val name: String? = null,
   @SerializedName("country_of_operation") val countryOfOperation: String? = null,
   @SerializedName("merchant_profile_picture_url") val merchantProfilePictureUrl: String? = null
+)
+
+@Keep
+internal data class BffChannelUiGroup(
+  @SerializedName("id") val id: String,
+  @SerializedName("label") val label: String,
+  @SerializedName("icon_url") val iconUrl: String? = null
 )
 
 @Keep
