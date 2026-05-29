@@ -56,11 +56,13 @@ internal fun EwalletPaymentUI(
   channels: List<BffChannel>,
   bffBusiness: BffBusiness?,
   selectedChannel: BffChannel?,
+  effectiveChannel: BffChannel? = selectedChannel,
   initialValues: Map<String, String> = emptyMap(),
   initialVisibleFields: List<ChannelFormField> = emptyList(),
   initialSaveChecked: Boolean = false,
   onSelectChannel: (String) -> Unit,
   onFormStateChanged: (Map<String, String>, List<ChannelFormField>, Boolean) -> Unit = { _, _, _ -> },
+  onSaveCheck: (Boolean, Map<String, String>, List<ChannelFormField>) -> Unit = { _, _, _ -> },
   showSaveCheckbox: Boolean = false,
   modifier: Modifier = Modifier
 ) {
@@ -73,7 +75,7 @@ internal fun EwalletPaymentUI(
   val isSaveChecked = remember { mutableStateOf(false) }
 
   LaunchedEffect(
-    selectedChannel?.channelCode,
+    effectiveChannel?.channelCode,
     initialValues,
     initialVisibleFields,
     initialSaveChecked
@@ -82,7 +84,7 @@ internal fun EwalletPaymentUI(
     formValues.putAll(initialValues)
     visibleFields.value = initialVisibleFields
     isSaveChecked.value = initialSaveChecked
-    if (selectedChannel != null) {
+    if (effectiveChannel != null) {
       onFormStateChanged(formValues.toMap(), visibleFields.value, isSaveChecked.value)
     }
   }
@@ -175,10 +177,10 @@ internal fun EwalletPaymentUI(
       }
     }
 
-    val channelFormFields = selectedChannel?.form.orEmpty()
+    val channelFormFields = effectiveChannel?.form.orEmpty()
     if (channelFormFields.isNotEmpty()) {
       Spacer(modifier = Modifier.height(12.dp))
-      key(selectedChannel?.channelCode) {
+      key(effectiveChannel?.channelCode) {
         DynamicForm(
           fields = channelFormFields,
           cardDetails = null,
@@ -199,8 +201,8 @@ internal fun EwalletPaymentUI(
       }
     }
 
-    if (showSaveCheckbox && selectedChannel != null) {
-      val channel = selectedChannel
+    if (showSaveCheckbox && effectiveChannel != null) {
+      val channel = effectiveChannel
       Spacer(modifier = Modifier.height(16.dp))
       CheckboxWithText(
         checked = isSaveChecked.value,
@@ -211,13 +213,13 @@ internal fun EwalletPaymentUI(
         ),
         onCheckedChange = { nextChecked ->
           isSaveChecked.value = nextChecked
-          onFormStateChanged(formValues.toMap(), visibleFields.value, isSaveChecked.value)
+          onSaveCheck(isSaveChecked.value, formValues.toMap(), visibleFields.value)
         },
         textColor = appearance.colorText
       )
     }
 
-    if (!selectedChannel?.instructions.isNullOrEmpty()) {
+    if (!effectiveChannel?.instructions.isNullOrEmpty()) {
       Spacer(modifier = Modifier.height(16.dp))
       DashedDivider(
         modifier = Modifier
@@ -234,7 +236,7 @@ internal fun EwalletPaymentUI(
           modifier = Modifier.size(60.dp)
         )
         Column() {
-          selectedChannel.instructions.forEachIndexed { index, instruction ->
+          effectiveChannel.instructions.forEachIndexed { index, instruction ->
             Text(
               text = instruction,
               style = MaterialTheme.typography.titleSmall.takeIf { index == 0 }

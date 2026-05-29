@@ -80,21 +80,16 @@ internal fun PaymentMethodsUI(
     return channel.allowSave || channelVariantsByDisplayCode[channel.channelCode]?.saveChannel != null
   }
 
-  fun effectiveSelectedChannel(displaySelected: BffChannel?): BffChannel? {
-    if (displaySelected == null) return null
-    val draft = paymentDrafts[displaySelected.channelCode]
-    val saveChecked = draft?.savePaymentMethod ?: false
-    val variants = channelVariantsByDisplayCode[displaySelected.channelCode]
-    return when {
-      saveChecked && variants?.saveChannel != null -> variants.saveChannel
-      !saveChecked && variants?.nonSaveChannel != null -> variants.nonSaveChannel
-      else -> displaySelected
+  val selectedDisplayChannelForUi =
+    remember(selectedChannel, channelVariantsByDisplayCode) {
+      if (selectedChannel == null) return@remember null
+      val match =
+        channelVariantsByDisplayCode.entries.firstOrNull { (_, pair) ->
+          pair.saveChannel?.channelCode == selectedChannel.channelCode
+        }
+      match?.value?.nonSaveChannel ?: selectedChannel
     }
-  }
-
-  val displaySelectedChannel = selectedChannel
-  val effectiveSelected = effectiveSelectedChannel(displaySelectedChannel)
-  val selectedDraft = displaySelectedChannel?.let { paymentDrafts[it.channelCode] }
+  val selectedDraft = selectedChannel?.let { paymentDrafts[it.channelCode] }
   val uiGroupMetaById =
     remember(channelUiGroups) { channelUiGroups.orEmpty().associateBy { it.id } }
   val supportedUiGroups = remember { XenditComponents.UiGroup.SUPPORTED }
@@ -170,31 +165,40 @@ internal fun PaymentMethodsUI(
                   val initialValues = selectedDraft?.formValues.orEmpty()
                   CardPaymentUI(
                     session = session,
-                    channelData = effectiveSelected,
+                    channelData = selectedChannel,
                     cardDetails = cardDetails,
                     initialValues = initialValues,
                     installmentPlans = installmentPlans,
                     onCardNumberChanged = onCardNumberChanged,
                     onFormStateChanged = { formValues, visibleFields, isSaveChecked ->
                       onFormChanged(
-                        displaySelectedChannel?.channelCode,
+                        selectedChannel?.channelCode,
                         formValues,
                         visibleFields,
                         isSaveChecked
                       )
                     },
                     modifier = Modifier.padding(bottom = 8.dp),
-                    showSaveCheckbox = canShowSaveCheckbox(displaySelectedChannel)
+                    showSaveCheckbox = canShowSaveCheckbox(selectedChannel)
                   )
                 }
 
                 XenditComponents.UiGroup.EWALLET -> {
                   val draft = selectedDraft
-                  val showSaveCheckbox = canShowSaveCheckbox(displaySelectedChannel)
+                  val saveCodes =
+                    remember(channelVariantsByDisplayCode) {
+                      channelVariantsByDisplayCode.values.mapNotNull { it.saveChannel?.channelCode }.toSet()
+                    }
+                  val displayChannels =
+                    remember(groupChannels, saveCodes) { groupChannels.filter { it.channelCode !in saveCodes } }
+                  val showSaveCheckbox = canShowSaveCheckbox(selectedDisplayChannelForUi)
+                  val variants =
+                    selectedDisplayChannelForUi?.let { channelVariantsByDisplayCode[it.channelCode] }
                   EwalletPaymentUI(
-                    channels = groupChannels,
+                    channels = displayChannels,
                     bffBusiness = bffBusiness,
-                    selectedChannel = effectiveSelected,
+                    selectedChannel = selectedDisplayChannelForUi,
+                    effectiveChannel = selectedChannel,
                     initialValues = draft?.formValues.orEmpty(),
                     initialVisibleFields = draft?.visibleFields ?: emptyList(),
                     initialSaveChecked =
@@ -202,11 +206,36 @@ internal fun PaymentMethodsUI(
                     onSelectChannel = onSelectChannel,
                     onFormStateChanged = { formValues, visibleFields, isSaveChecked ->
                       onFormChanged(
-                        displaySelectedChannel?.channelCode,
+                        selectedChannel?.channelCode,
                         formValues,
                         visibleFields,
                         isSaveChecked
                       )
+                    },
+                    onSaveCheck = { isSave, values, fields ->
+                      val nextEffective =
+                        when {
+                          isSave && variants?.saveChannel != null -> variants.saveChannel
+                          !isSave && variants?.nonSaveChannel != null -> variants.nonSaveChannel
+                          else -> selectedChannel
+                        }
+                      val nextCode = nextEffective?.channelCode
+                      if (!nextCode.isNullOrBlank()) {
+                        if (nextCode == selectedChannel?.channelCode) {
+                          onFormChanged(nextCode, values, fields, isSave)
+                        } else {
+                          val nextDraft = paymentDrafts[nextCode]
+                          onFormChanged(
+                            nextCode,
+                            nextDraft?.formValues.orEmpty(),
+                            nextDraft?.visibleFields.orEmpty(),
+                            isSave
+                          )
+                        }
+                        if (nextCode != selectedChannel?.channelCode) {
+                          onSelectChannel(nextCode)
+                        }
+                      }
                     },
                     showSaveCheckbox = showSaveCheckbox,
                     modifier = Modifier.padding(bottom = 8.dp)
@@ -216,11 +245,11 @@ internal fun PaymentMethodsUI(
                 XenditComponents.UiGroup.QR_CODE -> {
                   QrPaymentUI(
                     channels = groupChannels,
-                    selectedChannel = effectiveSelected,
+                    selectedChannel = selectedChannel,
                     onSelectChannel = onSelectChannel,
                     onFormStateChanged = { formValues, visibleFields ->
                       onFormChanged(
-                        effectiveSelected?.channelCode,
+                        selectedChannel?.channelCode,
                         formValues,
                         visibleFields,
                         false
