@@ -39,6 +39,7 @@ import co.xendit.components.data.model.InstallmentPlan
 import co.xendit.components.data.model.PaymentDraft
 import co.xendit.components.XenditComponents
 import co.xendit.components.ui.ChannelVariantChannels
+import co.xendit.components.ui.banktransfer.BankTransferPaymentUI
 import co.xendit.components.ui.card.CardPaymentUI
 import co.xendit.components.ui.ewallet.EwalletPaymentUI
 import co.xendit.components.ui.qrcode.QrPaymentUI
@@ -93,7 +94,8 @@ internal fun PaymentMethodsUI(
       setOf(
         XenditComponents.UiGroup.CARDS,
         XenditComponents.UiGroup.EWALLET,
-        XenditComponents.UiGroup.QR_CODE
+        XenditComponents.UiGroup.QR_CODE,
+        XenditComponents.UiGroup.BANK_TRANSFER
       )
     }
 
@@ -218,6 +220,30 @@ internal fun PaymentMethodsUI(
                     modifier = Modifier.padding(bottom = 8.dp)
                   )
                 }
+
+                XenditComponents.UiGroup.BANK_TRANSFER -> {
+                  val draft = selectedDraft
+                  val showSaveCheckbox = canShowSaveCheckbox(displaySelectedChannel)
+                  BankTransferPaymentUI(
+                    channels = groupChannels,
+                    selectedChannel = effectiveSelected,
+                    initialValues = draft?.formValues.orEmpty(),
+                    initialVisibleFields = draft?.visibleFields ?: emptyList(),
+                    initialSaveChecked =
+                      if (showSaveCheckbox) (draft?.savePaymentMethod ?: false) else false,
+                    onSelectChannel = onSelectChannel,
+                    onFormStateChanged = { formValues, visibleFields, isSaveChecked ->
+                      onFormChanged(
+                        displaySelectedChannel?.channelCode,
+                        formValues,
+                        visibleFields,
+                        isSaveChecked
+                      )
+                    },
+                    showSaveCheckbox = showSaveCheckbox,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                  )
+                }
               }
             }
           }
@@ -280,6 +306,7 @@ private fun displayNameIconForUiGroup(uiGroup: String): Pair<String, Int> {
     XenditComponents.UiGroup.CARDS -> "Cards" to R.drawable.ic_cards
     XenditComponents.UiGroup.EWALLET -> "E-Wallet" to R.drawable.ic_e_wallet
     XenditComponents.UiGroup.QR_CODE -> "QR Code" to R.drawable.ic_qris
+    XenditComponents.UiGroup.BANK_TRANSFER -> "Bank Transfer" to R.drawable.ic_cards
     else -> uiGroup.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() } to R.drawable.ic_cards // Fallback icon
   }
 }

@@ -30,6 +30,7 @@ object XenditComponents {
     const val CARDS = "cards"
     const val EWALLET = "ewallet"
     const val QR_CODE = "qr_code"
+    const val BANK_TRANSFER = "bank_transfer"
   }
 
   private var composeView: ComposeView? = null

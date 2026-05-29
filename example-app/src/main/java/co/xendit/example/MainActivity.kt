@@ -156,6 +156,7 @@ fun PaymentDemo(fontFamily: FontFamily, modifier: Modifier = Modifier) {
         sessionId,
         merchantPreferredPaymentMethod =
           listOf(
+            XenditComponents.UiGroup.BANK_TRANSFER,
             XenditComponents.UiGroup.CARDS,
             XenditComponents.UiGroup.EWALLET,
             XenditComponents.UiGroup.QR_CODE

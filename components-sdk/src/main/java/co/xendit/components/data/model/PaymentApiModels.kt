@@ -2,6 +2,7 @@ package co.xendit.components.data.model
 
 import androidx.annotation.Keep
 import com.google.gson.annotations.SerializedName
+import com.google.gson.JsonElement
 
 @Keep
 internal data class PaymentOptionsRequest(
@@ -44,7 +45,7 @@ internal data class PaymentAction(
   @SerializedName("action_title") val actionTitle: String? = null,
   @SerializedName("action_subtitle") val actionSubtitle: String? = null,
   @SerializedName("action_graphic") val actionGraphic: String? = null,
-  val instructions: Map<String, Any>? = null,
+  val instructions: JsonElement? = null,
   val otp: OtpUi? = null
 )
 

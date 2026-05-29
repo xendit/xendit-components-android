@@ -416,7 +416,11 @@ internal class PaymentViewModel(
             }
           if (body.status == PaymentRequestStatus.REQUIRES_ACTION) {
             val presentToCustomer =
-              actions.firstOrNull { it.type == "PRESENT_TO_CUSTOMER" && it.value != null }
+              actions.firstOrNull {
+                it.type == "PRESENT_TO_CUSTOMER" &&
+                  it.value != null &&
+                  (it.descriptor == "VIRTUAL_ACCOUNT_NUMBER" || it.descriptor == "QR_STRING")
+              } ?: actions.firstOrNull { it.type == "PRESENT_TO_CUSTOMER" && it.value != null }
             when {
               redirect?.value != null -> {
                 _state.update {
