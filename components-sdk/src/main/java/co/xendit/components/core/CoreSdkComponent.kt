@@ -11,6 +11,7 @@ import co.xendit.components.core.network.interceptor.ErrorInterceptor
 import co.xendit.components.core.network.interceptor.HeaderInterceptor
 import co.xendit.components.core.network.provider.HeaderProvider
 import co.xendit.components.data.model.FieldType
+import co.xendit.components.core.model.EnumWithFallbackValueTypeAdapterFactory
 import co.xendit.components.data.network.remote.session.XenditApi
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
@@ -63,6 +64,7 @@ internal object CoreSdkComponent {
     GsonBuilder()
       .setStrictness(Strictness.LENIENT)
       .registerTypeAdapter(FieldType::class.java, FieldTypeDeserializer())
+      .registerTypeAdapterFactory(EnumWithFallbackValueTypeAdapterFactory)
       .create()
   }
 

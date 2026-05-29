@@ -14,6 +14,7 @@ import co.xendit.components.data.model.FieldType
 import co.xendit.components.data.model.InstallmentPlan
 import co.xendit.components.data.model.PaymentAction
 import co.xendit.components.data.model.PaymentDraft
+import co.xendit.components.data.model.PaymentActionDescriptor
 import co.xendit.components.data.model.PaymentRequest
 import co.xendit.components.data.model.PaymentRequestStatus
 import co.xendit.components.data.model.PaymentResponse
@@ -410,16 +411,17 @@ internal class PaymentViewModel(
           val redirect =
             actions.firstOrNull {
               it.type == "REDIRECT_CUSTOMER" &&
-                  (it.descriptor == "WEB_URL" ||
-                      it.descriptor == "DEEPLINK_URL" ||
-                      it.descriptor == "WEB_GOOGLE_PAYLINK")
+                  (it.descriptor == PaymentActionDescriptor.WEB_URL ||
+                      it.descriptor == PaymentActionDescriptor.DEEPLINK_URL ||
+                      it.descriptor == PaymentActionDescriptor.WEB_GOOGLE_PAYLINK)
             }
           if (body.status == PaymentRequestStatus.REQUIRES_ACTION) {
             val presentToCustomer =
               actions.firstOrNull {
                 it.type == "PRESENT_TO_CUSTOMER" &&
                   it.value != null &&
-                  (it.descriptor == "VIRTUAL_ACCOUNT_NUMBER" || it.descriptor == "QR_STRING")
+                  (it.descriptor == PaymentActionDescriptor.VIRTUAL_ACCOUNT_NUMBER ||
+                    it.descriptor == PaymentActionDescriptor.QR_STRING)
               } ?: actions.firstOrNull { it.type == "PRESENT_TO_CUSTOMER" && it.value != null }
             when {
               redirect?.value != null -> {

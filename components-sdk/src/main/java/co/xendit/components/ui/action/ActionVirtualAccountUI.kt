@@ -50,13 +50,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import co.xendit.components.R
+import co.xendit.components.data.model.PaymentInstructionTab
 import co.xendit.components.ui.helper.CurrencyUtil
 import co.xendit.components.ui.helper.SdkImageLoader
 import co.xendit.components.ui.style.xenditAppearance
 import coil.compose.AsyncImage
-import com.google.gson.JsonArray
-import com.google.gson.JsonElement
-import com.google.gson.JsonObject
 import kotlinx.coroutines.launch
 
 @Composable
@@ -69,7 +67,7 @@ internal fun ActionVirtualAccountUI(
   merchantName: String?,
   amount: Long?,
   currency: String?,
-  instructionPayload: JsonElement?,
+  instructions: List<PaymentInstructionTab>?,
   onClose: () -> Unit,
   onPaymentMade: () -> Unit,
   snackbarHostState: SnackbarHostState? = null,
@@ -84,7 +82,7 @@ internal fun ActionVirtualAccountUI(
   val formattedAmount = remember(amount, currency) { CurrencyUtil.formatAmount(amount, currency) }
   val copiedText = stringResource(R.string.sessionaction_va_copied_to_clipboard)
 
-  val sections = remember(instructionPayload) { parseInstructionSections(instructionPayload) }
+  val sections = remember(instructions) { instructions.orEmpty() }
   var selectedTabIndex by remember(sections.size) { mutableIntStateOf(0) }
   val effectiveSelectedIndex = selectedTabIndex.coerceIn(0, (sections.size - 1).coerceAtLeast(0))
   val selectedSection = sections.getOrNull(effectiveSelectedIndex)
@@ -309,7 +307,10 @@ internal fun ActionVirtualAccountUI(
 
             val content = selectedSection?.content.orEmpty()
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-              content.forEachIndexed { index, item ->
+              val textSteps =
+                content.filter { it.type.equals("text", true) && !it.text.isNullOrBlank() }
+                  .mapNotNull { it.text }
+              textSteps.forEachIndexed { index, text ->
                 Row(
                   modifier = Modifier.fillMaxWidth(),
                   verticalAlignment = Alignment.Top
@@ -321,7 +322,7 @@ internal fun ActionVirtualAccountUI(
                     modifier = Modifier.padding(end = 8.dp)
                   )
                   Text(
-                    text = parseBoldTags(item.text),
+                    text = parseBoldTags(text),
                     style = MaterialTheme.typography.bodyMedium,
                     color = appearance.colorText
                   )
@@ -332,34 +333,6 @@ internal fun ActionVirtualAccountUI(
         }
       }
     }
-  }
-}
-
-private data class InstructionSection(
-  val title: String,
-  val content: List<InstructionItem>
-)
-
-private data class InstructionItem(
-  val type: String,
-  val text: String
-)
-
-private fun parseInstructionSections(payload: JsonElement?): List<InstructionSection> {
-  val array = payload as? JsonArray ?: return emptyList()
-  return array.mapNotNull { element ->
-    val obj = element as? JsonObject ?: return@mapNotNull null
-    val title = obj.get("title")?.asString?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
-    val contentArray = obj.getAsJsonArray("content") ?: JsonArray()
-    val items =
-      contentArray.mapNotNull { c ->
-        val cObj = c as? JsonObject ?: return@mapNotNull null
-        val type = cObj.get("type")?.asString ?: "text"
-        val text = cObj.get("text")?.asString ?: return@mapNotNull null
-        InstructionItem(type = type, text = text)
-      }.filter { it.type.lowercase() == "text" && it.text.isNotBlank() }
-    if (items.isEmpty()) return@mapNotNull null
-    InstructionSection(title = title, content = items)
   }
 }
 

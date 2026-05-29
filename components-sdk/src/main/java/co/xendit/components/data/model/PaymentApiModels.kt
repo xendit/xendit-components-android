@@ -1,8 +1,8 @@
 package co.xendit.components.data.model
 
 import androidx.annotation.Keep
+import co.xendit.components.core.model.FallbackValue
 import com.google.gson.annotations.SerializedName
-import com.google.gson.JsonElement
 
 @Keep
 internal data class PaymentOptionsRequest(
@@ -37,15 +37,57 @@ internal data class OtpUi(
 )
 
 @Keep
+internal enum class PaymentActionDescriptor {
+  @SerializedName("PAYMENT_CODE") PAYMENT_CODE,
+  @SerializedName("QR_STRING") QR_STRING,
+  @SerializedName("VIRTUAL_ACCOUNT_NUMBER") VIRTUAL_ACCOUNT_NUMBER,
+  @SerializedName("WEB_URL") WEB_URL,
+  @SerializedName("DEEPLINK_URL") DEEPLINK_URL,
+  @SerializedName("WEB_GOOGLE_PAYLINK") WEB_GOOGLE_PAYLINK,
+  @SerializedName("CAPTURE_PAYMENT") CAPTURE_PAYMENT,
+  @SerializedName("VALIDATE_OTP") VALIDATE_OTP,
+  @SerializedName("RESEND_OTP") RESEND_OTP,
+  @FallbackValue
+  @SerializedName("UNKNOWN")
+  UNKNOWN
+}
+
+@Keep
+internal data class PaymentInstructionField(
+  val label: String,
+  val value: String
+)
+
+@Keep
+internal data class PaymentInstructionStep(
+  val type: String,
+  val text: String? = null,
+  val src: String? = null,
+  val height: Int? = null,
+  val alt: String? = null,
+  val items: List<String>? = null,
+  val heading: String? = null,
+  val fields: List<PaymentInstructionField>? = null,
+  val headers: List<String>? = null,
+  val rows: List<List<String>>? = null
+)
+
+@Keep
+internal data class PaymentInstructionTab(
+  val title: String,
+  val content: List<PaymentInstructionStep>
+)
+
+@Keep
 internal data class PaymentAction(
   val type: String,
-  val descriptor: String?,
+  val descriptor: PaymentActionDescriptor?,
   val value: String?,
   @SerializedName("iframe_capable") val iframeCapable: Boolean? = null,
   @SerializedName("action_title") val actionTitle: String? = null,
   @SerializedName("action_subtitle") val actionSubtitle: String? = null,
   @SerializedName("action_graphic") val actionGraphic: String? = null,
-  val instructions: JsonElement? = null,
+  val instructions: List<PaymentInstructionTab>? = null,
   val otp: OtpUi? = null
 )
 

@@ -58,6 +58,7 @@ import co.xendit.components.XenditComponents
 import co.xendit.components.core.CoreSdkComponent.globalErrorHandler
 import co.xendit.components.data.model.BffSessionType
 import co.xendit.components.data.model.ChannelFormField
+import co.xendit.components.data.model.PaymentActionDescriptor
 import co.xendit.components.data.model.PaymentDraft
 import co.xendit.components.data.model.PaymentRequestStatus
 import co.xendit.components.data.model.PaymentSessionStatus
@@ -362,7 +363,7 @@ internal fun PaymentContainerHost(
               mviState.paymentActionRedirect != null -> {
                 val redirect = mviState.paymentActionRedirect!!
                 val url = redirect.value.orEmpty()
-                if (redirect.descriptor == "DEEPLINK_URL") {
+                if (redirect.descriptor == PaymentActionDescriptor.DEEPLINK_URL) {
                   LaunchedEffect(url) {
                     if (url.isNotBlank()) {
                       val didLaunch = runCatching {
@@ -397,7 +398,7 @@ internal fun PaymentContainerHost(
                 val channelName = selectedChannel?.brandName.orEmpty()
                 val channelLogoUrl = selectedChannel?.brandLogoUrl
                 when (action.descriptor) {
-                  "VIRTUAL_ACCOUNT_NUMBER" -> {
+                  PaymentActionDescriptor.VIRTUAL_ACCOUNT_NUMBER -> {
                     ActionVirtualAccountUI(
                       title = action.actionTitle,
                       subtitle = action.actionSubtitle,
@@ -407,7 +408,7 @@ internal fun PaymentContainerHost(
                       merchantName = merchantName,
                       amount = mviState.sessionResponse?.session?.amount,
                       currency = mviState.sessionResponse?.session?.currency,
-                      instructionPayload = action.instructions,
+                      instructions = action.instructions,
                       onClose = { viewModel.markClosed() },
                       onPaymentMade = {
                         viewModel.dispatch(ActionIntent.SimulatePayment)
@@ -418,7 +419,7 @@ internal fun PaymentContainerHost(
                     )
                   }
 
-                  "QR_STRING" -> {
+                  PaymentActionDescriptor.QR_STRING -> {
                     ActionQrUI(
                       title = merchantName,
                       channelName = channelName.ifBlank { "QR Code" },
