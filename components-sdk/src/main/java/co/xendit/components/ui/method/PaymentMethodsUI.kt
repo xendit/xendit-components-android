@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -24,12 +25,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import co.xendit.components.R
 import co.xendit.components.data.model.BffBusiness
 import co.xendit.components.data.model.BffChannel
+import co.xendit.components.data.model.BffChannelUiGroup
 import co.xendit.components.data.model.BffSession
 import co.xendit.components.data.model.BffSessionAllowSavePaymentMethod
 import co.xendit.components.data.model.BffSessionType
@@ -41,9 +45,11 @@ import co.xendit.components.XenditComponents
 import co.xendit.components.ui.ChannelVariantChannels
 import co.xendit.components.ui.card.CardPaymentUI
 import co.xendit.components.ui.ewallet.EwalletPaymentUI
+import co.xendit.components.ui.helper.SdkImageLoader
 import co.xendit.components.ui.qrcode.QrPaymentUI
 import co.xendit.components.ui.style.xenditAppearance
 import co.xendit.components.ui.ui_util.CustomShape.createTopRoundedOpenShape
+import coil.compose.AsyncImage
 
 @Composable
 internal fun PaymentMethodsUI(
@@ -51,6 +57,7 @@ internal fun PaymentMethodsUI(
   bffBusiness: BffBusiness?,
   merchantPreferredPaymentMethod: List<String>? = null,
   channels: List<BffChannel>,
+  channelUiGroups: List<BffChannelUiGroup>? = null,
   channelVariantsByDisplayCode: Map<String, ChannelVariantChannels> = emptyMap(),
   expandedUiGroup: String?,
   selectedChannel: BffChannel?,
@@ -88,21 +95,21 @@ internal fun PaymentMethodsUI(
   val displaySelectedChannel = selectedChannel
   val effectiveSelected = effectiveSelectedChannel(displaySelectedChannel)
   val selectedDraft = displaySelectedChannel?.let { paymentDrafts[it.channelCode] }
-  val supportedUiGroups =
-    remember {
-      setOf(
-        XenditComponents.UiGroup.CARDS,
-        XenditComponents.UiGroup.EWALLET,
-        XenditComponents.UiGroup.QR_CODE
-      )
-    }
+  val uiGroupMetaById =
+    remember(channelUiGroups) { channelUiGroups.orEmpty().associateBy { it.id } }
+  val supportedUiGroups = remember { XenditComponents.UiGroup.SUPPORTED }
 
   val groups = remember(channels) {
     channels.groupBy { it.uiGroup }.filter { it.key in supportedUiGroups }
   }
-  val filteredUiGroup = remember(groups.keys, merchantPreferredPaymentMethod) {
+  val filteredUiGroup = remember(groups.keys, merchantPreferredPaymentMethod, channelUiGroups) {
+    val ordered =
+      channelUiGroups
+        ?.map { it.id }
+        ?.filter { it in groups.keys }
+        ?: groups.keys.toList()
     if (merchantPreferredPaymentMethod.isNullOrEmpty()) {
-      groups.keys
+      ordered
     } else {
       merchantPreferredPaymentMethod.filter { it in groups.keys }
     }
@@ -123,7 +130,10 @@ internal fun PaymentMethodsUI(
     ) {
       filteredUiGroup.forEachIndexed { index, uiGroup ->
         val isExpanded = expandedUiGroup == uiGroup
-        val displayNameIcon = displayNameIconForUiGroup(uiGroup)
+        val groupMeta = uiGroupMetaById[uiGroup]
+        val fallback = fallbackDisplayNameIconForUiGroup(uiGroup)
+        val displayName = groupMeta?.label?.takeIf { it.isNotBlank() } ?: fallback.first
+        val iconUrl = null //groupMeta?.iconUrl?.takeIf { it.isNotBlank() } cant use this now
         val groupChannels = groups[uiGroup].orEmpty()
 
         Box(
@@ -142,8 +152,9 @@ internal fun PaymentMethodsUI(
         ) {
           Column() {
             SelectableHeaderItem(
-              text = displayNameIcon.first,
-              leftIcon = displayNameIcon.second,
+              text = displayName,
+              leftIcon = fallback.second,
+              leftIconUrl = iconUrl,
               isExpanded = isExpanded,
               isSelected = isExpanded,
               onToggle = {
@@ -232,12 +243,15 @@ internal fun PaymentMethodsUI(
 private fun SelectableHeaderItem(
   text: String,
   @DrawableRes leftIcon: Int,
+  leftIconUrl: String?,
   isExpanded: Boolean,
   isSelected: Boolean,
   onToggle: () -> Unit,
   modifier: Modifier = Modifier
 ) {
   val appearance = xenditAppearance
+  val context = LocalContext.current
+  val imageLoader = remember { SdkImageLoader.get(context) }
   val activeColor = appearance.colorPrimary
   val inactiveColor = MaterialTheme.colorScheme.onSurface
 
@@ -251,11 +265,21 @@ private fun SelectableHeaderItem(
       .padding(horizontal = 16.dp, vertical = 14.dp),
     verticalAlignment = Alignment.CenterVertically
   ) {
-    Icon(
-      painter = painterResource(id = leftIcon),
-      contentDescription = null,
-      tint = contentColor
-    )
+    if (!leftIconUrl.isNullOrBlank()) {
+      AsyncImage(
+        model = leftIconUrl,
+        imageLoader = imageLoader,
+        contentDescription = null,
+        contentScale = ContentScale.Fit,
+        modifier = Modifier.size(20.dp)
+      )
+    } else {
+      Icon(
+        painter = painterResource(id = leftIcon),
+        contentDescription = null,
+        tint = contentColor
+      )
+    }
 
     Text(
       text = text,
@@ -275,7 +299,7 @@ private fun SelectableHeaderItem(
   }
 }
 
-private fun displayNameIconForUiGroup(uiGroup: String): Pair<String, Int> {
+private fun fallbackDisplayNameIconForUiGroup(uiGroup: String): Pair<String, Int> {
   return when (uiGroup.lowercase()) {
     XenditComponents.UiGroup.CARDS -> "Cards" to R.drawable.ic_cards
     XenditComponents.UiGroup.EWALLET -> "E-Wallet" to R.drawable.ic_e_wallet
