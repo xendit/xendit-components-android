@@ -4,7 +4,7 @@
   <string name="select_country">Seleccionar país</string>
   <string name="select_province">Seleccionar provincia</string>
   <string name="save_for_faster_payment_next_time">Guardar para pagar más rápido la próxima vez</string>
-  <string name="card_brand_not_supported">Esta marca de tarjeta no es compatible con esta transacción.</string>
+  <string name="card_brand_not_supported">Esta marca de tarjeta no está aceptada.</string>
   <string name="form_validation_required">%1$s es obligatorio.</string>
   <string name="form_validation_invalid">%1$s no es válido.</string>
 </resources>

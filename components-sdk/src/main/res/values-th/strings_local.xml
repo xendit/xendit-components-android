@@ -4,7 +4,7 @@
   <string name="select_country">เลือกประเทศ</string>
   <string name="select_province">เลือกจังหวัด</string>
   <string name="save_for_faster_payment_next_time">บันทึกเพื่อชำระเงินได้เร็วขึ้นในครั้งถัดไป</string>
-  <string name="card_brand_not_supported">แบรนด์บัตรนี้ไม่รองรับสำหรับธุรกรรมนี้</string>
+  <string name="card_brand_not_supported">แบรนด์บัตรนี้ไม่ได้รับการยอมรับ</string>
   <string name="form_validation_required">%1$s จำเป็นต้องกรอก</string>
   <string name="form_validation_invalid">%1$s ไม่ถูกต้อง</string>
 </resources>

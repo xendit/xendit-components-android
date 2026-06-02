@@ -4,7 +4,7 @@
   <string name="select_country">Chọn quốc gia</string>
   <string name="select_province">Chọn tỉnh</string>
   <string name="save_for_faster_payment_next_time">Lưu để thanh toán nhanh hơn vào lần sau</string>
-  <string name="card_brand_not_supported">Thương hiệu thẻ này không được hỗ trợ cho giao dịch này.</string>
+  <string name="card_brand_not_supported">Thương hiệu thẻ này không được chấp nhận.</string>
   <string name="form_validation_required">%1$s là bắt buộc.</string>
   <string name="form_validation_invalid">%1$s không hợp lệ.</string>
 </resources>
