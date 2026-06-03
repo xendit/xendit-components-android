@@ -1,18 +1,15 @@
 package co.xendit.components.ui.action
 
-import androidx.compose.foundation.background
+import android.content.ClipData
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -23,11 +20,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SecondaryTabRow
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
-import androidx.compose.material3.SecondaryTabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -39,7 +35,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.ClipEntry
+import androidx.compose.ui.platform.Clipboard
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
@@ -55,6 +53,7 @@ import co.xendit.components.ui.helper.CurrencyUtil
 import co.xendit.components.ui.helper.SdkImageLoader
 import co.xendit.components.ui.style.xenditAppearance
 import coil.compose.AsyncImage
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 @Composable
@@ -75,9 +74,8 @@ internal fun ActionVirtualAccountUI(
 ) {
   val appearance = xenditAppearance
   val context = LocalContext.current
-  val clipboardManager = LocalClipboardManager.current
+  val clipboard = LocalClipboard.current
   val scope = rememberCoroutineScope()
-  val hostState = snackbarHostState ?: remember { SnackbarHostState() }
   val imageLoader = remember { SdkImageLoader.get(context) }
   val formattedAmount = remember(amount, currency) { CurrencyUtil.formatAmount(amount, currency) }
   val copiedText = stringResource(R.string.sessionaction_va_copied_to_clipboard)
@@ -87,121 +85,145 @@ internal fun ActionVirtualAccountUI(
   val effectiveSelectedIndex = selectedTabIndex.coerceIn(0, (sections.size - 1).coerceAtLeast(0))
   val selectedSection = sections.getOrNull(effectiveSelectedIndex)
 
-  fun copyToClipboard(value: String) {
-    if (value.isBlank()) return
-    clipboardManager.setText(AnnotatedString(value))
-    scope.launch { hostState.showSnackbar(copiedText) }
-  }
-
-  Box(
-    modifier = modifier
-      .fillMaxSize()
-      .background(Color.Black.copy(alpha = 0.55f)),
-    contentAlignment = Alignment.Center
+  Surface(
+    modifier = Modifier
+      .fillMaxWidth(),
+    color = appearance.colorBackground,
+    tonalElevation = 0.dp
   ) {
-    if (snackbarHostState == null) {
-      SnackbarHost(
-        hostState = hostState,
-        modifier = Modifier
-          .align(Alignment.BottomCenter)
-          .padding(16.dp)
-      )
-    }
-
-    Surface(
-      modifier = Modifier
-        .fillMaxWidth(),
-      color = appearance.colorBackground,
-      tonalElevation = 0.dp
+    Column(
+      modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
+      horizontalAlignment = Alignment.CenterHorizontally
     ) {
-      Column(
-        modifier = Modifier.padding(20.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-      ) {
-        Box(modifier = Modifier.fillMaxWidth()) {
-          AsyncImage(
-            model = channelLogoUrl,
-            imageLoader = imageLoader,
+      Box(modifier = Modifier.fillMaxWidth()) {
+        AsyncImage(
+          model = channelLogoUrl,
+          imageLoader = imageLoader,
+          contentDescription = null,
+          contentScale = ContentScale.Fit,
+          modifier = Modifier
+            .align(Alignment.Center)
+            .height(28.dp)
+        )
+        IconButton(
+          onClick = onClose,
+          modifier = Modifier.align(Alignment.CenterEnd)
+        ) {
+          Icon(
+            imageVector = Icons.Filled.Close,
             contentDescription = null,
-            contentScale = ContentScale.Fit,
-            modifier = Modifier
-              .align(Alignment.Center)
-              .height(28.dp)
+            tint = appearance.colorTextSecondary
           )
-          IconButton(
-            onClick = onClose,
-            modifier = Modifier.align(Alignment.CenterEnd)
-          ) {
-            Icon(
-              imageVector = Icons.Filled.Close,
-              contentDescription = null,
-              tint = appearance.colorTextSecondary
-            )
-          }
         }
+      }
 
+      Text(
+        text = title?.takeIf { it.isNotBlank() } ?: channelName,
+        style = MaterialTheme.typography.titleLarge,
+        color = appearance.colorText,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.fillMaxWidth()
+      )
+
+      if (!subtitle.isNullOrBlank()) {
+        Spacer(modifier = Modifier.height(8.dp))
         Text(
-          text = title?.takeIf { it.isNotBlank() } ?: channelName,
-          style = MaterialTheme.typography.titleLarge,
-          color = appearance.colorText,
+          text = subtitle,
+          style = MaterialTheme.typography.bodyMedium,
+          color = appearance.colorTextSecondary,
           textAlign = TextAlign.Center,
           modifier = Modifier.fillMaxWidth()
         )
+      }
 
-        if (!subtitle.isNullOrBlank()) {
-          Spacer(modifier = Modifier.height(8.dp))
-          Text(
-            text = subtitle,
-            style = MaterialTheme.typography.bodyMedium,
-            color = appearance.colorTextSecondary,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth()
-          )
-        }
+      Spacer(modifier = Modifier.height(16.dp))
 
-        Spacer(modifier = Modifier.height(16.dp))
+      Surface(
+        modifier = Modifier
+          .fillMaxWidth()
+          .border(
+            width = 2.dp,
+            color = appearance.colorPrimary,
+            shape = RoundedCornerShape(appearance.borderRadius)
+          ),
+        shape = RoundedCornerShape(appearance.borderRadius),
+        color = appearance.colorBackground,
+        tonalElevation = 0.dp
+      ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+          Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+          ) {
+            Column(modifier = Modifier.weight(1f)) {
+              Text(
+                text = stringResource(R.string.sessionaction_va_virtual_account_number),
+                style = MaterialTheme.typography.bodySmall,
+                color = appearance.colorTextSecondary
+              )
+              Spacer(modifier = Modifier.height(4.dp))
+              Text(
+                text = virtualAccountNumber,
+                style = MaterialTheme.typography.titleMedium,
+                color = appearance.colorText
+              )
+              if (!merchantName.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                  text = merchantName,
+                  style = MaterialTheme.typography.bodySmall,
+                  color = appearance.colorTextSecondary
+                )
+              }
+            }
 
-        Surface(
-          modifier = Modifier
-            .fillMaxWidth()
-            .border(
-              width = 2.dp,
-              color = appearance.colorPrimary,
-              shape = RoundedCornerShape(appearance.borderRadius)
-            ),
-          shape = RoundedCornerShape(appearance.borderRadius),
-          color = appearance.colorBackground,
-          tonalElevation = 0.dp
-        ) {
-          Column(modifier = Modifier.padding(16.dp)) {
+            OutlinedButton(
+              onClick = {
+                copyToClipboard(
+                  scope,
+                  clipboard,
+                  virtualAccountNumber,
+                  snackbarHostState,
+                  copiedText
+                )
+              },
+              colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFFFAFAFA),
+                contentColor = appearance.colorText
+              ),
+              shape = RoundedCornerShape(999.dp)
+            ) {
+              Text(
+                text = stringResource(R.string.sessionaction_va_copy_number),
+                style = MaterialTheme.typography.titleSmall
+              )
+            }
+          }
+
+          if (formattedAmount.isNotBlank()) {
+            Spacer(modifier = Modifier.height(16.dp))
             Row(
               modifier = Modifier.fillMaxWidth(),
               verticalAlignment = Alignment.CenterVertically
             ) {
               Column(modifier = Modifier.weight(1f)) {
                 Text(
-                  text = stringResource(R.string.sessionaction_va_virtual_account_number),
+                  text = stringResource(R.string.sessionaction_va_amount_to_pay),
                   style = MaterialTheme.typography.bodySmall,
                   color = appearance.colorTextSecondary
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                  text = virtualAccountNumber,
+                  text = formattedAmount,
                   style = MaterialTheme.typography.titleMedium,
                   color = appearance.colorText
                 )
-                if (!merchantName.isNullOrBlank()) {
-                  Spacer(modifier = Modifier.height(4.dp))
-                  Text(
-                    text = merchantName,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = appearance.colorTextSecondary
-                  )
-                }
               }
 
               OutlinedButton(
-                onClick = { copyToClipboard(virtualAccountNumber) },
+                onClick = {
+                  copyToClipboard(scope, clipboard, amount.toString(), snackbarHostState, copiedText)
+                },
                 colors = ButtonDefaults.buttonColors(
                   containerColor = Color(0xFFFAFAFA),
                   contentColor = appearance.colorText
@@ -209,128 +231,106 @@ internal fun ActionVirtualAccountUI(
                 shape = RoundedCornerShape(999.dp)
               ) {
                 Text(
-                  text = stringResource(R.string.sessionaction_va_copy_number),
+                  text = stringResource(R.string.sessionaction_va_copy_amount),
                   style = MaterialTheme.typography.titleSmall
                 )
               }
             }
+          }
 
-            if (formattedAmount.isNotBlank()) {
-              Spacer(modifier = Modifier.height(16.dp))
-              Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-              ) {
-                Column(modifier = Modifier.weight(1f)) {
-                  Text(
-                    text = stringResource(R.string.sessionaction_va_amount_to_pay),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = appearance.colorTextSecondary
-                  )
-                  Spacer(modifier = Modifier.height(4.dp))
-                  Text(
-                    text = formattedAmount,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = appearance.colorText
-                  )
-                }
+          Spacer(modifier = Modifier.height(16.dp))
 
-                OutlinedButton(
-                  onClick = { copyToClipboard(formattedAmount) },
-                  colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFFAFAFA),
-                    contentColor = appearance.colorText
-                  ),
-                  shape = RoundedCornerShape(999.dp)
-                ) {
-                  Text(
-                    text = stringResource(R.string.sessionaction_va_copy_amount),
-                    style = MaterialTheme.typography.titleSmall
-                  )
-                }
-              }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            OutlinedButton(
-              onClick = onPaymentMade,
-              modifier = Modifier.fillMaxWidth(),
-              colors = ButtonDefaults.buttonColors(
-                containerColor = appearance.colorBackground,
-                contentColor = appearance.colorText
-              ),
-              shape = RoundedCornerShape(appearance.borderRadius)
-            ) {
-              Text(
-                text = stringResource(R.string.sessionaction_simulate_payment),
-                style = MaterialTheme.typography.titleSmall
-              )
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
+          OutlinedButton(
+            onClick = onPaymentMade,
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(
+              containerColor = appearance.colorBackground,
+              contentColor = appearance.colorText
+            ),
+            shape = RoundedCornerShape(appearance.borderRadius)
+          ) {
             Text(
-              text = stringResource(R.string.sessionaction_simulate_payment_instructions),
-              style = MaterialTheme.typography.bodySmall,
-              color = appearance.colorTextSecondary,
-              textAlign = TextAlign.Center,
-              modifier = Modifier.fillMaxWidth()
+              text = stringResource(R.string.sessionaction_simulate_payment),
+              style = MaterialTheme.typography.titleSmall
             )
           }
+
+          Spacer(modifier = Modifier.height(8.dp))
+          Text(
+            text = stringResource(R.string.sessionaction_simulate_payment_instructions),
+            style = MaterialTheme.typography.bodySmall,
+            color = appearance.colorTextSecondary,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth()
+          )
         }
+      }
 
-        if (sections.isNotEmpty()) {
-          Spacer(modifier = Modifier.height(16.dp))
-          Column(
-            modifier = Modifier
-              .fillMaxWidth()
-              .verticalScroll(rememberScrollState())
-          ) {
-            if (sections.size > 1) {
-              SecondaryTabRow(
-                selectedTabIndex = effectiveSelectedIndex,
-                containerColor = appearance.colorBackground,
-                contentColor = appearance.colorPrimary
-              ) {
-                sections.forEachIndexed { index, section ->
-                  Tab(
-                    selected = effectiveSelectedIndex == index,
-                    onClick = { selectedTabIndex = index },
-                    text = { Text(section.title) }
-                  )
-                }
+      if (sections.isNotEmpty()) {
+        Spacer(modifier = Modifier.height(16.dp))
+        Column(
+          modifier = Modifier
+            .fillMaxWidth()
+            .verticalScroll(rememberScrollState())
+        ) {
+          if (sections.size > 1) {
+            SecondaryTabRow(
+              selectedTabIndex = effectiveSelectedIndex,
+              containerColor = appearance.colorBackground,
+              contentColor = appearance.colorPrimary
+            ) {
+              sections.forEachIndexed { index, section ->
+                Tab(
+                  selected = effectiveSelectedIndex == index,
+                  onClick = { selectedTabIndex = index },
+                  text = { Text(section.title) }
+                )
               }
-              Spacer(modifier = Modifier.height(12.dp))
             }
+            Spacer(modifier = Modifier.height(12.dp))
+          }
 
-            val content = selectedSection?.content.orEmpty()
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-              val textSteps =
-                content.filter { it.type.equals("text", true) && !it.text.isNullOrBlank() }
-                  .mapNotNull { it.text }
-              textSteps.forEachIndexed { index, text ->
-                Row(
-                  modifier = Modifier.fillMaxWidth(),
-                  verticalAlignment = Alignment.Top
-                ) {
-                  Text(
-                    text = "${index + 1}.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = appearance.colorText,
-                    modifier = Modifier.padding(end = 8.dp)
-                  )
-                  Text(
-                    text = parseBoldTags(text),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = appearance.colorText
-                  )
-                }
+          val content = selectedSection?.content.orEmpty()
+          Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            val textSteps =
+              content.filter { it.type.equals("text", true) && !it.text.isNullOrBlank() }
+                .mapNotNull { it.text }
+            textSteps.forEachIndexed { index, text ->
+              Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.Top
+              ) {
+                Text(
+                  text = "${index + 1}.",
+                  style = MaterialTheme.typography.bodyMedium,
+                  color = appearance.colorText,
+                  modifier = Modifier.padding(end = 8.dp)
+                )
+                Text(
+                  text = parseBoldTags(text),
+                  style = MaterialTheme.typography.bodyMedium,
+                  color = appearance.colorText
+                )
               }
             }
           }
         }
       }
     }
+  }
+}
+
+private fun copyToClipboard(
+  scope: CoroutineScope,
+  clipboard: Clipboard,
+  value: String,
+  snackbarHostState: SnackbarHostState?,
+  copiedText: String
+) {
+  if (value.isBlank()) return
+  scope.launch {
+    clipboard.setClipEntry(ClipEntry(ClipData.newPlainText(null, value)))
+    snackbarHostState?.showSnackbar(copiedText)
   }
 }
 
