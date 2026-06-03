@@ -44,7 +44,6 @@ internal data class PaymentState(
   val channelVariantsByDisplayCode: Map<String, ChannelVariantChannels> = emptyMap(),
   val expandedUiGroup: String? = null,
   val selectedChannel: BffChannel? = null,
-  val lastSelectedChannelCodeByUiGroup: Map<String, String> = emptyMap(),
   val paymentSessionId: String? = null,
   val paymentActionRedirect: PaymentAction? = null,
   val presentToCustomerPaymentAction: PaymentAction? = null,
@@ -189,6 +188,7 @@ internal class PaymentViewModel(
   private var lastPaymentRequestId: String? = null
   private var lastSessionTokenRequestId: String? = null
   private var challengePollingJob: Job? = null
+  private val lastSelectedChannelCodeByUiGroup: MutableMap<String, String> = mutableMapOf()
 
   fun dispatch(intent: ActionIntent) {
     when (intent) {
@@ -242,18 +242,18 @@ internal class PaymentViewModel(
           val body = response.body()
           val session = body?.session
           val channels = body?.paymentChannels.orEmpty()
-          val combined = combinePairedChannels(channels)
+          val variantsByDisplayCode = combinePairedChannels(channels).variantsByDisplayCode
           this@PaymentViewModel.paymentSessionId =
             session?.paymentSessionId ?: session?.id
           val sessionType = body?.session?.sessionType
           val allowSavePaymentMethod = body?.session?.allowSavePaymentMethod
 
-          if (combined.channels.isNotEmpty()) {
+          if (channels.isNotEmpty()) {
             _state.update {
               it.copy(
                 isLoading = false,
-                channels = combined.channels,
-                channelVariantsByDisplayCode = combined.variantsByDisplayCode,
+                channels = channels,
+                channelVariantsByDisplayCode = variantsByDisplayCode,
                 paymentSessionId = this@PaymentViewModel.paymentSessionId,
                 sessionResponse = body,
                 errorMessage = null,
@@ -299,19 +299,18 @@ internal class PaymentViewModel(
       } else if (currentSelected?.uiGroup == newExpandedUiGroup) {
         currentSelected
       } else {
-        val lastSelectedCode = _state.value.lastSelectedChannelCodeByUiGroup[newExpandedUiGroup]
+        val lastSelectedCode = lastSelectedChannelCodeByUiGroup[newExpandedUiGroup]
         val lastSelected = lastSelectedCode?.let { code -> channels.firstOrNull { it.channelCode == code } }
         lastSelected ?: (groups[newExpandedUiGroup]?.firstOrNull().takeIf { groups[newExpandedUiGroup]?.size == 1 })
       }
 
+    if (nextSelected != null) {
+      lastSelectedChannelCodeByUiGroup[nextSelected.uiGroup] = nextSelected.channelCode
+    }
     _state.update {
       it.copy(
         expandedUiGroup = newExpandedUiGroup,
         selectedChannel = nextSelected,
-        lastSelectedChannelCodeByUiGroup =
-          it.lastSelectedChannelCodeByUiGroup.toMutableMap().apply {
-            if (nextSelected != null) put(nextSelected.uiGroup, nextSelected.channelCode)
-          },
         paymentActionRedirect = null,
         presentToCustomerPaymentAction = null,
         paymentResponse = null,
@@ -323,13 +322,10 @@ internal class PaymentViewModel(
 
   private fun selectChannelInternal(channelCode: String) {
     val selected = _state.value.channels.firstOrNull { it.channelCode == channelCode } ?: return
+    lastSelectedChannelCodeByUiGroup[selected.uiGroup] = selected.channelCode
     _state.update {
       it.copy(
         selectedChannel = selected,
-        lastSelectedChannelCodeByUiGroup =
-          it.lastSelectedChannelCodeByUiGroup.toMutableMap().apply {
-            put(selected.uiGroup, selected.channelCode)
-          },
         paymentActionRedirect = null,
         presentToCustomerPaymentAction = null,
         paymentResponse = null,
@@ -553,6 +549,7 @@ internal class PaymentViewModel(
     paymentSessionId = null
     lastPaymentRequestId = null
     lastSessionTokenRequestId = null
+    lastSelectedChannelCodeByUiGroup.clear()
     _state.value = PaymentState()
   }
 
