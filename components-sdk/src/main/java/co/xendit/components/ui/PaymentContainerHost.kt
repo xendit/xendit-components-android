@@ -489,6 +489,7 @@ internal fun PaymentContainerHost(
                       bffBusiness = mviState.sessionResponse?.business,
                       merchantPreferredPaymentMethod = merchantPreferredPaymentMethod,
                       channels = mviState.channels,
+                      channelUiGroups = mviState.sessionResponse?.channelUiGroups,
                       channelVariantsByDisplayCode = mviState.channelVariantsByDisplayCode,
                       expandedUiGroup = mviState.expandedUiGroup,
                       selectedChannel = mviState.selectedChannel,

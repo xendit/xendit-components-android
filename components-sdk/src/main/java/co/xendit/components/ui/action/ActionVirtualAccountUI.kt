@@ -110,9 +110,7 @@ internal fun ActionVirtualAccountUI(
 
     Surface(
       modifier = Modifier
-        .fillMaxWidth()
-        .padding(horizontal = 24.dp),
-      shape = RoundedCornerShape(appearance.borderRadius),
+        .fillMaxWidth(),
       color = appearance.colorBackground,
       tonalElevation = 0.dp
     ) {
