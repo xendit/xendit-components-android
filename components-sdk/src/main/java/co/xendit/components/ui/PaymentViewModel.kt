@@ -39,7 +39,7 @@ import kotlinx.coroutines.launch
 
 internal data class PaymentState(
   val isLoading: Boolean = false,
-  val isAwaitingPaymentAction: Boolean = false,
+  val awaitingPaymentAction: AwaitingPaymentAction? = null,
   val channels: List<BffChannel> = emptyList(),
   val channelVariantsByDisplayCode: Map<String, ChannelVariantChannels> = emptyMap(),
   val expandedUiGroup: String? = null,
@@ -55,6 +55,11 @@ internal data class PaymentState(
   val allowSavePaymentMethod: BffSessionAllowSavePaymentMethod? = null,
   val paymentDrafts: Map<String, PaymentDraft> = emptyMap()
 )
+
+internal sealed interface AwaitingPaymentAction {
+  data object Deeplink : AwaitingPaymentAction
+  data object EmptyPaymentActions : AwaitingPaymentAction
+}
 
 internal data class ChannelVariantChannels(
   val saveChannel: BffChannel? = null,
@@ -222,7 +227,7 @@ internal class PaymentViewModel(
             paymentResponse = null,
             pollResponse = null,
             isLoading = false,
-            isAwaitingPaymentAction = false
+            awaitingPaymentAction = null
           )
         }
         markClosed()
@@ -357,7 +362,7 @@ internal class PaymentViewModel(
       _state.update {
         it.copy(
           isLoading = true,
-          isAwaitingPaymentAction = false,
+          awaitingPaymentAction = null,
           errorMessage = null,
           paymentResponse = null,
           paymentActionRedirect = null,
@@ -418,7 +423,7 @@ internal class PaymentViewModel(
                 _state.update {
                   it.copy(
                     isLoading = false,
-                    isAwaitingPaymentAction = false,
+                    awaitingPaymentAction = null,
                     paymentActionRedirect = redirect,
                     presentToCustomerPaymentAction = null,
                     paymentResponse = null
@@ -430,7 +435,7 @@ internal class PaymentViewModel(
                 _state.update {
                   it.copy(
                     isLoading = false,
-                    isAwaitingPaymentAction = false,
+                    awaitingPaymentAction = null,
                     presentToCustomerPaymentAction = presentToCustomer,
                     paymentActionRedirect = null,
                     paymentResponse = null
@@ -442,7 +447,7 @@ internal class PaymentViewModel(
                 _state.update {
                   it.copy(
                     isLoading = false,
-                    isAwaitingPaymentAction = true,
+                    awaitingPaymentAction = AwaitingPaymentAction.EmptyPaymentActions,
                     paymentActionRedirect = null,
                     presentToCustomerPaymentAction = null,
                     paymentResponse = body
@@ -454,25 +459,25 @@ internal class PaymentViewModel(
                 _state.update {
                   it.copy(
                     isLoading = false,
-                    isAwaitingPaymentAction = false,
+                    awaitingPaymentAction = null,
                     paymentResponse = body
                   )
                 }
               }
             }
           } else {
-            _state.update { it.copy(isLoading = false, isAwaitingPaymentAction = false, paymentResponse = body) }
+            _state.update { it.copy(isLoading = false, awaitingPaymentAction = null, paymentResponse = body) }
           }
           onChallengeCompletedInternal() // start pooling here
         } else {
           val error = response.errorBody()?.asApiError()
           val errorMessage = error?.errorContent?.message1 ?: error?.message ?: "Payment Failed"
-          _state.update { it.copy(isLoading = false, isAwaitingPaymentAction = false, errorMessage = errorMessage) }
+          _state.update { it.copy(isLoading = false, awaitingPaymentAction = null, errorMessage = errorMessage) }
         }
       } catch (e: Exception) {
         val errorMessage = e.message ?: "Payment Error"
         globalErrorHandler.postError(errorMessage = UiText.DynamicString(errorMessage))
-        _state.update { it.copy(isLoading = false, isAwaitingPaymentAction = false, errorMessage = errorMessage) }
+        _state.update { it.copy(isLoading = false, awaitingPaymentAction = null, errorMessage = errorMessage) }
       }
     }
   }
@@ -556,7 +561,7 @@ internal class PaymentViewModel(
   fun showLoadingWithAction() {
     _state.update {
       it.copy(
-        isAwaitingPaymentAction = true,
+        awaitingPaymentAction = AwaitingPaymentAction.Deeplink,
       )
     }
   }
@@ -583,7 +588,7 @@ internal class PaymentViewModel(
         presentToCustomerPaymentAction = null,
         paymentActionRedirect = null,
         isLoading = false,
-        isAwaitingPaymentAction = false
+        awaitingPaymentAction = null
       )
     }
     cancelChallenge()

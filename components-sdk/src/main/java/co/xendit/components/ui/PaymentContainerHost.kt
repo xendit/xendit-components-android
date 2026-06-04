@@ -555,13 +555,34 @@ internal fun PaymentContainerHost(
             )
           }
         }
-        if (mviState.isAwaitingPaymentAction) {
+        val awaitingPaymentAction = mviState.awaitingPaymentAction
+        if (awaitingPaymentAction != null) {
+          val resolvedChannelName =
+            mviState.selectedChannel?.brandName.orEmpty().ifBlank { "payment" }
+          val deeplinkTitleTemplate =
+            stringResource(R.string.sessionaction_deeplink_instructions)
+          val emptyPaymentActions =
+            stringResource(R.string.sessionaction_empty_list_push_notification_subtext)
+
+          val subtitle =
+            when (awaitingPaymentAction) {
+              AwaitingPaymentAction.Deeplink -> deeplinkTitleTemplate.replace(
+                "{{channelName}}",
+                resolvedChannelName
+              )
+
+              AwaitingPaymentAction.EmptyPaymentActions -> emptyPaymentActions.replace(
+                "{{channelName}}",
+                resolvedChannelName
+              )
+            }
           AwaitingPaymentDialog(
             modifier = Modifier.matchParentSize(),
             appearance = style,
-            channelName = mviState.selectedChannel?.brandName.orEmpty(),
             channelLogoUrl = mviState.selectedChannel?.brandLogoUrl,
-            onClose = { viewModel.dispatch(ActionIntent.CloseWebPayment) }
+            onClose = { viewModel.dispatch(ActionIntent.CloseWebPayment) },
+            title = stringResource(R.string.sessionaction_deeplink_title),
+            subtitle = subtitle
           )
         }
         if (mviState.isLoading) {
