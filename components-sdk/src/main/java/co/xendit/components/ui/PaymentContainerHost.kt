@@ -370,7 +370,7 @@ internal fun PaymentContainerHost(
                         )
                       }.isSuccess
                       if (didLaunch) {
-                        viewModel.showLoading()
+                        viewModel.showLoadingWithAction()
                       }
                     }
                     viewModel.dispatch(ActionIntent.ClearPaymentActionRedirect)

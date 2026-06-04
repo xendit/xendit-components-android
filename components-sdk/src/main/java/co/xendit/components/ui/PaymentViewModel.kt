@@ -553,6 +553,14 @@ internal class PaymentViewModel(
     _state.value = PaymentState()
   }
 
+  fun showLoadingWithAction() {
+    _state.update {
+      it.copy(
+        isAwaitingPaymentAction = true,
+      )
+    }
+  }
+
   fun showLoading() {
     _state.update {
       it.copy(
