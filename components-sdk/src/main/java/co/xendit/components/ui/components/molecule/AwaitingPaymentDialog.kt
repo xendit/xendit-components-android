@@ -35,8 +35,8 @@ import coil.compose.AsyncImage
 internal fun AwaitingPaymentDialog(
   modifier: Modifier = Modifier,
   appearance: XenditAppearance,
-  title: String = "",
-  subtitle: String = "",
+  title: String,
+  subtitle: String,
   channelLogoUrl: String?,
   onClose: () -> Unit,
 ) {
