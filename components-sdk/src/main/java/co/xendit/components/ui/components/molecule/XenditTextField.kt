@@ -52,6 +52,7 @@ internal fun XenditTextField(
 ) {
   val appearance = xenditAppearance
   val interactionSource = remember { MutableInteractionSource() }
+  val showErrorText = isError && !errorMessage.isNullOrBlank()
 
   Column(
     modifier = Modifier
@@ -101,9 +102,7 @@ internal fun XenditTextField(
           leadingIcon = leadingIcon,
           trailingIcon = trailingIcon,
           isError = isError,
-          supportingText = if (isError && errorMessage != null) {
-            { Text(errorMessage, color = appearance.colorDanger) }
-          } else null,
+          supportingText = null,
           container = {
             OutlinedTextFieldDefaults.Container(
               enabled = enabled,
@@ -123,5 +122,14 @@ internal fun XenditTextField(
         )
       }
     )
+
+    if (showErrorText) {
+      Spacer(modifier = Modifier.height(12.dp))
+      Text(
+        text = errorMessage.orEmpty(),
+        style = MaterialTheme.typography.bodyMedium,
+        color = appearance.colorDanger
+      )
+    }
   }
 }

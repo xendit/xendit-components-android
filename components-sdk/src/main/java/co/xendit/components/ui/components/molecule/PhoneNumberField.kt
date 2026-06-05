@@ -140,9 +140,9 @@ internal fun PhoneNumberField(
     errorMessage?.let {
       Text(
         text = it,
-        style = MaterialTheme.typography.labelSmall,
+        style = MaterialTheme.typography.bodyMedium,
         color = appearance.colorDanger,
-        modifier = Modifier.padding(top = 2.dp)
+        modifier = Modifier.padding(top = 12.dp)
       )
     }
   }
