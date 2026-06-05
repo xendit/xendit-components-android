@@ -77,10 +77,10 @@ internal fun PhoneNumberField(
     label?.let {
       Text(
         text = it,
-        style = MaterialTheme.typography.titleSmall,
+        style = MaterialTheme.typography.bodyLarge,
         color = appearance.colorText
       )
-      Spacer(modifier = Modifier.height(8.dp))
+      Spacer(modifier = Modifier.height(12.dp))
     }
 
     Row(
@@ -142,7 +142,7 @@ internal fun PhoneNumberField(
         text = it,
         style = MaterialTheme.typography.bodyMedium,
         color = appearance.colorDanger,
-        modifier = Modifier.padding(top = 12.dp)
+        modifier = Modifier.padding(top = 8.dp)
       )
     }
   }

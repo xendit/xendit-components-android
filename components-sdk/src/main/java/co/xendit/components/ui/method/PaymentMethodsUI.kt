@@ -179,7 +179,6 @@ internal fun PaymentMethodsUI(
                         isSaveChecked
                       )
                     },
-                    modifier = Modifier.padding(bottom = 8.dp),
                     showSaveCheckbox = canShowSaveCheckbox(selectedChannel)
                   )
                 }

@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -174,7 +175,7 @@ internal fun DynamicForm(
     onValuesChangedRef.value(formValues.toMap())
   }
 
-  Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+  Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(24.dp)) {
     val handleValueChange =
       remember(formValues, formErrors, onValuesChangedRef, onCardNumberChangedRef) {
         { changedField: ChannelFormField, key: String, value: String ->
@@ -221,60 +222,62 @@ internal fun DynamicForm(
       val startsGroup = startField.groupLabel != null
 
       if (startsGroup) {
-        Text(
-          text = startField.groupLabel.orEmpty(),
-          style = MaterialTheme.typography.bodyLarge,
-          color = appearance.colorText,
-          modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
-        )
+        Column() {
+          Text(
+            text = startField.groupLabel.orEmpty(),
+            style = MaterialTheme.typography.bodyLarge,
+            color = appearance.colorText
+          )
+          Spacer(modifier = Modifier.height(12.dp))
+          val (groupFields, nextFieldIndex) = collectDynamicFormGroupFields(
+            filteredFields,
+            fieldIndex
+          )
+          val listPropertyKey = groupFields.map { it.primaryChannelPropertyKey() }
+          val filteredFormError = formErrors.filterKeys { it in listPropertyKey }
+          val groupHaveError = filteredFormError.any { it.value != null }
 
-        val (groupFields, nextFieldIndex) = collectDynamicFormGroupFields(
-          filteredFields,
-          fieldIndex
-        )
-        val listPropertyKey = groupFields.map { it.primaryChannelPropertyKey() }
-        val filteredFormError = formErrors.filterKeys { it in listPropertyKey }
-        val groupHaveError = filteredFormError.any { it.value != null }
-
-        Column(
-          modifier = Modifier
-            .fillMaxWidth()
-            .border(
-              width = 1.dp,
-              color = if (groupHaveError) appearance.colorDanger else appearance.colorBorder,
-              shape = RoundedCornerShape(appearance.borderRadius)
-            )
-            .background(appearance.colorBackground)
-        ) {
-          var groupFieldIndex = 0
-          while (groupFieldIndex < groupFields.size) {
-            groupFieldIndex +=
-              renderDynamicFormFieldOrTwoColumnRow(
-                fields = groupFields,
-                index = groupFieldIndex,
-                rowModifier = Modifier
-                  .fillMaxWidth()
-                  .height(IntrinsicSize.Min),
-                singleNoBorder = true,
-                isDisplayError = false,
-                context = renderContext,
-                groupHaveError = groupHaveError
+          Column(
+            modifier = Modifier
+              .fillMaxWidth()
+              .border(
+                width = 1.dp,
+                color = if (groupHaveError) appearance.colorDanger else appearance.colorBorder,
+                shape = RoundedCornerShape(appearance.borderRadius)
               )
+              .background(appearance.colorBackground)
+          ) {
+            var groupFieldIndex = 0
+            while (groupFieldIndex < groupFields.size) {
+              groupFieldIndex +=
+                renderDynamicFormFieldOrTwoColumnRow(
+                  fields = groupFields,
+                  index = groupFieldIndex,
+                  rowModifier = Modifier
+                    .fillMaxWidth()
+                    .height(IntrinsicSize.Min),
+                  singleNoBorder = true,
+                  isDisplayError = false,
+                  context = renderContext,
+                  groupHaveError = groupHaveError
+                )
 
-            if (groupFieldIndex < groupFields.size) {
-              HorizontalDivider(
-                thickness = 1.dp,
-                color = if (groupHaveError) appearance.colorDanger else appearance.colorBorder
-              )
+              if (groupFieldIndex < groupFields.size) {
+                HorizontalDivider(
+                  thickness = 1.dp,
+                  color = if (groupHaveError) appearance.colorDanger else appearance.colorBorder
+                )
+              }
             }
           }
+          DynamicFormErrorDisplay(
+            modifier = Modifier,
+            filteredFormError = filteredFormError,
+            appearance = appearance
+          )
+          fieldIndex = nextFieldIndex
         }
-        DynamicFormErrorDisplay(
-          modifier = Modifier,
-          filteredFormError = filteredFormError,
-          appearance = appearance
-        )
-        fieldIndex = nextFieldIndex
+
       } else {
         fieldIndex +=
           renderDynamicFormFieldOrTwoColumnRow(
@@ -361,7 +364,7 @@ private fun DynamicFormErrorDisplay(
         text = firstError.asString(),
         style = MaterialTheme.typography.bodyMedium,
         color = appearance.colorDanger,
-        modifier = modifier.padding(top = 2.dp)
+        modifier = modifier.padding(top = 8.dp)
       )
     }
   }

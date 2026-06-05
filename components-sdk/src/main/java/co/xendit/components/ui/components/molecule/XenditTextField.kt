@@ -62,7 +62,7 @@ internal fun XenditTextField(
     // Label Above
     if (label != null && labelPlacement == XenditTextFieldLabelPlacement.Above && !noBorder) {
       Text(text = label, style = MaterialTheme.typography.bodyLarge, color = appearance.colorText)
-      Spacer(modifier = Modifier.height(8.dp))
+      Spacer(modifier = Modifier.height(12.dp))
     }
 
     BasicTextField(
@@ -124,7 +124,7 @@ internal fun XenditTextField(
     )
 
     if (showErrorText) {
-      Spacer(modifier = Modifier.height(12.dp))
+      Spacer(modifier = Modifier.height(8.dp))
       Text(
         text = errorMessage.orEmpty(),
         style = MaterialTheme.typography.bodyMedium,
