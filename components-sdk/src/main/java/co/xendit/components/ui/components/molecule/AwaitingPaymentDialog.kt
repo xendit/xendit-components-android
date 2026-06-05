@@ -2,6 +2,7 @@ package co.xendit.components.ui.components.molecule
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -22,13 +23,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInteropFilter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import co.xendit.components.R
 import co.xendit.components.ui.helper.SdkImageLoader
 import co.xendit.components.ui.style.XenditAppearance
 import coil.compose.AsyncImage
@@ -37,25 +35,30 @@ import coil.compose.AsyncImage
 internal fun AwaitingPaymentDialog(
   modifier: Modifier = Modifier,
   appearance: XenditAppearance,
-  channelName: String,
+  title: String,
+  subtitle: String,
   channelLogoUrl: String?,
-  onClose: () -> Unit
+  onClose: () -> Unit,
 ) {
   val context = LocalContext.current
   val imageLoader = remember { SdkImageLoader.get(context) }
-  val title = stringResource(id = R.string.sessionaction_empty_list_push_notification_title)
-  val subtextTemplate =
-    stringResource(id = R.string.sessionaction_empty_list_push_notification_subtext)
-  val resolvedChannelName = channelName.ifBlank { "payment" }
-  val subtext = subtextTemplate.replace("{{channelName}}", resolvedChannelName)
 
   Box(
     modifier =
       modifier
-        .background(Color.Black.copy(alpha = 0.5f))
-        .pointerInteropFilter { true },
+        .background(Color.Black.copy(alpha = 0.5f)),
     contentAlignment = Alignment.Center
   ) {
+    Box(
+      modifier =
+        Modifier
+          .matchParentSize()
+          .clickable(
+            indication = null,
+            interactionSource = remember { MutableInteractionSource() },
+            onClick = {}
+          )
+    )
     Column(
       modifier =
         Modifier
@@ -106,7 +109,7 @@ internal fun AwaitingPaymentDialog(
       )
       Spacer(modifier = Modifier.height(6.dp))
       Text(
-        text = subtext,
+        text = subtitle,
         style = MaterialTheme.typography.bodyMedium,
         color = appearance.colorTextSecondary,
         textAlign = TextAlign.Center
