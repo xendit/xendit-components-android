@@ -60,7 +60,7 @@ internal fun XenditTextField(
   ) {
     // Label Above
     if (label != null && labelPlacement == XenditTextFieldLabelPlacement.Above && !noBorder) {
-      Text(text = label, style = MaterialTheme.typography.titleSmall, color = appearance.colorText)
+      Text(text = label, style = MaterialTheme.typography.bodyLarge, color = appearance.colorText)
       Spacer(modifier = Modifier.height(8.dp))
     }
 

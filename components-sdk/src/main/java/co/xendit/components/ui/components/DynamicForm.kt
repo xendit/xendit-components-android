@@ -223,7 +223,7 @@ internal fun DynamicForm(
       if (startsGroup) {
         Text(
           text = startField.groupLabel.orEmpty(),
-          style = MaterialTheme.typography.titleSmall,
+          style = MaterialTheme.typography.bodyLarge,
           color = appearance.colorText,
           modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
         )
@@ -270,7 +270,7 @@ internal fun DynamicForm(
           }
         }
         DynamicFormErrorDisplay(
-          modifier = Modifier.padding(start = 8.dp),
+          modifier = Modifier,
           filteredFormError = filteredFormError,
           appearance = appearance
         )
@@ -359,7 +359,7 @@ private fun DynamicFormErrorDisplay(
     if (firstError != null) {
       Text(
         text = firstError.asString(),
-        style = MaterialTheme.typography.labelSmall,
+        style = MaterialTheme.typography.bodyMedium,
         color = appearance.colorDanger,
         modifier = modifier.padding(top = 2.dp)
       )
