@@ -48,6 +48,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import co.xendit.components.R
+import co.xendit.components.core.CoreSdkComponent
 import co.xendit.components.data.model.PaymentInstructionTab
 import co.xendit.components.ui.helper.CurrencyUtil
 import co.xendit.components.ui.helper.SdkImageLoader
@@ -240,29 +241,31 @@ internal fun ActionVirtualAccountUI(
 
           Spacer(modifier = Modifier.height(16.dp))
 
-          OutlinedButton(
-            onClick = onPaymentMade,
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(
-              containerColor = appearance.colorBackground,
-              contentColor = appearance.colorText
-            ),
-            shape = RoundedCornerShape(appearance.borderRadius)
-          ) {
+          if (!CoreSdkComponent.isProdLive()) {
+            OutlinedButton(
+              onClick = onPaymentMade,
+              modifier = Modifier.fillMaxWidth(),
+              colors = ButtonDefaults.buttonColors(
+                containerColor = appearance.colorBackground,
+                contentColor = appearance.colorText
+              ),
+              shape = RoundedCornerShape(appearance.borderRadius)
+            ) {
+              Text(
+                text = stringResource(R.string.sessionaction_simulate_payment),
+                style = MaterialTheme.typography.titleSmall
+              )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
             Text(
-              text = stringResource(R.string.sessionaction_simulate_payment),
-              style = MaterialTheme.typography.titleSmall
+              text = stringResource(R.string.sessionaction_simulate_payment_instructions),
+              style = MaterialTheme.typography.bodySmall,
+              color = appearance.colorTextSecondary,
+              textAlign = TextAlign.Center,
+              modifier = Modifier.fillMaxWidth()
             )
           }
-
-          Spacer(modifier = Modifier.height(8.dp))
-          Text(
-            text = stringResource(R.string.sessionaction_simulate_payment_instructions),
-            style = MaterialTheme.typography.bodySmall,
-            color = appearance.colorTextSecondary,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth()
-          )
         }
       }
 

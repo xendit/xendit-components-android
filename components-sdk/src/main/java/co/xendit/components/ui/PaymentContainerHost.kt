@@ -349,10 +349,6 @@ internal fun PaymentContainerHost(
               }
             }
           }
-          GenericHeader(
-            title = stringResource(id = R.string.sessionpayment_methods_header),
-            onLeftClick = dismiss
-          )
 
           Box(
             modifier = Modifier
@@ -445,6 +441,10 @@ internal fun PaymentContainerHost(
 
               mviState.channels.isNotEmpty() -> {
                 Column {
+                  GenericHeader(
+                    title = stringResource(id = R.string.sessionpayment_methods_header),
+                    onLeftClick = dismiss
+                  )
                   Column(
                     modifier = Modifier
                       .weight(1f)
