@@ -36,7 +36,7 @@ internal fun XenditDropdownField(
   val appearance = xenditAppearance
   val resolvedShape = shape ?: MaterialTheme.shapes.small
   val resolvedBorderColor = borderColor ?: appearance.colorBorder
-  val resolvedContentColor = contentColor ?: appearance.colorTextSecondary
+  val resolvedContentColor = contentColor ?: appearance.colorText
   val resolvedPlaceholderColor = placeholderColor ?: appearance.colorTextPlaceholder
 
   Row(

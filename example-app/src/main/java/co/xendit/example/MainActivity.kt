@@ -415,7 +415,11 @@ private enum class AppearancePreset {
   DailyBrew,
   FintechBlue,
   Arcade,
-  Boutique
+  Boutique,
+  MidnightCyber,
+  LavenderFields,
+  SunsetGlow,
+  MintFresh,
 }
 
 private fun AppearancePreset.displayName(): String =
@@ -425,6 +429,10 @@ private fun AppearancePreset.displayName(): String =
     AppearancePreset.FintechBlue -> "Fintech Blue"
     AppearancePreset.Arcade -> "Arcade"
     AppearancePreset.Boutique -> "Boutique"
+    AppearancePreset.MidnightCyber -> "Midnight Cyber"
+    AppearancePreset.LavenderFields -> "Lavender Fields"
+    AppearancePreset.SunsetGlow -> "Sunset Glow"
+    AppearancePreset.MintFresh -> "Mint Fresh"
   }
 
 private fun presetAppearance(
@@ -494,5 +502,65 @@ private fun presetAppearance(
         colorDanger = Color(0xFF941B1B),
         qrForegroundColor = Color(0xFF2C2C2C),
         qrBackgroundColor = Color(0xFFF4F1EA),
+      )
+
+    AppearancePreset.MidnightCyber ->
+      XenditAppearance(
+        fontFamily = FontFamily.Monospace,
+        colorPrimary = Color(0xFF00E5FF),
+        borderRadius = 8.dp,
+        colorBackground = Color(0xFF0B0E14),
+        colorText = Color(0xFFF5F7FA),
+        colorBorder = Color(0xFF1F2633),
+        colorTextSecondary = Color(0xFF94A3B8),
+        colorTextPlaceholder = Color(0xFF475569),
+        colorDanger = Color(0xFFFF4655),
+        qrForegroundColor = Color(0xFFF5F7FA),
+        qrBackgroundColor = Color(0xFF0B0E14),
+      )
+
+    AppearancePreset.LavenderFields ->
+      XenditAppearance(
+        fontFamily = FontFamily.Serif,
+        colorPrimary = Color(0xFF6D28D9),
+        borderRadius = 6.dp,
+        colorBackground = Color(0xFFFAF5FF),
+        colorText = Color(0xFF2E1065),
+        colorBorder = Color(0xFFE9D5FF),
+        colorTextSecondary = Color(0xFF6B21A8),
+        colorTextPlaceholder = Color(0xFFC084FC),
+        colorDanger = Color(0xFFE11D48),
+        qrForegroundColor = Color(0xFF2E1065),
+        qrBackgroundColor = Color(0xFFFAF5FF),
+      )
+
+    AppearancePreset.SunsetGlow ->
+      XenditAppearance(
+        fontFamily = FontFamily.Default,
+        colorPrimary = Color(0xFFF97316),
+        borderRadius = 24.dp,
+        colorBackground = Color(0xFFFFF7ED),
+        colorText = Color(0xFF431407),
+        colorBorder = Color(0xFFFFEDD5),
+        colorTextSecondary = Color(0xFF9A3412),
+        colorTextPlaceholder = Color(0xFFC2410C),
+        colorDanger = Color(0xFFDC2626),
+        qrForegroundColor = Color(0xFF431407),
+        qrBackgroundColor = Color(0xFFFFF7ED),
+      )
+
+    AppearancePreset.MintFresh ->
+      XenditAppearance(
+        fontFamily = FontFamily.SansSerif,
+        colorPrimary = Color(0xFF10B981),
+        borderRadius = 16.dp,
+        colorBackground = Color(0xFFF0FDF4),
+        colorText = Color(0xFF064E3B),
+        colorBorder = Color(0xFFDCFCE7),
+        colorTextSecondary = Color(0xFF374151),
+        colorTextPlaceholder = Color(0xFF9CA3AF),
+        colorDanger = Color(0xFFF43F5E),
+        qrForegroundColor = Color(0xFF064E3B),
+        qrBackgroundColor = Color(0xFFF0FDF4),
       )
   }

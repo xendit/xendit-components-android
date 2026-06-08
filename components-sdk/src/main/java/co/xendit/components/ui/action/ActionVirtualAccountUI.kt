@@ -189,7 +189,7 @@ internal fun ActionVirtualAccountUI(
                 )
               },
               colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFFFAFAFA),
+                containerColor = appearance.colorBackground,
                 contentColor = appearance.colorText
               ),
               shape = RoundedCornerShape(999.dp)
@@ -226,7 +226,7 @@ internal fun ActionVirtualAccountUI(
                   copyToClipboard(scope, clipboard, amount.toString(), snackbarHostState, copiedText)
                 },
                 colors = ButtonDefaults.buttonColors(
-                  containerColor = Color(0xFFFAFAFA),
+                  containerColor = appearance.colorBackground,
                   contentColor = appearance.colorText
                 ),
                 shape = RoundedCornerShape(999.dp)
