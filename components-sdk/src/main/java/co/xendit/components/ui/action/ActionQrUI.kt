@@ -61,10 +61,10 @@ import androidx.compose.ui.window.DialogWindowProvider
 import androidx.core.net.toUri
 import co.xendit.components.R
 import co.xendit.components.ui.helper.CurrencyUtil
+import co.xendit.components.ui.helper.QrCodeGenerator
 import co.xendit.components.ui.helper.QrNmidSearcherUtil
 import co.xendit.components.ui.helper.SdkImageLoader
 import co.xendit.components.ui.style.xenditAppearance
-import co.xendit.components.ui.helper.QrCodeGenerator
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import kotlinx.coroutines.Dispatchers
@@ -72,6 +72,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.math.BigDecimal
 import kotlin.coroutines.resume
 import kotlin.math.roundToInt
 
@@ -81,7 +82,7 @@ internal fun ActionQrUI(
   channelName: String,
   channelLogoUrl: String?,
   qrString: String,
-  amount: Long?,
+  amount: BigDecimal?,
   currency: String?,
   onClose: () -> Unit,
   onPaymentMade: () -> Unit,
