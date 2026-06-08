@@ -34,8 +34,8 @@ internal object PaymentRequestMapper {
           var finalValue = if (isSensitive) encrypt(value, publicKey, sessionId) else value
           if (field.type is FieldType.PhoneNumber) {
             val countryCodeKey = "${propertyKey}_country_code"
-            val countryCode = formValues[countryCodeKey] ?: "ID"
-            val dialCode = Country.fromCode(countryCode)?.dialCode ?: "62"
+            val countryCode = formValues[countryCodeKey] ?: ""
+            val dialCode = Country.fromCode(countryCode)?.dialCode ?: ""
             finalValue = "+$dialCode$value"
           }
           flatMap[prop] = finalValue

@@ -22,6 +22,7 @@ internal data class BffSession(
   @SerializedName("allow_save_payment_method") val allowSavePaymentMethod: BffSessionAllowSavePaymentMethod?,
   @SerializedName("reference_id") val referenceId: String?,
   @SerializedName("currency") val currency: String?,
+  @SerializedName("country") val country: String?,
   @SerializedName("amount") val amount: BigDecimal?,
   @SerializedName("items") val items: List<BffItem>?
 )

@@ -144,7 +144,7 @@ internal fun DynamicForm(
           if (!formValues.containsKey(countryCodeKey)) {
             // Default to ID or first country if no initial country code
             formValues[countryCodeKey] =
-              initialValues[countryCodeKey] ?: Country.fromCode("ID")?.code
+              initialValues[countryCodeKey] ?: Country.fromCode(session?.country ?: "")?.code
                   ?: Country.countries.first().code
           }
         }
@@ -203,6 +203,7 @@ internal fun DynamicForm(
         handleValueChange
       ) {
         DynamicFormRenderContext(
+          country = session?.country,
           currency = session?.currency,
           allFields = filteredFields,
           values = formValues,
@@ -305,6 +306,7 @@ private fun canRenderDynamicFormAsTwoColumnRow(
 }
 
 private data class DynamicFormRenderContext(
+  val country: String?,
   val currency: String?,
   val allFields: List<ChannelFormField>,
   val values: Map<String, String>,
@@ -376,6 +378,7 @@ private fun DynamicFormFieldItem(
 ) {
   FormFieldItem(
     field = field,
+    country = context.country,
     currency = context.currency,
     allFields = context.allFields,
     values = context.values,
@@ -504,6 +507,7 @@ private fun filterFormFields(
 @Composable
 private fun FormFieldItem(
   field: ChannelFormField,
+  country: String?,
   currency: String?,
   allFields: List<ChannelFormField>,
   values: Map<String, String>,
@@ -573,7 +577,7 @@ private fun FormFieldItem(
 
     is FieldType.PhoneNumber -> {
       val countryCodeKey = "${propertyKey}_country_code"
-      val countryCode = values[countryCodeKey] ?: "ID" // Default fallback
+      val countryCode = values[countryCodeKey] ?: country ?: "" // Default fallback
       PhoneNumberField(
         value = currentValue,
         label = labelDisplay,
