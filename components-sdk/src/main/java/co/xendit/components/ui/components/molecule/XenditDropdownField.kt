@@ -2,7 +2,6 @@ package co.xendit.components.ui.components.molecule
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -27,9 +26,7 @@ internal fun XenditDropdownField(
   value: String,
   placeholder: String,
   isExpanded: Boolean,
-  onClick: () -> Unit,
   modifier: Modifier = Modifier,
-  enabled: Boolean = true,
   shape: Shape? = null,
   borderColor: Color? = null,
   contentColor: Color? = null,
@@ -48,7 +45,6 @@ internal fun XenditDropdownField(
       .clip(resolvedShape)
       .background(appearance.colorBackground, resolvedShape)
       .border(1.dp, resolvedBorderColor, resolvedShape)
-      .clickable(enabled = enabled, onClick = onClick)
       .padding(horizontal = 12.dp, vertical = 8.dp),
     verticalAlignment = Alignment.CenterVertically
   ) {

@@ -103,19 +103,13 @@ internal fun EwalletPaymentUI(
 
     ExposedDropdownMenuBox(
       expanded = expanded,
-      onExpandedChange = {},
+      onExpandedChange = { if (channels.size > 1) expanded = !expanded },
       modifier = Modifier.fillMaxWidth()
     ) {
       XenditDropdownField(
         value = selectedChannel?.brandName ?: "",
         placeholder = stringResource(id = R.string.ewallet_select_placeholder),
         isExpanded = expanded,
-        onClick = {
-          if (channels.size > 1) {
-            expanded = if (expanded) false else true
-          }
-        },
-        enabled = channels.size > 1,
         leadingContent = selectedChannel?.let { channel ->
           {
             Row(
@@ -140,7 +134,7 @@ internal fun EwalletPaymentUI(
         modifier = Modifier
           .menuAnchor(
             type = ExposedDropdownMenuAnchorType.PrimaryNotEditable,
-            enabled = false
+            enabled = channels.size > 1
           )
           .fillMaxWidth()
       )

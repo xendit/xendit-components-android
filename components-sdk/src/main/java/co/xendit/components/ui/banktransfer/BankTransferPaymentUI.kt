@@ -1,6 +1,5 @@
 package co.xendit.components.ui.banktransfer
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
@@ -10,11 +9,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
+import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
@@ -28,7 +26,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -96,7 +93,7 @@ internal fun BankTransferPaymentUI(
 
     ExposedDropdownMenuBox(
       expanded = expanded,
-      onExpandedChange = {},
+      onExpandedChange = { if (channels.size > 1) expanded = !expanded },
       modifier = Modifier.fillMaxWidth()
     ) {
       XenditDropdownField(
@@ -106,12 +103,6 @@ internal fun BankTransferPaymentUI(
             id = R.string.sessionpayment_methods_select_channel_placeholder,
           ).replace("{{groupName}}", "Bank transfer"),
         isExpanded = expanded,
-        onClick = {
-          if (channels.size > 1) {
-            expanded = if (expanded) false else true
-          }
-        },
-        enabled = channels.size > 1,
         leadingContent = selectedChannel?.let { channel ->
           {
             Row(
@@ -136,7 +127,7 @@ internal fun BankTransferPaymentUI(
         modifier = Modifier
           .menuAnchor(
             type = ExposedDropdownMenuAnchorType.PrimaryNotEditable,
-            enabled = false
+            enabled = channels.size > 1
           )
           .fillMaxWidth()
       )

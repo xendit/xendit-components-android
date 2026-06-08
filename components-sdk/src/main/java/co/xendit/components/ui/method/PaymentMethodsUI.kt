@@ -31,6 +31,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import co.xendit.components.R
+import co.xendit.components.XenditComponents
 import co.xendit.components.data.model.BffBusiness
 import co.xendit.components.data.model.BffChannel
 import co.xendit.components.data.model.BffChannelUiGroup
@@ -41,7 +42,6 @@ import co.xendit.components.data.model.CardDetails
 import co.xendit.components.data.model.ChannelFormField
 import co.xendit.components.data.model.InstallmentPlan
 import co.xendit.components.data.model.PaymentDraft
-import co.xendit.components.XenditComponents
 import co.xendit.components.ui.ChannelVariantChannels
 import co.xendit.components.ui.banktransfer.BankTransferPaymentUI
 import co.xendit.components.ui.card.CardPaymentUI
@@ -76,6 +76,7 @@ internal fun PaymentMethodsUI(
   val appearance = xenditAppearance
   val isSaveOptionalSession =
     sessionType == BffSessionType.PAY && allowSavePaymentMethod == BffSessionAllowSavePaymentMethod.OPTIONAL
+
   fun canShowSaveCheckbox(channel: BffChannel?): Boolean {
     if (!isSaveOptionalSession || channel == null) return false
     return channel.allowSave || channelVariantsByDisplayCode[channel.channelCode]?.saveChannel != null
@@ -187,10 +188,14 @@ internal fun PaymentMethodsUI(
                   val draft = selectedDraft
                   val saveCodes =
                     remember(channelVariantsByDisplayCode) {
-                      channelVariantsByDisplayCode.values.mapNotNull { it.saveChannel?.channelCode }.toSet()
+                      channelVariantsByDisplayCode.values.mapNotNull { it.saveChannel?.channelCode }
+                        .toSet()
                     }
                   val displayChannels =
-                    remember(groupChannels, saveCodes) { groupChannels.filter { it.channelCode !in saveCodes } }
+                    remember(
+                      groupChannels,
+                      saveCodes
+                    ) { groupChannels.filter { it.channelCode !in saveCodes } }
                   val showSaveCheckbox = canShowSaveCheckbox(selectedDisplayChannelForUi)
                   val variants =
                     selectedDisplayChannelForUi?.let { channelVariantsByDisplayCode[it.channelCode] }
@@ -357,7 +362,7 @@ private fun fallbackDisplayNameIconForUiGroup(uiGroup: String): Pair<String, Int
     XenditComponents.UiGroup.CARDS -> "Cards" to R.drawable.ic_cards
     XenditComponents.UiGroup.EWALLET -> "E-Wallet" to R.drawable.ic_e_wallet
     XenditComponents.UiGroup.QR_CODE -> "QR Code" to R.drawable.ic_qris
-    XenditComponents.UiGroup.BANK_TRANSFER -> "Bank Transfer" to R.drawable.ic_cards
-    else -> uiGroup.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() } to R.drawable.ic_cards // Fallback icon
+    XenditComponents.UiGroup.BANK_TRANSFER -> "Bank Transfer" to R.drawable.ic_bank_va
+    else -> uiGroup.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() } to R.drawable.ic_bank_va // Fallback icon
   }
 }
