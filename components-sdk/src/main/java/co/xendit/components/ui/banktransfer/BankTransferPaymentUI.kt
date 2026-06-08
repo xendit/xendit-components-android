@@ -14,9 +14,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
@@ -41,6 +40,7 @@ import co.xendit.components.data.model.ChannelFormField
 import co.xendit.components.ui.components.DynamicForm
 import co.xendit.components.ui.components.molecule.CheckboxWithText
 import co.xendit.components.ui.components.molecule.DashedDivider
+import co.xendit.components.ui.components.molecule.XenditDropdownField
 import co.xendit.components.ui.ewallet.EwalletLogo
 import co.xendit.components.ui.helper.SdkImageLoader
 import co.xendit.components.ui.style.xenditAppearance
@@ -84,40 +84,40 @@ internal fun BankTransferPaymentUI(
 
   Column(
     modifier = modifier
-      .padding(top = 16.dp)
-      .padding(horizontal = 24.dp)
+      .padding(horizontal = 16.dp)
       .padding(bottom = 12.dp)
   ) {
     Text(
       text = stringResource(id = R.string.sessionpayment_methods_pay_with),
-      style = MaterialTheme.typography.titleSmall,
-      color = appearance.colorTextSecondary
+      style = MaterialTheme.typography.bodyLarge,
+      color = appearance.colorText
     )
     Spacer(modifier = Modifier.height(8.dp))
 
     ExposedDropdownMenuBox(
       expanded = expanded,
-      onExpandedChange = { if (channels.size > 1) expanded = !expanded },
+      onExpandedChange = {},
       modifier = Modifier.fillMaxWidth()
     ) {
-      OutlinedTextField(
+      XenditDropdownField(
         value = selectedChannel?.brandName ?: "",
-        onValueChange = {},
-        readOnly = true,
-        placeholder = {
-          Text(
-            stringResource(
-              id = R.string.sessionpayment_methods_select_channel_placeholder,
-            ).replace("{{groupName}}", "Bank transfer")
-          )
+        placeholder =
+          stringResource(
+            id = R.string.sessionpayment_methods_select_channel_placeholder,
+          ).replace("{{groupName}}", "Bank transfer"),
+        isExpanded = expanded,
+        onClick = {
+          if (channels.size > 1) {
+            expanded = if (expanded) false else true
+          }
         },
-        leadingIcon = selectedChannel?.let { channel ->
+        enabled = channels.size > 1,
+        leadingContent = selectedChannel?.let { channel ->
           {
             Row(
               modifier = Modifier.height(IntrinsicSize.Min),
               verticalAlignment = Alignment.CenterVertically
             ) {
-              Spacer(modifier = Modifier.width(12.dp))
               AsyncImage(
                 model = channel.brandLogoUrl,
                 imageLoader = imageLoader,
@@ -133,16 +133,11 @@ internal fun BankTransferPaymentUI(
             }
           }
         },
-        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-        colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(
-          focusedBorderColor = appearance.colorBorder,
-          unfocusedBorderColor = appearance.colorBorder,
-          focusedTextColor = appearance.colorText,
-          unfocusedTextColor = appearance.colorText,
-          cursorColor = appearance.colorPrimary
-        ),
         modifier = Modifier
-          .menuAnchor()
+          .menuAnchor(
+            type = ExposedDropdownMenuAnchorType.PrimaryNotEditable,
+            enabled = false
+          )
           .fillMaxWidth()
       )
 
@@ -239,4 +234,3 @@ internal fun BankTransferPaymentUI(
     }
   }
 }
-
