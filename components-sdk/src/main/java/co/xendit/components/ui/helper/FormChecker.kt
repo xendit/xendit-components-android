@@ -67,7 +67,7 @@ internal object FormChecker {
         if (value.isNotBlank()) {
           val propertyKey = field.primaryChannelPropertyKey()
           val countryCodeKey = "${propertyKey}_country_code"
-          val regionCode = values?.get(countryCodeKey) ?: "ID"
+          val regionCode = values?.get(countryCodeKey) ?: ""
           if (!isValidPhoneNumber(value, regionCode)) {
             return UiText.StringResource(R.string.form_validation_invalid, field.label)
           }

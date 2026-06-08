@@ -6,6 +6,7 @@ import co.xendit.components.data.model.BffChannel
 import co.xendit.components.data.model.ChannelFormField
 import co.xendit.components.data.model.FieldType
 import co.xendit.components.data.model.RegexValidator
+import java.math.BigDecimal
 
 /**
  * Sample BffChannel object for "Cards" based on the API response. This can be used for testing or
@@ -21,8 +22,8 @@ internal val SAMPLE_CARD_CHANNEL =
     allowPayWithoutSave = true,
     allowSave = true,
     brandColor = "#000000",
-    minAmount = 5000,
-    maxAmount = 200000000,
+    minAmount = BigDecimal(5000),
+    maxAmount = BigDecimal(200000000),
     requiresCustomerDetails = false,
     card =
       BffCardInfo(

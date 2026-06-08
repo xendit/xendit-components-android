@@ -2,6 +2,7 @@ package co.xendit.components.data.model
 
 import androidx.annotation.Keep
 import com.google.gson.annotations.SerializedName
+import java.math.BigDecimal
 
 @Keep
 internal data class SessionResponse(
@@ -21,7 +22,8 @@ internal data class BffSession(
   @SerializedName("allow_save_payment_method") val allowSavePaymentMethod: BffSessionAllowSavePaymentMethod?,
   @SerializedName("reference_id") val referenceId: String?,
   @SerializedName("currency") val currency: String?,
-  @SerializedName("amount") val amount: Long?,
+  @SerializedName("country") val country: String?,
+  @SerializedName("amount") val amount: BigDecimal?,
   @SerializedName("items") val items: List<BffItem>?
 )
 
@@ -41,26 +43,38 @@ internal data class BffChannelUiGroup(
 
 @Keep
 internal enum class PaymentSessionStatus {
-  @SerializedName("ACTIVE") ACTIVE,
-  @SerializedName("PENDING") PENDING,
-  @SerializedName("COMPLETED") COMPLETED,
-  @SerializedName("EXPIRED") EXPIRED,
-  @SerializedName("CANCELED") CANCELED
+  @SerializedName("ACTIVE")
+  ACTIVE,
+  @SerializedName("PENDING")
+  PENDING,
+  @SerializedName("COMPLETED")
+  COMPLETED,
+  @SerializedName("EXPIRED")
+  EXPIRED,
+  @SerializedName("CANCELED")
+  CANCELED
 }
 
 @Keep
 internal enum class BffSessionType {
-  @SerializedName("SAVE") SAVE,
-  @SerializedName("PAY") PAY,
-  @SerializedName("AUTHORIZATION") AUTHORIZATION,
-  @SerializedName("SUBSCRIPTION") SUBSCRIPTION
+  @SerializedName("SAVE")
+  SAVE,
+  @SerializedName("PAY")
+  PAY,
+  @SerializedName("AUTHORIZATION")
+  AUTHORIZATION,
+  @SerializedName("SUBSCRIPTION")
+  SUBSCRIPTION
 }
 
 @Keep
 internal enum class BffSessionAllowSavePaymentMethod {
-  @SerializedName("DISABLED") DISABLED,
-  @SerializedName("FORCED") FORCED,
-  @SerializedName("OPTIONAL") OPTIONAL
+  @SerializedName("DISABLED")
+  DISABLED,
+  @SerializedName("FORCED")
+  FORCED,
+  @SerializedName("OPTIONAL")
+  OPTIONAL
 }
 
 @Keep
@@ -83,8 +97,8 @@ internal data class BffChannel(
   @SerializedName("channel_code") val channelCode: String,
   @SerializedName("allow_pay_without_save") val allowPayWithoutSave: Boolean,
   @SerializedName("allow_save") val allowSave: Boolean,
-  @SerializedName("min_amount") val minAmount: Long?,
-  @SerializedName("max_amount") val maxAmount: Long?,
+  @SerializedName("min_amount") val minAmount: BigDecimal?,
+  @SerializedName("max_amount") val maxAmount: BigDecimal?,
   @SerializedName("requires_customer_details") val requiresCustomerDetails: Boolean?,
   @SerializedName("card") val card: BffCardInfo?,
   @SerializedName("form") val form: List<ChannelFormField>?,
@@ -156,15 +170,26 @@ internal sealed class FieldType {
     }
   }
 
-  data class CreditCardNumber(@SerializedName("name") override val name: String = "credit_card_number") : FieldType()
-  data class CreditCardExpiry(@SerializedName("name") override val name: String = "credit_card_expiry") : FieldType()
-  data class CreditCardCvn(@SerializedName("name") override val name: String = "credit_card_cvn") : FieldType()
-  data class PhoneNumber(@SerializedName("name") override val name: String = "phone_number") : FieldType()
+  data class CreditCardNumber(@SerializedName("name") override val name: String = "credit_card_number") :
+    FieldType()
+
+  data class CreditCardExpiry(@SerializedName("name") override val name: String = "credit_card_expiry") :
+    FieldType()
+
+  data class CreditCardCvn(@SerializedName("name") override val name: String = "credit_card_cvn") :
+    FieldType()
+
+  data class PhoneNumber(@SerializedName("name") override val name: String = "phone_number") :
+    FieldType()
+
   data class Email(@SerializedName("name") override val name: String = "email") : FieldType()
-  data class PostalCode(@SerializedName("name") override val name: String = "postal_code") : FieldType()
+  data class PostalCode(@SerializedName("name") override val name: String = "postal_code") :
+    FieldType()
+
   data class Country(@SerializedName("name") override val name: String = "country") : FieldType()
   data class Province(@SerializedName("name") override val name: String = "province") : FieldType()
-  data class InstallmentPlan(@SerializedName("name") override val name: String = "installment_plan") : FieldType()
+  data class InstallmentPlan(@SerializedName("name") override val name: String = "installment_plan") :
+    FieldType()
 
   data class Text(
     @SerializedName("name") override val name: String = "text",
