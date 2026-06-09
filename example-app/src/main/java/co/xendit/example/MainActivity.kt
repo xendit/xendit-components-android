@@ -17,6 +17,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -80,6 +84,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
+@OptIn(ExperimentalMaterial3Api::class)
 fun PaymentDemo(fontFamily: FontFamily, modifier: Modifier = Modifier) {
   var sessionId by remember { mutableStateOf("") }
   val context = LocalContext.current
@@ -96,59 +101,69 @@ fun PaymentDemo(fontFamily: FontFamily, modifier: Modifier = Modifier) {
   var qrBackgroundHex by remember { mutableStateOf("") }
   var borderRadiusDp by remember { mutableStateOf("") }
   var styleError by remember { mutableStateOf("") }
+  var selectedPreset by remember { mutableStateOf(AppearancePreset.Custom) }
+  var presetExpanded by remember { mutableStateOf(false) }
+  val appearanceInputsEnabled = selectedPreset == AppearancePreset.Custom
 
   val onLaunch: () -> Unit = {
     context.findActivity()?.let { act ->
       styleError = ""
-      var appearance = XenditAppearance(fontFamily = fontFamily)
+      val appearance =
+        if (selectedPreset == AppearancePreset.Custom) {
+          var customAppearance = XenditAppearance(fontFamily = fontFamily)
 
-      parseColorOrNull(colorPrimaryHex)?.let { appearance = appearance.copy(colorPrimary = it) }
-      parseColorOrNull(colorTextHex)?.let { appearance = appearance.copy(colorText = it) }
-      parseColorOrNull(colorTextSecondaryHex)?.let {
-        appearance = appearance.copy(colorTextSecondary = it)
-      }
-      parseColorOrNull(colorTextPlaceholderHex)?.let {
-        appearance = appearance.copy(colorTextPlaceholder = it)
-      }
-      parseColorOrNull(colorDisabledHex)?.let { appearance = appearance.copy(colorDisabled = it) }
-      parseColorOrNull(colorDangerHex)?.let { appearance = appearance.copy(colorDanger = it) }
-      parseColorOrNull(colorBorderHex)?.let { appearance = appearance.copy(colorBorder = it) }
-      parseColorOrNull(colorBackgroundHex)?.let {
-        appearance = appearance.copy(colorBackground = it)
-      }
-      parseColorOrNull(qrForegroundHex)?.let {
-        appearance = appearance.copy(qrForegroundColor = it)
-      }
-      parseColorOrNull(qrBackgroundHex)?.let {
-        appearance = appearance.copy(qrBackgroundColor = it)
-      }
+          parseColorOrNull(colorPrimaryHex)?.let { customAppearance = customAppearance.copy(colorPrimary = it) }
+          parseColorOrNull(colorTextHex)?.let { customAppearance = customAppearance.copy(colorText = it) }
+          parseColorOrNull(colorTextSecondaryHex)?.let {
+            customAppearance = customAppearance.copy(colorTextSecondary = it)
+          }
+          parseColorOrNull(colorTextPlaceholderHex)?.let {
+            customAppearance = customAppearance.copy(colorTextPlaceholder = it)
+          }
+          parseColorOrNull(colorDisabledHex)?.let { customAppearance = customAppearance.copy(colorDisabled = it) }
+          parseColorOrNull(colorDangerHex)?.let { customAppearance = customAppearance.copy(colorDanger = it) }
+          parseColorOrNull(colorBorderHex)?.let { customAppearance = customAppearance.copy(colorBorder = it) }
+          parseColorOrNull(colorBackgroundHex)?.let {
+            customAppearance = customAppearance.copy(colorBackground = it)
+          }
+          parseColorOrNull(qrForegroundHex)?.let {
+            customAppearance = customAppearance.copy(qrForegroundColor = it)
+          }
+          parseColorOrNull(qrBackgroundHex)?.let {
+            customAppearance = customAppearance.copy(qrBackgroundColor = it)
+          }
 
-      borderRadiusDp.trim().takeIf { it.isNotBlank() }?.toFloatOrNull()?.let {
-        appearance = appearance.copy(borderRadius = it.dp)
-      }
+          borderRadiusDp.trim().takeIf { it.isNotBlank() }?.toFloatOrNull()?.let {
+            customAppearance = customAppearance.copy(borderRadius = it.dp)
+          }
 
-      val anyInvalidColor =
-        listOf(
-          colorPrimaryHex to "colorPrimary",
-          colorTextHex to "colorText",
-          colorTextSecondaryHex to "colorTextSecondary",
-          colorTextPlaceholderHex to "colorTextPlaceholder",
-          colorDisabledHex to "colorDisabled",
-          colorDangerHex to "colorDanger",
-          colorBorderHex to "colorBorder",
-          colorBackgroundHex to "colorBackground",
-          qrForegroundHex to "qrForegroundColor",
-          qrBackgroundHex to "qrBackgroundColor"
-        ).firstOrNull { (raw, _) -> raw.isNotBlank() && parseColorOrNull(raw) == null }
+          val anyInvalidColor =
+            listOf(
+              colorPrimaryHex to "colorPrimary",
+              colorTextHex to "colorText",
+              colorTextSecondaryHex to "colorTextSecondary",
+              colorTextPlaceholderHex to "colorTextPlaceholder",
+              colorDisabledHex to "colorDisabled",
+              colorDangerHex to "colorDanger",
+              colorBorderHex to "colorBorder",
+              colorBackgroundHex to "colorBackground",
+              qrForegroundHex to "qrForegroundColor",
+              qrBackgroundHex to "qrBackgroundColor"
+            ).firstOrNull { (raw, _) -> raw.isNotBlank() && parseColorOrNull(raw) == null }
 
-      if (anyInvalidColor != null) {
-        styleError = "Invalid hex for ${anyInvalidColor.second}"
-        return@let
-      }
-      if (borderRadiusDp.isNotBlank() && borderRadiusDp.trim().toFloatOrNull() == null) {
-        styleError = "Invalid borderRadius dp"
-        return@let
-      }
+          if (anyInvalidColor != null) {
+            styleError = "Invalid hex for ${anyInvalidColor.second}"
+            return@let
+          }
+          if (borderRadiusDp.isNotBlank() && borderRadiusDp.trim().toFloatOrNull() == null) {
+            styleError = "Invalid borderRadius dp"
+            return@let
+          }
+
+          customAppearance
+        } else {
+          presetAppearance(preset = selectedPreset, openSansFontFamily = fontFamily)
+        }
 
       XenditComponents.initialize(appearance = appearance)
       XenditComponents.present(
@@ -156,6 +171,7 @@ fun PaymentDemo(fontFamily: FontFamily, modifier: Modifier = Modifier) {
         sessionId,
         merchantPreferredPaymentMethod =
           listOf(
+            XenditComponents.UiGroup.BANK_TRANSFER,
             XenditComponents.UiGroup.CARDS,
             XenditComponents.UiGroup.EWALLET,
             XenditComponents.UiGroup.QR_CODE
@@ -227,6 +243,46 @@ fun PaymentDemo(fontFamily: FontFamily, modifier: Modifier = Modifier) {
       }
 
       Text(
+        text = "Preset Style",
+        style = MaterialTheme.typography.titleMedium,
+        modifier = Modifier
+          .fillMaxWidth()
+          .padding(top = 24.dp, bottom = 12.dp)
+      )
+
+      ExposedDropdownMenuBox(
+        expanded = presetExpanded,
+        onExpandedChange = { presetExpanded = !presetExpanded },
+        modifier = Modifier.fillMaxWidth()
+      ) {
+        OutlinedTextField(
+          value = selectedPreset.displayName(),
+          onValueChange = {},
+          readOnly = true,
+          label = { Text("Choose a preset") },
+          trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = presetExpanded) },
+          modifier = Modifier
+            .menuAnchor()
+            .fillMaxWidth()
+        )
+        ExposedDropdownMenu(
+          expanded = presetExpanded,
+          onDismissRequest = { presetExpanded = false }
+        ) {
+          AppearancePreset.values().forEach { preset ->
+            DropdownMenuItem(
+              text = { Text(preset.displayName()) },
+              onClick = {
+                selectedPreset = preset
+                presetExpanded = false
+                styleError = ""
+              }
+            )
+          }
+        }
+      }
+
+      Text(
         text = "Customize Appearance (hex like 21DCCB, #21DCCB or #FF21DCCB)",
         style = MaterialTheme.typography.titleMedium,
         modifier = Modifier
@@ -238,67 +294,78 @@ fun PaymentDemo(fontFamily: FontFamily, modifier: Modifier = Modifier) {
         value = colorPrimaryHex,
         onValueChange = { colorPrimaryHex = it },
         label = { Text("colorPrimary") },
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        enabled = appearanceInputsEnabled
       )
       OutlinedTextField(
         value = colorTextHex,
         onValueChange = { colorTextHex = it },
         label = { Text("colorText") },
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        enabled = appearanceInputsEnabled
       )
       OutlinedTextField(
         value = colorTextSecondaryHex,
         onValueChange = { colorTextSecondaryHex = it },
         label = { Text("colorTextSecondary") },
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        enabled = appearanceInputsEnabled
       )
       OutlinedTextField(
         value = colorTextPlaceholderHex,
         onValueChange = { colorTextPlaceholderHex = it },
         label = { Text("colorTextPlaceholder") },
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        enabled = appearanceInputsEnabled
       )
       OutlinedTextField(
         value = colorDisabledHex,
         onValueChange = { colorDisabledHex = it },
         label = { Text("colorDisabled") },
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        enabled = appearanceInputsEnabled
       )
       OutlinedTextField(
         value = colorDangerHex,
         onValueChange = { colorDangerHex = it },
         label = { Text("colorDanger") },
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        enabled = appearanceInputsEnabled
       )
       OutlinedTextField(
         value = colorBorderHex,
         onValueChange = { colorBorderHex = it },
         label = { Text("colorBorder") },
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        enabled = appearanceInputsEnabled
       )
       OutlinedTextField(
         value = colorBackgroundHex,
         onValueChange = { colorBackgroundHex = it },
         label = { Text("colorBackground") },
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        enabled = appearanceInputsEnabled
       )
       OutlinedTextField(
         value = qrForegroundHex,
         onValueChange = { qrForegroundHex = it },
         label = { Text("qrForegroundColor") },
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        enabled = appearanceInputsEnabled
       )
       OutlinedTextField(
         value = qrBackgroundHex,
         onValueChange = { qrBackgroundHex = it },
         label = { Text("qrBackgroundColor") },
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        enabled = appearanceInputsEnabled
       )
       OutlinedTextField(
         value = borderRadiusDp,
         onValueChange = { borderRadiusDp = it },
         label = { Text("borderRadius (dp)") },
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        enabled = appearanceInputsEnabled
       )
 
       if (styleError.isNotBlank()) {
@@ -342,3 +409,158 @@ private fun parseColorOrNull(raw: String): Color? {
     Color(argb.toLong(16))
   }.getOrNull()
 }
+
+private enum class AppearancePreset {
+  Custom,
+  DailyBrew,
+  FintechBlue,
+  Arcade,
+  Boutique,
+  MidnightCyber,
+  LavenderFields,
+  SunsetGlow,
+  MintFresh,
+}
+
+private fun AppearancePreset.displayName(): String =
+  when (this) {
+    AppearancePreset.Custom -> "Custom"
+    AppearancePreset.DailyBrew -> "Daily Brew"
+    AppearancePreset.FintechBlue -> "Fintech Blue"
+    AppearancePreset.Arcade -> "Arcade"
+    AppearancePreset.Boutique -> "Boutique"
+    AppearancePreset.MidnightCyber -> "Midnight Cyber"
+    AppearancePreset.LavenderFields -> "Lavender Fields"
+    AppearancePreset.SunsetGlow -> "Sunset Glow"
+    AppearancePreset.MintFresh -> "Mint Fresh"
+  }
+
+private fun presetAppearance(
+  preset: AppearancePreset,
+  openSansFontFamily: FontFamily,
+): XenditAppearance =
+  when (preset) {
+    AppearancePreset.Custom ->
+      XenditAppearance(fontFamily = openSansFontFamily)
+
+    AppearancePreset.DailyBrew ->
+      XenditAppearance(
+        fontFamily = openSansFontFamily,
+        colorPrimary = Color(0xFF8D6E63),
+        borderRadius = 12.dp,
+        colorBackground = Color(0xFFFFFBF0),
+        colorText = Color(0xFF3E2723),
+        colorBorder = Color(0xFFD7CCC8),
+        colorTextSecondary = Color(0xFF795548),
+        colorTextPlaceholder = Color(0xFFA1887F),
+        colorDanger = Color(0xFFD32F2F),
+        qrForegroundColor = Color(0xFF3E2723),
+        qrBackgroundColor = Color(0xFFFFFBF0),
+      )
+
+    AppearancePreset.FintechBlue ->
+      XenditAppearance(
+        fontFamily = openSansFontFamily,
+        colorPrimary = Color(0xFF0052FF),
+        borderRadius = 6.dp,
+        colorBackground = Color(0xFFFFFFFF),
+        colorText = Color(0xFF111827),
+        colorBorder = Color(0xFFE5E7EB),
+        colorTextSecondary = Color(0xFF6B7280),
+        colorTextPlaceholder = Color(0xFF9CA3AF),
+        colorDanger = Color(0xFFDC2626),
+        qrForegroundColor = Color(0xFF0052FF),
+        qrBackgroundColor = Color(0xFFFFFFFF),
+      )
+
+    AppearancePreset.Arcade ->
+      XenditAppearance(
+        fontFamily = FontFamily.Monospace,
+        colorPrimary = Color(0xFF00FFD1),
+        borderRadius = 4.dp,
+        colorBackground = Color(0xFF000000),
+        colorText = Color(0xFFFFFFFF),
+        colorBorder = Color(0xFF00FFD1),
+        colorTextSecondary = Color(0xFF888888),
+        colorTextPlaceholder = Color(0xFF333333),
+        colorDisabled = Color(0xFF1A1A1A),
+        colorDanger = Color(0xFFFF0055),
+        qrForegroundColor = Color(0xFF000000),
+        qrBackgroundColor = Color(0xFF00FFD1),
+      )
+
+    AppearancePreset.Boutique ->
+      XenditAppearance(
+        fontFamily = FontFamily.Serif,
+        colorPrimary = Color(0xFF2C2C2C),
+        borderRadius = 0.dp,
+        colorBackground = Color(0xFFF4F1EA),
+        colorText = Color(0xFF2C2C2C),
+        colorBorder = Color(0xFF2C2C2C),
+        colorTextSecondary = Color(0xFF5A5A5A),
+        colorTextPlaceholder = Color(0xFFAAAAAA),
+        colorDanger = Color(0xFF941B1B),
+        qrForegroundColor = Color(0xFF2C2C2C),
+        qrBackgroundColor = Color(0xFFF4F1EA),
+      )
+
+    AppearancePreset.MidnightCyber ->
+      XenditAppearance(
+        fontFamily = FontFamily.Monospace,
+        colorPrimary = Color(0xFF00E5FF),
+        borderRadius = 8.dp,
+        colorBackground = Color(0xFF0B0E14),
+        colorText = Color(0xFFF5F7FA),
+        colorBorder = Color(0xFF1F2633),
+        colorTextSecondary = Color(0xFF94A3B8),
+        colorTextPlaceholder = Color(0xFF475569),
+        colorDanger = Color(0xFFFF4655),
+        qrForegroundColor = Color(0xFFF5F7FA),
+        qrBackgroundColor = Color(0xFF0B0E14),
+      )
+
+    AppearancePreset.LavenderFields ->
+      XenditAppearance(
+        fontFamily = FontFamily.Serif,
+        colorPrimary = Color(0xFF6D28D9),
+        borderRadius = 6.dp,
+        colorBackground = Color(0xFFFAF5FF),
+        colorText = Color(0xFF2E1065),
+        colorBorder = Color(0xFFE9D5FF),
+        colorTextSecondary = Color(0xFF6B21A8),
+        colorTextPlaceholder = Color(0xFFC084FC),
+        colorDanger = Color(0xFFE11D48),
+        qrForegroundColor = Color(0xFF2E1065),
+        qrBackgroundColor = Color(0xFFFAF5FF),
+      )
+
+    AppearancePreset.SunsetGlow ->
+      XenditAppearance(
+        fontFamily = FontFamily.Default,
+        colorPrimary = Color(0xFFF97316),
+        borderRadius = 24.dp,
+        colorBackground = Color(0xFFFFF7ED),
+        colorText = Color(0xFF431407),
+        colorBorder = Color(0xFFFFEDD5),
+        colorTextSecondary = Color(0xFF9A3412),
+        colorTextPlaceholder = Color(0xFFC2410C),
+        colorDanger = Color(0xFFDC2626),
+        qrForegroundColor = Color(0xFF431407),
+        qrBackgroundColor = Color(0xFFFFF7ED),
+      )
+
+    AppearancePreset.MintFresh ->
+      XenditAppearance(
+        fontFamily = FontFamily.SansSerif,
+        colorPrimary = Color(0xFF10B981),
+        borderRadius = 16.dp,
+        colorBackground = Color(0xFFF0FDF4),
+        colorText = Color(0xFF064E3B),
+        colorBorder = Color(0xFFDCFCE7),
+        colorTextSecondary = Color(0xFF374151),
+        colorTextPlaceholder = Color(0xFF9CA3AF),
+        colorDanger = Color(0xFFF43F5E),
+        qrForegroundColor = Color(0xFF064E3B),
+        qrBackgroundColor = Color(0xFFF0FDF4),
+      )
+  }

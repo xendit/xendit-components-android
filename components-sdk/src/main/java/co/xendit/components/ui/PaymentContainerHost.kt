@@ -57,6 +57,7 @@ import co.xendit.components.XenditComponents
 import co.xendit.components.core.CoreSdkComponent.globalErrorHandler
 import co.xendit.components.data.model.BffSessionType
 import co.xendit.components.data.model.ChannelFormField
+import co.xendit.components.data.model.PaymentActionDescriptor
 import co.xendit.components.data.model.PaymentDraft
 import co.xendit.components.data.model.PaymentRequestStatus
 import co.xendit.components.data.model.PaymentSessionStatus
@@ -65,6 +66,7 @@ import co.xendit.components.data.model.XenditPaymentResult
 import co.xendit.components.internal_entry_point.CardViewModelFactory
 import co.xendit.components.internal_entry_point.PaymentViewModelFactory
 import co.xendit.components.ui.action.ActionQrUI
+import co.xendit.components.ui.action.ActionVirtualAccountUI
 import co.xendit.components.ui.action.ActionWebViewUI
 import co.xendit.components.ui.card.CardIntent
 import co.xendit.components.ui.card.CardViewModel
@@ -345,10 +347,6 @@ internal fun PaymentContainerHost(
               }
             }
           }
-          GenericHeader(
-            title = stringResource(id = R.string.sessionpayment_methods_header),
-            onLeftClick = dismiss
-          )
 
           Box(
             modifier = Modifier
@@ -359,7 +357,7 @@ internal fun PaymentContainerHost(
               mviState.paymentActionRedirect != null -> {
                 val redirect = mviState.paymentActionRedirect!!
                 val url = redirect.value.orEmpty()
-                if (redirect.descriptor == "DEEPLINK_URL") {
+                if (redirect.descriptor == PaymentActionDescriptor.DEEPLINK_URL) {
                   LaunchedEffect(url) {
                     if (url.isNotBlank()) {
                       val didLaunch = runCatching {
@@ -388,27 +386,63 @@ internal fun PaymentContainerHost(
               }
 
               mviState.presentToCustomerPaymentAction != null -> {
-                val qrAction = mviState.presentToCustomerPaymentAction!!
+                val action = mviState.presentToCustomerPaymentAction!!
                 val merchantName = mviState.sessionResponse?.business?.name
-                ActionQrUI(
-                  title = merchantName,
-                  channelName = mviState.selectedChannel?.brandName ?: "QR Code",
-                  channelLogoUrl = mviState.selectedChannel?.brandLogoUrl,
-                  qrString = qrAction.value.orEmpty(),
-                  amount = mviState.sessionResponse?.session?.amount,
-                  currency = mviState.sessionResponse?.session?.currency,
-                  onClose = { viewModel.markClosed() },
-                  onPaymentMade = {
-                    viewModel.dispatch(ActionIntent.SimulatePayment)
-                    viewModel.dispatch(ActionIntent.ChallengeCompleted(true))
-                    viewModel.showLoading()
-                  },
-                  snackbarHostState = snackbarHostState
-                )
+                val selectedChannel = mviState.selectedChannel
+                val channelName = selectedChannel?.brandName.orEmpty()
+                val channelLogoUrl = selectedChannel?.brandLogoUrl
+                when (action.descriptor) {
+                  PaymentActionDescriptor.VIRTUAL_ACCOUNT_NUMBER -> {
+                    ActionVirtualAccountUI(
+                      title = action.actionTitle,
+                      subtitle = action.actionSubtitle,
+                      channelName = channelName.ifBlank { "Virtual Account" },
+                      channelLogoUrl = channelLogoUrl,
+                      virtualAccountNumber = action.value.orEmpty(),
+                      merchantName = merchantName,
+                      amount = mviState.sessionResponse?.session?.amount,
+                      currency = mviState.sessionResponse?.session?.currency,
+                      instructions = action.instructions,
+                      onClose = { viewModel.markClosed() },
+                      onPaymentMade = {
+                        viewModel.dispatch(ActionIntent.SimulatePayment)
+                        viewModel.dispatch(ActionIntent.ChallengeCompleted(true))
+                        viewModel.showLoading()
+                      },
+                      snackbarHostState = snackbarHostState
+                    )
+                  }
+
+                  PaymentActionDescriptor.QR_STRING -> {
+                    ActionQrUI(
+                      title = merchantName,
+                      channelName = channelName.ifBlank { "QR Code" },
+                      channelLogoUrl = channelLogoUrl,
+                      qrString = action.value.orEmpty(),
+                      amount = mviState.sessionResponse?.session?.amount,
+                      currency = mviState.sessionResponse?.session?.currency,
+                      onClose = { viewModel.markClosed() },
+                      onPaymentMade = {
+                        viewModel.dispatch(ActionIntent.SimulatePayment)
+                        viewModel.dispatch(ActionIntent.ChallengeCompleted(true))
+                        viewModel.showLoading()
+                      },
+                      snackbarHostState = snackbarHostState
+                    )
+                  }
+
+                  else -> {
+                    viewModel.markClosed()
+                  }
+                }
               }
 
               mviState.channels.isNotEmpty() -> {
                 Column {
+                  GenericHeader(
+                    title = stringResource(id = R.string.sessionpayment_methods_header),
+                    onLeftClick = dismiss
+                  )
                   Column(
                     modifier = Modifier
                       .weight(1f)

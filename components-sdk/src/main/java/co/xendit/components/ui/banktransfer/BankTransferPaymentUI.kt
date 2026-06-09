@@ -1,6 +1,5 @@
-package co.xendit.components.ui.ewallet
+package co.xendit.components.ui.banktransfer
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
@@ -33,7 +32,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import co.xendit.components.R
-import co.xendit.components.data.model.BffBusiness
 import co.xendit.components.data.model.BffChannel
 import co.xendit.components.data.model.ChannelFormField
 import co.xendit.components.ui.components.DynamicForm
@@ -47,17 +45,15 @@ import coil.compose.AsyncImage
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun EwalletPaymentUI(
+internal fun BankTransferPaymentUI(
+  displayName: String,
   channels: List<BffChannel>,
-  bffBusiness: BffBusiness?,
   selectedChannel: BffChannel?,
-  effectiveChannel: BffChannel? = selectedChannel,
   initialValues: Map<String, String> = emptyMap(),
   initialVisibleFields: List<ChannelFormField> = emptyList(),
   initialSaveChecked: Boolean = false,
   onSelectChannel: (String) -> Unit,
   onFormStateChanged: (Map<String, String>, List<ChannelFormField>, Boolean) -> Unit = { _, _, _ -> },
-  onSaveCheck: (Boolean, Map<String, String>, List<ChannelFormField>) -> Unit = { _, _, _ -> },
   showSaveCheckbox: Boolean = false,
   modifier: Modifier = Modifier
 ) {
@@ -70,7 +66,7 @@ internal fun EwalletPaymentUI(
   val isSaveChecked = remember { mutableStateOf(false) }
 
   LaunchedEffect(
-    effectiveChannel?.channelCode,
+    selectedChannel?.channelCode,
     initialValues,
     initialVisibleFields,
     initialSaveChecked
@@ -79,7 +75,7 @@ internal fun EwalletPaymentUI(
     formValues.putAll(initialValues)
     visibleFields.value = initialVisibleFields
     isSaveChecked.value = initialSaveChecked
-    if (effectiveChannel != null) {
+    if (selectedChannel != null) {
       onFormStateChanged(formValues.toMap(), visibleFields.value, isSaveChecked.value)
     }
   }
@@ -90,7 +86,7 @@ internal fun EwalletPaymentUI(
       .padding(bottom = 12.dp)
   ) {
     Text(
-      text = stringResource(id = R.string.ewallet_pay_with),
+      text = stringResource(id = R.string.sessionpayment_methods_pay_with),
       style = MaterialTheme.typography.bodyLarge,
       color = appearance.colorText
     )
@@ -103,7 +99,10 @@ internal fun EwalletPaymentUI(
     ) {
       XenditDropdownField(
         value = selectedChannel?.brandName ?: "",
-        placeholder = stringResource(id = R.string.ewallet_select_placeholder),
+        placeholder =
+          stringResource(
+            id = R.string.sessionpayment_methods_select_channel_placeholder,
+          ).replace("{{groupName}}", displayName),
         isExpanded = expanded,
         leadingContent = selectedChannel?.let { channel ->
           {
@@ -152,7 +151,6 @@ internal fun EwalletPaymentUI(
                   }
                   Text(channel.brandName)
                 }
-
               },
               onClick = {
                 onSelectChannel(channel.channelCode)
@@ -164,10 +162,10 @@ internal fun EwalletPaymentUI(
       }
     }
 
-    val channelFormFields = effectiveChannel?.form.orEmpty()
+    val channelFormFields = selectedChannel?.form.orEmpty()
     if (channelFormFields.isNotEmpty()) {
       Spacer(modifier = Modifier.height(12.dp))
-      key(effectiveChannel?.channelCode) {
+      key(selectedChannel?.channelCode) {
         DynamicForm(
           fields = channelFormFields,
           cardDetails = null,
@@ -188,42 +186,34 @@ internal fun EwalletPaymentUI(
       }
     }
 
-    if (showSaveCheckbox && effectiveChannel != null) {
-      val channel = effectiveChannel
+    if (showSaveCheckbox && selectedChannel != null) {
       Spacer(modifier = Modifier.height(16.dp))
       CheckboxWithText(
         checked = isSaveChecked.value,
-        text = stringResource(
-          id = R.string.ewallet_link_for_future_purchase,
-          channel.brandName,
-          bffBusiness?.name.orEmpty()
-        ),
+        text = stringResource(id = R.string.sessionpayment_save_checkbox_label),
         onCheckedChange = { nextChecked ->
           isSaveChecked.value = nextChecked
-          onSaveCheck(isSaveChecked.value, formValues.toMap(), visibleFields.value)
+          onFormStateChanged(formValues.toMap(), visibleFields.value, isSaveChecked.value)
         },
         textColor = appearance.colorText
       )
     }
 
-    if (!effectiveChannel?.instructions.isNullOrEmpty()) {
+    if (!selectedChannel?.instructions.isNullOrEmpty()) {
       Spacer(modifier = Modifier.height(16.dp))
       DashedDivider(
-        modifier = Modifier
-          .fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth(),
         color = appearance.colorBorder
       )
       Spacer(modifier = Modifier.height(8.dp))
-      Row(
-        verticalAlignment = Alignment.CenterVertically
-      ) {
-        Image(
+      Row(verticalAlignment = Alignment.CenterVertically) {
+        androidx.compose.foundation.Image(
           painter = painterResource(R.drawable.img_phone_app),
           contentDescription = null,
           modifier = Modifier.size(60.dp)
         )
         Column {
-          effectiveChannel.instructions.forEachIndexed { index, instruction ->
+          selectedChannel.instructions.forEachIndexed { index, instruction ->
             Text(
               text = instruction,
               style = MaterialTheme.typography.titleSmall.takeIf { index == 0 }
@@ -234,6 +224,5 @@ internal fun EwalletPaymentUI(
         }
       }
     }
-
   }
 }

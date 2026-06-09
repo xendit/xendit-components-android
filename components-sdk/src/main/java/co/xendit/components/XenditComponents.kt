@@ -30,7 +30,8 @@ object XenditComponents {
     const val CARDS = "cards"
     const val EWALLET = "ewallet"
     const val QR_CODE = "qr_code"
-    val SUPPORTED: Set<String> = setOf(CARDS, EWALLET, QR_CODE)
+    const val BANK_TRANSFER = "bank_transfer"
+    val SUPPORTED: Set<String> = setOf(CARDS, EWALLET, QR_CODE, BANK_TRANSFER)
   }
 
   private var composeView: ComposeView? = null
