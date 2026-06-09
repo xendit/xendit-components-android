@@ -17,4 +17,5 @@
   <string name="ewallet_pay_with">Pagar con</string>
   <string name="ewallet_select_placeholder">Selecciona un monedero digital</string>
   <string name="ewallet_link_for_future_purchase">Vincula tu %1$s con %2$s para futuras compras</string>
+  <string name="sessionpayment_methods_select_payment_method">Seleccionar método de pago</string>
 </resources>

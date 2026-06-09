@@ -440,7 +440,7 @@ internal fun PaymentContainerHost(
               mviState.channels.isNotEmpty() -> {
                 Column {
                   GenericHeader(
-                    title = stringResource(id = R.string.sessionpayment_methods_header),
+                    title = stringResource(id = R.string.sessionpayment_methods_select_payment_method),
                     onLeftClick = dismiss
                   )
                   Column(
