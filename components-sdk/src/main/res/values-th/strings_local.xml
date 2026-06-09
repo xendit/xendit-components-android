@@ -17,4 +17,5 @@
   <string name="ewallet_pay_with">ชำระเงินด้วย</string>
   <string name="ewallet_select_placeholder">เลือกอีวอลเล็ต</string>
   <string name="ewallet_link_for_future_purchase">เชื่อมต่อ %1$s ของคุณกับ %2$s เพื่อการซื้อในครั้งถัดไป</string>
+  <string name="sessionpayment_methods_select_payment_method">เลือกวิธีการชำระเงิน</string>
 </resources>
