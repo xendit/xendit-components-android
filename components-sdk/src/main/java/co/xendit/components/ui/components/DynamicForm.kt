@@ -222,7 +222,7 @@ internal fun DynamicForm(
       val startsGroup = startField.groupLabel != null
 
       if (startsGroup) {
-        Column() {
+        Column {
           Text(
             text = startField.groupLabel.orEmpty(),
             style = MaterialTheme.typography.bodyLarge,

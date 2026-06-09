@@ -73,7 +73,7 @@ internal fun PhoneNumberField(
       }
     }
 
-  Column() {
+  Column {
     label?.let {
       Text(
         text = it,

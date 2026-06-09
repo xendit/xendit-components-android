@@ -112,7 +112,7 @@ internal fun PaymentMethodsUI(
     }
   }
 
-  Column() {
+  Column {
     Column(
       modifier = Modifier
         .fillMaxWidth()
@@ -147,7 +147,7 @@ internal fun PaymentMethodsUI(
               } else Modifier
             )
         ) {
-          Column() {
+          Column {
             SelectableHeaderItem(
               text = displayName,
               leftIcon = fallback.second,
@@ -268,6 +268,7 @@ internal fun PaymentMethodsUI(
                   val draft = selectedDraft
                   val showSaveCheckbox = canShowSaveCheckbox(selectedDisplayChannelForUi)
                   BankTransferPaymentUI(
+                    displayName = displayName,
                     channels = groupChannels,
                     selectedChannel = selectedDisplayChannelForUi,
                     initialValues = draft?.formValues.orEmpty(),

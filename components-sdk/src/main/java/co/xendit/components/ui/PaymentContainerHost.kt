@@ -3,7 +3,6 @@ package co.xendit.components.ui
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -78,7 +77,6 @@ import co.xendit.components.ui.helper.FormChecker.validateAllField
 import co.xendit.components.ui.method.PaymentMethodsUI
 import co.xendit.components.ui.style.XenditAppearance
 import co.xendit.components.ui.style.xenditAppearance
-import io.nerdythings.okhttp.modifier.settings.OkHttpProfilerSettingsActivity
 import kotlinx.coroutines.launch
 
 internal enum class PaymentContainerPresentation {

@@ -1,9 +1,6 @@
 package co.xendit.components.ui.ewallet
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
@@ -13,11 +10,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
+import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
@@ -31,7 +27,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -42,12 +37,12 @@ import co.xendit.components.data.model.BffBusiness
 import co.xendit.components.data.model.BffChannel
 import co.xendit.components.data.model.ChannelFormField
 import co.xendit.components.ui.components.DynamicForm
+import co.xendit.components.ui.components.molecule.ChannelLogo
 import co.xendit.components.ui.components.molecule.CheckboxWithText
 import co.xendit.components.ui.components.molecule.DashedDivider
 import co.xendit.components.ui.components.molecule.XenditDropdownField
 import co.xendit.components.ui.helper.SdkImageLoader
 import co.xendit.components.ui.style.xenditAppearance
-import coil.ImageLoader
 import coil.compose.AsyncImage
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -147,9 +142,9 @@ internal fun EwalletPaymentUI(
           channels.forEach { channel ->
             DropdownMenuItem(
               text = {
-                Row() {
+                Row {
                   if (channel.brandLogoUrl != null) {
-                    EwalletLogo(
+                    ChannelLogo(
                       logoUrl = channel.brandLogoUrl,
                       imageLoader = imageLoader,
                     )
@@ -227,7 +222,7 @@ internal fun EwalletPaymentUI(
           contentDescription = null,
           modifier = Modifier.size(60.dp)
         )
-        Column() {
+        Column {
           effectiveChannel.instructions.forEachIndexed { index, instruction ->
             Text(
               text = instruction,
@@ -240,41 +235,5 @@ internal fun EwalletPaymentUI(
       }
     }
 
-  }
-}
-
-@Composable
-internal fun EwalletLogo(
-  logoUrl: String,
-  imageLoader: ImageLoader,
-) {
-  val appearance = xenditAppearance
-
-  Box(
-    modifier = Modifier
-      .size(width = 36.dp, height = 24.dp)
-      // 1. Apply border and background to the container
-      .border(
-        width = 1.dp,
-        color = appearance.colorBorder,
-        shape = RoundedCornerShape(4.dp)
-      )
-      .background(
-        color = appearance.colorBackground,
-        shape = RoundedCornerShape(4.dp)
-      )
-      .clip(RoundedCornerShape(4.dp)),
-    contentAlignment = Alignment.Center
-  ) {
-    AsyncImage(
-      model = logoUrl,
-      imageLoader = imageLoader,
-      contentDescription = null,
-      // 2. Use Fit or Inside to prevent "trimming"
-      contentScale = ContentScale.Fit,
-      modifier = Modifier
-        // 3. Add small padding so the logo doesn't touch the border
-        .padding(4.dp)
-    )
   }
 }

@@ -35,10 +35,10 @@ import co.xendit.components.R
 import co.xendit.components.data.model.BffChannel
 import co.xendit.components.data.model.ChannelFormField
 import co.xendit.components.ui.components.DynamicForm
+import co.xendit.components.ui.components.molecule.ChannelLogo
 import co.xendit.components.ui.components.molecule.CheckboxWithText
 import co.xendit.components.ui.components.molecule.DashedDivider
 import co.xendit.components.ui.components.molecule.XenditDropdownField
-import co.xendit.components.ui.ewallet.EwalletLogo
 import co.xendit.components.ui.helper.SdkImageLoader
 import co.xendit.components.ui.style.xenditAppearance
 import coil.compose.AsyncImage
@@ -46,6 +46,7 @@ import coil.compose.AsyncImage
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun BankTransferPaymentUI(
+  displayName: String,
   channels: List<BffChannel>,
   selectedChannel: BffChannel?,
   initialValues: Map<String, String> = emptyMap(),
@@ -101,7 +102,7 @@ internal fun BankTransferPaymentUI(
         placeholder =
           stringResource(
             id = R.string.sessionpayment_methods_select_channel_placeholder,
-          ).replace("{{groupName}}", "Bank transfer"),
+          ).replace("{{groupName}}", displayName),
         isExpanded = expanded,
         leadingContent = selectedChannel?.let { channel ->
           {
@@ -140,9 +141,9 @@ internal fun BankTransferPaymentUI(
           channels.forEach { channel ->
             DropdownMenuItem(
               text = {
-                Row() {
+                Row {
                   if (channel.brandLogoUrl != null) {
-                    EwalletLogo(
+                    ChannelLogo(
                       logoUrl = channel.brandLogoUrl,
                       imageLoader = imageLoader,
                     )
@@ -211,7 +212,7 @@ internal fun BankTransferPaymentUI(
           contentDescription = null,
           modifier = Modifier.size(60.dp)
         )
-        Column() {
+        Column {
           selectedChannel.instructions.forEachIndexed { index, instruction ->
             Text(
               text = instruction,
