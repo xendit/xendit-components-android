@@ -241,7 +241,7 @@ internal fun PaymentContainerHost(
       }
 
       isFailed -> {
-        val pollFailureCode = poll.paymentRequest?.failure_code
+        val pollFailureCode = poll.paymentRequest.failure_code
         val pollFailureMessage =
           FailureCodeMessageUtil.resolveFailureMessage(context, pollFailureCode)
 

@@ -3,6 +3,7 @@ package co.xendit.components.ui.components.molecule
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Text
@@ -49,7 +50,12 @@ internal fun InstallmentPlanField(
       label = label,
       placeholder = placeholder,
       trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-      modifier = Modifier.menuAnchor().fillMaxWidth(),
+      modifier = Modifier
+        .menuAnchor(
+          type = ExposedDropdownMenuAnchorType.PrimaryNotEditable,
+          enabled = true
+        )
+        .fillMaxWidth(),
       isError = isError,
       errorMessage = errorMessage,
       shape = shape,
@@ -61,7 +67,12 @@ internal fun InstallmentPlanField(
     ) {
       plans.forEach { plan ->
         DropdownMenuItem(
-          text = { Text(plan.toLabelDisplay(context, currency).asString(), color = appearance.colorText) },
+          text = {
+            Text(
+              plan.toLabelDisplay(context, currency).asString(),
+              color = appearance.colorText
+            )
+          },
           onClick = {
             onPlanSelected(plan)
             expanded = false
