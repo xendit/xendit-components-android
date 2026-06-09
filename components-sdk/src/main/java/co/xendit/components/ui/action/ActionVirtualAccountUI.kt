@@ -56,6 +56,7 @@ import co.xendit.components.ui.style.xenditAppearance
 import coil.compose.AsyncImage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import java.math.BigDecimal
 
 @Composable
 internal fun ActionVirtualAccountUI(
@@ -65,7 +66,7 @@ internal fun ActionVirtualAccountUI(
   channelLogoUrl: String?,
   virtualAccountNumber: String,
   merchantName: String?,
-  amount: Long?,
+  amount: BigDecimal?,
   currency: String?,
   instructions: List<PaymentInstructionTab>?,
   onClose: () -> Unit,
