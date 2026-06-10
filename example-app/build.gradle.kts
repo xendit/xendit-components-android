@@ -45,8 +45,8 @@ kotlin {
 
 dependencies {
   implementation(project(":components-sdk"))
-  // use directly from project
-//  implementation("co.xendit:components:1.0.0")
+//  use directly from project
+//  implementation("co.xendit:components:1.0.0") // for usage from maven
   implementation(libs.androidx.core.ktx)
   implementation(libs.androidx.lifecycle.runtime.ktx)
   implementation(libs.androidx.activity.compose)

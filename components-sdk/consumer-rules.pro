@@ -2,6 +2,9 @@
 -keep class co.xendit.components.XenditComponents {
     public *;
 }
+-keep class co.xendit.components.XenditComponentsUiGroup {
+    public *;
+}
 -keep class co.xendit.components.data.model.XenditPaymentResult { *; }
 -keep class co.xendit.components.data.model.XenditPaymentResult$* { *; }
 -keep class co.xendit.components.data.model.XenditError { *; }
