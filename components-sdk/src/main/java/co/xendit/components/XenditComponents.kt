@@ -24,15 +24,15 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 
 /** Main SDK entry point for displaying payment UI */
-object XenditComponents {
+object XenditComponentsUiGroup {
+  const val CARDS = "cards"
+  const val EWALLET = "ewallet"
+  const val QR_CODE = "qr_code"
+  const val BANK_TRANSFER = "bank_transfer"
+  val SUPPORTED: Set<String> = setOf(CARDS, EWALLET, QR_CODE, BANK_TRANSFER)
+}
 
-  object UiGroup {
-    const val CARDS = "cards"
-    const val EWALLET = "ewallet"
-    const val QR_CODE = "qr_code"
-    const val BANK_TRANSFER = "bank_transfer"
-    val SUPPORTED: Set<String> = setOf(CARDS, EWALLET, QR_CODE, BANK_TRANSFER)
-  }
+object XenditComponents {
 
   private var composeView: ComposeView? = null
   private var currentCallback: ((XenditPaymentResult) -> Unit)? = null

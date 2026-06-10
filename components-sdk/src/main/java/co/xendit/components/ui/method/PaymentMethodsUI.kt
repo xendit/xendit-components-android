@@ -32,6 +32,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import co.xendit.components.R
 import co.xendit.components.XenditComponents
+import co.xendit.components.XenditComponentsUiGroup
 import co.xendit.components.data.model.BffBusiness
 import co.xendit.components.data.model.BffChannel
 import co.xendit.components.data.model.BffChannelUiGroup
@@ -94,7 +95,7 @@ internal fun PaymentMethodsUI(
   val selectedDraft = selectedChannel?.let { paymentDrafts[it.channelCode] }
   val uiGroupMetaById =
     remember(channelUiGroups) { channelUiGroups.orEmpty().associateBy { it.id } }
-  val supportedUiGroups = remember { XenditComponents.UiGroup.SUPPORTED }
+  val supportedUiGroups = remember { XenditComponentsUiGroup.SUPPORTED }
 
   val groups = remember(channels) {
     channels.groupBy { it.uiGroup }.filter { it.key in supportedUiGroups }
@@ -163,7 +164,7 @@ internal fun PaymentMethodsUI(
             if (isExpanded) {
               Spacer(modifier = Modifier.height(8.dp))
               when (uiGroup) {
-                XenditComponents.UiGroup.CARDS -> {
+                XenditComponentsUiGroup.CARDS -> {
                   val initialValues = selectedDraft?.formValues.orEmpty()
                   CardPaymentUI(
                     session = session,
@@ -184,7 +185,7 @@ internal fun PaymentMethodsUI(
                   )
                 }
 
-                XenditComponents.UiGroup.EWALLET -> {
+                XenditComponentsUiGroup.EWALLET -> {
                   val draft = selectedDraft
                   val saveCodes =
                     remember(channelVariantsByDisplayCode) {
@@ -247,7 +248,7 @@ internal fun PaymentMethodsUI(
                   )
                 }
 
-                XenditComponents.UiGroup.QR_CODE -> {
+                XenditComponentsUiGroup.QR_CODE -> {
                   QrPaymentUI(
                     channels = groupChannels,
                     selectedChannel = selectedChannel,
@@ -264,7 +265,7 @@ internal fun PaymentMethodsUI(
                   )
                 }
 
-                XenditComponents.UiGroup.BANK_TRANSFER -> {
+                XenditComponentsUiGroup.BANK_TRANSFER -> {
                   val draft = selectedDraft
                   val showSaveCheckbox = canShowSaveCheckbox(selectedDisplayChannelForUi)
                   BankTransferPaymentUI(
@@ -360,10 +361,10 @@ private fun SelectableHeaderItem(
 
 private fun fallbackDisplayNameIconForUiGroup(uiGroup: String): Pair<String, Int> {
   return when (uiGroup.lowercase()) {
-    XenditComponents.UiGroup.CARDS -> "Cards" to R.drawable.ic_cards
-    XenditComponents.UiGroup.EWALLET -> "E-Wallet" to R.drawable.ic_e_wallet
-    XenditComponents.UiGroup.QR_CODE -> "QR Code" to R.drawable.ic_qris
-    XenditComponents.UiGroup.BANK_TRANSFER -> "Bank Transfer" to R.drawable.ic_bank_va
+    XenditComponentsUiGroup.CARDS -> "Cards" to R.drawable.ic_cards
+    XenditComponentsUiGroup.EWALLET -> "E-Wallet" to R.drawable.ic_e_wallet
+    XenditComponentsUiGroup.QR_CODE -> "QR Code" to R.drawable.ic_qris
+    XenditComponentsUiGroup.BANK_TRANSFER -> "Bank Transfer" to R.drawable.ic_bank_va
     else -> uiGroup.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() } to R.drawable.ic_bank_va // Fallback icon
   }
 }

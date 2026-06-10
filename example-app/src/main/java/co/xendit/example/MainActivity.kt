@@ -19,6 +19,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.MaterialTheme
@@ -40,6 +41,7 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import co.xendit.components.XenditComponents
+import co.xendit.components.XenditComponentsUiGroup
 import co.xendit.components.ui.style.XenditAppearance
 import co.xendit.example.ui.theme.XenComponentPrivateTheme
 
@@ -171,10 +173,10 @@ fun PaymentDemo(fontFamily: FontFamily, modifier: Modifier = Modifier) {
         sessionId,
         merchantPreferredPaymentMethod =
           listOf(
-            XenditComponents.UiGroup.BANK_TRANSFER,
-            XenditComponents.UiGroup.CARDS,
-            XenditComponents.UiGroup.EWALLET,
-            XenditComponents.UiGroup.QR_CODE
+            XenditComponentsUiGroup.BANK_TRANSFER,
+            XenditComponentsUiGroup.CARDS,
+            XenditComponentsUiGroup.EWALLET,
+            XenditComponentsUiGroup.QR_CODE
           )
       ) {
         paymentResultText = it.toString()
@@ -262,7 +264,10 @@ fun PaymentDemo(fontFamily: FontFamily, modifier: Modifier = Modifier) {
           label = { Text("Choose a preset") },
           trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = presetExpanded) },
           modifier = Modifier
-            .menuAnchor()
+            .menuAnchor(
+              type = ExposedDropdownMenuAnchorType.PrimaryNotEditable,
+              enabled = true
+            )
             .fillMaxWidth()
         )
         ExposedDropdownMenu(
