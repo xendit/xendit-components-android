@@ -265,7 +265,6 @@ internal fun PaymentMethodsUI(
                   )
                 }
 
-                XenditComponentsUiGroup.OVER_THE_COUNTER,
                 XenditComponentsUiGroup.BANK_TRANSFER,
                 XenditComponentsUiGroup.ONLINE_BANKING -> {
                   val draft = selectedDraft
