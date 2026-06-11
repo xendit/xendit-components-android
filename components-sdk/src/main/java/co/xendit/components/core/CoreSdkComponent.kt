@@ -1,8 +1,7 @@
 package co.xendit.components.core
 
 import android.content.Context
-import co.xendit.components.BuildConfig
-import co.xendit.components.util.XLogger
+import co.xendit.components.core.model.EnumWithFallbackValueTypeAdapterFactory
 import co.xendit.components.core.model.GlobalErrorHandler
 import co.xendit.components.core.model.GlobalLoadingHandler
 import co.xendit.components.core.model.SafeApiCall
@@ -13,7 +12,6 @@ import co.xendit.components.core.network.provider.HeaderProvider
 import co.xendit.components.data.model.FieldType
 import co.xendit.components.data.model.PaymentInstructionTab
 import co.xendit.components.data.model.PaymentInstructionTabDeserializer
-import co.xendit.components.core.model.EnumWithFallbackValueTypeAdapterFactory
 import co.xendit.components.data.network.remote.session.XenditApi
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
@@ -21,8 +19,6 @@ import com.google.gson.JsonDeserializationContext
 import com.google.gson.JsonDeserializer
 import com.google.gson.JsonElement
 import com.google.gson.Strictness
-import io.nerdythings.okhttp.modifier.interceptor.OkHttpRequestModifierInterceptor
-import io.nerdythings.okhttp.profiler.OkHttpProfilerInterceptor
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
@@ -84,10 +80,6 @@ internal object CoreSdkComponent {
         addInterceptor(baseUrlInterceptor)
         addInterceptor(headerInterceptor)
         addInterceptor(errorInterceptor)
-        if (BuildConfig.DEBUG) {
-          addInterceptor(OkHttpProfilerInterceptor())
-          addInterceptor(OkHttpRequestModifierInterceptor(appContext))
-        }
       }
       .build()
   }
