@@ -177,7 +177,6 @@ fun PaymentDemo(fontFamily: FontFamily, modifier: Modifier = Modifier) {
             XenditComponentsUiGroup.ONLINE_BANKING,
             XenditComponentsUiGroup.CARDS,
             XenditComponentsUiGroup.EWALLET,
-            XenditComponentsUiGroup.OVER_THE_COUNTER,
             XenditComponentsUiGroup.QR_CODE
           )
       ) {
