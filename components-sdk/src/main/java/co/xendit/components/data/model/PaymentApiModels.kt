@@ -75,7 +75,12 @@ internal data class PaymentInstructionStep(
 @Keep
 internal data class PaymentInstructionTab(
   val title: String,
-  val content: List<PaymentInstructionStep>
+  val content: List<PaymentInstructionStepBlock>
+)
+
+@Keep
+internal data class PaymentInstructionStepBlock(
+  val steps: List<PaymentInstructionStep>
 )
 
 @Keep

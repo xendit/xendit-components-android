@@ -1,6 +1,11 @@
 package co.xendit.components.ui.action
 
-import android.content.ClipData
+import android.content.ContentValues
+import android.graphics.Bitmap
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,6 +14,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -21,16 +27,13 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.ClipEntry
-import androidx.compose.ui.platform.Clipboard
-import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -38,21 +41,25 @@ import androidx.compose.ui.unit.dp
 import co.xendit.components.R
 import co.xendit.components.core.CoreSdkComponent
 import co.xendit.components.data.model.PaymentInstructionTab
+import co.xendit.components.ui.helper.BarcodeGenerator
 import co.xendit.components.ui.helper.CurrencyUtil
 import co.xendit.components.ui.helper.SdkImageLoader
 import co.xendit.components.ui.style.xenditAppearance
 import coil.compose.AsyncImage
-import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.OutputStream
 import java.math.BigDecimal
+import java.util.UUID
 
 @Composable
-internal fun ActionVirtualAccountUI(
+internal fun ActionBarcodeUI(
   title: String?,
   subtitle: String?,
   channelName: String,
   channelLogoUrl: String?,
-  virtualAccountNumber: String,
+  paymentCode: String,
   merchantName: String?,
   amount: BigDecimal?,
   currency: String?,
@@ -64,15 +71,28 @@ internal fun ActionVirtualAccountUI(
 ) {
   val appearance = xenditAppearance
   val context = LocalContext.current
-  val clipboard = LocalClipboard.current
   val scope = rememberCoroutineScope()
   val imageLoader = remember { SdkImageLoader.get(context) }
   val formattedAmount = remember(amount, currency) { CurrencyUtil.formatAmount(amount, currency) }
-  val copiedText = stringResource(R.string.sessionaction_va_copied_to_clipboard)
+  val barcodeWidthPx = 900
+  val barcodeHeightPx = 260
+  val barcodeBitmap =
+    remember(paymentCode, barcodeWidthPx, barcodeHeightPx) {
+      runCatching {
+        BarcodeGenerator.generateBarcodeBitmap(
+          content = paymentCode,
+          widthPx = barcodeWidthPx,
+          heightPx = barcodeHeightPx,
+          foreground = Color.Black,
+          background = Color.White
+        )
+      }.getOrNull()
+    }
+
+  val textDownloadError = stringResource(R.string.sessionaction_image_download_error)
 
   Surface(
-    modifier = Modifier
-      .fillMaxWidth(),
+    modifier = modifier.fillMaxWidth(),
     color = appearance.colorBackground,
     tonalElevation = 0.dp
   ) {
@@ -135,91 +155,111 @@ internal fun ActionVirtualAccountUI(
         color = appearance.colorBackground,
         tonalElevation = 0.dp
       ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(
+          modifier = Modifier.padding(16.dp),
+          horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+          if (barcodeBitmap != null) {
+            Image(
+              bitmap = barcodeBitmap.asImageBitmap(),
+              contentDescription = null,
+              modifier = Modifier
+                .fillMaxWidth()
+                .height(110.dp)
+            )
+          } else {
+            Text(
+              text = stringResource(R.string.sessionaction_barcode_unable_to_generate),
+              style = MaterialTheme.typography.bodyMedium,
+              color = appearance.colorDanger,
+              textAlign = TextAlign.Center
+            )
+          }
+
+          Spacer(modifier = Modifier.height(8.dp))
+          Text(
+            text = paymentCode,
+            style = MaterialTheme.typography.titleMedium,
+            color = appearance.colorText
+          )
+
+          Spacer(modifier = Modifier.height(12.dp))
+          OutlinedButton(
+            enabled = barcodeBitmap != null,
+            onClick = {
+              val bitmap = barcodeBitmap ?: return@OutlinedButton
+              scope.launch {
+                val success = saveBarcodeToGallery(context = context, bitmap = bitmap)
+                if (!success) {
+                  snackbarHostState?.showSnackbar(textDownloadError)
+                }
+              }
+            },
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(
+              containerColor = appearance.colorBackground,
+              contentColor = appearance.colorText
+            ),
+            shape = RoundedCornerShape(999.dp)
+          ) {
+            Text(
+              text = stringResource(R.string.sessionaction_barcode_download_barcode),
+              style = MaterialTheme.typography.titleSmall
+            )
+          }
+
+          Spacer(modifier = Modifier.height(16.dp))
+
+          if (formattedAmount.isNotBlank()) {
+            Row(
+              modifier = Modifier.fillMaxWidth(),
+              verticalAlignment = Alignment.CenterVertically
+            ) {
+              Text(
+                text = stringResource(R.string.sessionaction_barcode_amount_to_pay),
+                style = MaterialTheme.typography.bodySmall,
+                color = appearance.colorTextSecondary,
+                modifier = Modifier.weight(1f)
+              )
+              Text(
+                text = formattedAmount,
+                style = MaterialTheme.typography.titleMedium,
+                color = appearance.colorText
+              )
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+          }
+
           Row(
             modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.Top
           ) {
             Column(modifier = Modifier.weight(1f)) {
               Text(
-                text = stringResource(R.string.sessionaction_va_virtual_account_number),
+                text = stringResource(R.string.sessionaction_barcode_payment_code),
                 style = MaterialTheme.typography.bodySmall,
                 color = appearance.colorTextSecondary
               )
               Spacer(modifier = Modifier.height(4.dp))
               Text(
-                text = virtualAccountNumber,
-                style = MaterialTheme.typography.titleMedium,
+                text = paymentCode,
+                style = MaterialTheme.typography.titleSmall,
                 color = appearance.colorText
               )
-              if (!merchantName.isNullOrBlank()) {
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                  text = merchantName,
-                  style = MaterialTheme.typography.bodySmall,
-                  color = appearance.colorTextSecondary
-                )
-              }
             }
-
-            OutlinedButton(
-              onClick = {
-                copyToClipboard(
-                  scope,
-                  clipboard,
-                  virtualAccountNumber,
-                  snackbarHostState,
-                  copiedText
-                )
-              },
-              colors = ButtonDefaults.buttonColors(
-                containerColor = appearance.colorBackground,
-                contentColor = appearance.colorText
-              ),
-              shape = RoundedCornerShape(999.dp)
-            ) {
+            Spacer(modifier = Modifier.size(16.dp))
+            Column(modifier = Modifier.weight(1f)) {
               Text(
-                text = stringResource(R.string.sessionaction_va_copy_number),
-                style = MaterialTheme.typography.titleSmall
+                text = stringResource(R.string.sessionaction_barcode_seller),
+                style = MaterialTheme.typography.bodySmall,
+                color = appearance.colorTextSecondary
               )
-            }
-          }
-
-          if (formattedAmount.isNotBlank()) {
-            Spacer(modifier = Modifier.height(16.dp))
-            Row(
-              modifier = Modifier.fillMaxWidth(),
-              verticalAlignment = Alignment.CenterVertically
-            ) {
-              Column(modifier = Modifier.weight(1f)) {
-                Text(
-                  text = stringResource(R.string.sessionaction_va_amount_to_pay),
-                  style = MaterialTheme.typography.bodySmall,
-                  color = appearance.colorTextSecondary
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                  text = formattedAmount,
-                  style = MaterialTheme.typography.titleMedium,
-                  color = appearance.colorText
-                )
-              }
-
-              OutlinedButton(
-                onClick = {
-                  copyToClipboard(scope, clipboard, amount.toString(), snackbarHostState, copiedText)
-                },
-                colors = ButtonDefaults.buttonColors(
-                  containerColor = appearance.colorBackground,
-                  contentColor = appearance.colorText
-                ),
-                shape = RoundedCornerShape(999.dp)
-              ) {
-                Text(
-                  text = stringResource(R.string.sessionaction_va_copy_amount),
-                  style = MaterialTheme.typography.titleSmall
-                )
-              }
+              Spacer(modifier = Modifier.height(4.dp))
+              Text(
+                text = merchantName.orEmpty(),
+                style = MaterialTheme.typography.titleSmall,
+                color = appearance.colorText
+              )
             }
           }
 
@@ -261,16 +301,32 @@ internal fun ActionVirtualAccountUI(
   }
 }
 
-private fun copyToClipboard(
-  scope: CoroutineScope,
-  clipboard: Clipboard,
-  value: String,
-  snackbarHostState: SnackbarHostState?,
-  copiedText: String
-) {
-  if (value.isBlank()) return
-  scope.launch {
-    clipboard.setClipEntry(ClipEntry(ClipData.newPlainText(null, value)))
-    snackbarHostState?.showSnackbar(copiedText)
+private suspend fun saveBarcodeToGallery(context: android.content.Context, bitmap: Bitmap): Boolean {
+  return withContext(Dispatchers.IO) {
+    runCatching {
+      val displayName = "xendit_barcode_${UUID.randomUUID()}.png"
+      val values =
+        ContentValues().apply {
+          put(MediaStore.Images.Media.DISPLAY_NAME, displayName)
+          put(MediaStore.Images.Media.MIME_TYPE, "image/png")
+          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES)
+            put(MediaStore.Images.Media.IS_PENDING, 1)
+          }
+        }
+      val resolver = context.contentResolver
+      val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values) ?: return@runCatching false
+      resolver.openOutputStream(uri).use { out: OutputStream? ->
+        if (out == null) return@runCatching false
+        bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+      }
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        values.clear()
+        values.put(MediaStore.Images.Media.IS_PENDING, 0)
+        resolver.update(uri, values, null, null)
+      }
+      true
+    }.getOrDefault(false)
   }
 }
+

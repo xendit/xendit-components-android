@@ -11,6 +11,8 @@ import co.xendit.components.core.network.interceptor.ErrorInterceptor
 import co.xendit.components.core.network.interceptor.HeaderInterceptor
 import co.xendit.components.core.network.provider.HeaderProvider
 import co.xendit.components.data.model.FieldType
+import co.xendit.components.data.model.PaymentInstructionTab
+import co.xendit.components.data.model.PaymentInstructionTabDeserializer
 import co.xendit.components.core.model.EnumWithFallbackValueTypeAdapterFactory
 import co.xendit.components.data.network.remote.session.XenditApi
 import com.google.gson.Gson
@@ -64,6 +66,7 @@ internal object CoreSdkComponent {
     GsonBuilder()
       .setStrictness(Strictness.LENIENT)
       .registerTypeAdapter(FieldType::class.java, FieldTypeDeserializer())
+      .registerTypeAdapter(PaymentInstructionTab::class.java, PaymentInstructionTabDeserializer())
       .registerTypeAdapterFactory(EnumWithFallbackValueTypeAdapterFactory)
       .create()
   }
@@ -81,6 +84,10 @@ internal object CoreSdkComponent {
         addInterceptor(baseUrlInterceptor)
         addInterceptor(headerInterceptor)
         addInterceptor(errorInterceptor)
+        if (BuildConfig.DEBUG) {
+          addInterceptor(OkHttpProfilerInterceptor())
+          addInterceptor(OkHttpRequestModifierInterceptor(appContext))
+        }
       }
       .build()
   }
