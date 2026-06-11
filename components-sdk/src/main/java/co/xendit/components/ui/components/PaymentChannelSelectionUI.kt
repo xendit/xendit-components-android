@@ -71,10 +71,7 @@ internal fun PaymentChannelSelectionUI(
   val isSaveChecked = remember { mutableStateOf(false) }
 
   LaunchedEffect(
-    contentChannel?.channelCode,
-    initialValues,
-    initialVisibleFields,
-    initialSaveChecked
+    contentChannel?.channelCode
   ) {
     formValues.clear()
     formValues.putAll(initialValues)

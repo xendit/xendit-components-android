@@ -13,7 +13,7 @@ internal class PaymentInstructionTabDeserializer : JsonDeserializer<PaymentInstr
     context: JsonDeserializationContext
   ): PaymentInstructionTab {
     val obj = json.asJsonObject
-    val title = obj["title"]?.asString.orEmpty()
+    val title = obj["title"]?.takeIf { it.isJsonPrimitive }?.asString.orEmpty()
     val contentElement = obj["content"]
     val blocks = parseBlocks(contentElement, context)
     return PaymentInstructionTab(title = title, content = blocks)
@@ -63,4 +63,3 @@ internal class PaymentInstructionTabDeserializer : JsonDeserializer<PaymentInstr
     return out
   }
 }
-

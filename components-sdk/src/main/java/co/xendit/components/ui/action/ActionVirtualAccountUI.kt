@@ -207,7 +207,13 @@ internal fun ActionVirtualAccountUI(
 
               OutlinedButton(
                 onClick = {
-                  copyToClipboard(scope, clipboard, amount.toString(), snackbarHostState, copiedText)
+                  copyToClipboard(
+                    scope,
+                    clipboard,
+                    amount?.toPlainString().orEmpty(),
+                    snackbarHostState,
+                    copiedText
+                  )
                 },
                 colors = ButtonDefaults.buttonColors(
                   containerColor = appearance.colorBackground,
