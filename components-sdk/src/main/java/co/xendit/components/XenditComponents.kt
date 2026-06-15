@@ -29,7 +29,9 @@ object XenditComponentsUiGroup {
   const val EWALLET = "ewallet"
   const val QR_CODE = "qr_code"
   const val BANK_TRANSFER = "bank_transfer"
-  val SUPPORTED: Set<String> = setOf(CARDS, EWALLET, QR_CODE, BANK_TRANSFER)
+  const val ONLINE_BANKING = "online_banking"
+  const val OVER_THE_COUNTER = "over_the_counter"
+  val SUPPORTED: Set<String> = setOf(CARDS, EWALLET, QR_CODE, BANK_TRANSFER, ONLINE_BANKING)
 }
 
 object XenditComponents {

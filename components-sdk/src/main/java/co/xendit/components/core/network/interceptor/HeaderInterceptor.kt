@@ -12,7 +12,6 @@ internal class HeaderInterceptor(
     val requestBuilder = chain.request().newBuilder()
 
     requestBuilder.header("Content-Type", "application/json")
-    requestBuilder.header("Origin", provider.getOrigin())
     requestBuilder.header("x-android-components-version", provider.getSdkVersion())
     requestBuilder.header("x-merchant-app-id", provider.getMerchantAppId())
 

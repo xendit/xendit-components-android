@@ -265,7 +265,8 @@ internal fun PaymentMethodsUI(
                   )
                 }
 
-                XenditComponentsUiGroup.BANK_TRANSFER -> {
+                XenditComponentsUiGroup.BANK_TRANSFER,
+                XenditComponentsUiGroup.ONLINE_BANKING -> {
                   val draft = selectedDraft
                   val showSaveCheckbox = canShowSaveCheckbox(selectedDisplayChannelForUi)
                   BankTransferPaymentUI(
@@ -365,6 +366,8 @@ private fun fallbackDisplayNameIconForUiGroup(uiGroup: String): Pair<String, Int
     XenditComponentsUiGroup.EWALLET -> "E-Wallet" to R.drawable.ic_e_wallet
     XenditComponentsUiGroup.QR_CODE -> "QR Code" to R.drawable.ic_qris
     XenditComponentsUiGroup.BANK_TRANSFER -> "Bank Transfer" to R.drawable.ic_bank_va
+    XenditComponentsUiGroup.ONLINE_BANKING -> "Online Banking" to R.drawable.ic_bank_va
+    XenditComponentsUiGroup.OVER_THE_COUNTER -> "Over The Counter" to R.drawable.ic_bank_va
     else -> uiGroup.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() } to R.drawable.ic_bank_va // Fallback icon
   }
 }

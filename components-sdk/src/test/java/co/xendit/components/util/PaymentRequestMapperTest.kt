@@ -154,6 +154,6 @@ class PaymentRequestMapperTest {
       )
 
     val cardDetails = result["card_details"] as Map<*, *>
-    assertEquals("+628000032341", cardDetails["cardholder_phone_number"])
+    assertEquals("+8000032341", cardDetails["cardholder_phone_number"])
   }
 }

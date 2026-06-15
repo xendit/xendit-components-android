@@ -2,7 +2,6 @@ package co.xendit.components.ui.action
 
 import android.content.ClipData
 import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -10,9 +9,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.ButtonDefaults
@@ -20,17 +17,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.SecondaryTabRow
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -40,12 +33,7 @@ import androidx.compose.ui.platform.Clipboard
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import co.xendit.components.R
 import co.xendit.components.core.CoreSdkComponent
@@ -81,11 +69,6 @@ internal fun ActionVirtualAccountUI(
   val imageLoader = remember { SdkImageLoader.get(context) }
   val formattedAmount = remember(amount, currency) { CurrencyUtil.formatAmount(amount, currency) }
   val copiedText = stringResource(R.string.sessionaction_va_copied_to_clipboard)
-
-  val sections = remember(instructions) { instructions.orEmpty() }
-  var selectedTabIndex by remember(sections.size) { mutableIntStateOf(0) }
-  val effectiveSelectedIndex = selectedTabIndex.coerceIn(0, (sections.size - 1).coerceAtLeast(0))
-  val selectedSection = sections.getOrNull(effectiveSelectedIndex)
 
   Surface(
     modifier = Modifier
@@ -224,7 +207,13 @@ internal fun ActionVirtualAccountUI(
 
               OutlinedButton(
                 onClick = {
-                  copyToClipboard(scope, clipboard, amount.toString(), snackbarHostState, copiedText)
+                  copyToClipboard(
+                    scope,
+                    clipboard,
+                    amount?.toPlainString().orEmpty(),
+                    snackbarHostState,
+                    copiedText
+                  )
                 },
                 colors = ButtonDefaults.buttonColors(
                   containerColor = appearance.colorBackground,
@@ -270,55 +259,9 @@ internal fun ActionVirtualAccountUI(
         }
       }
 
-      if (sections.isNotEmpty()) {
+      if (!instructions.isNullOrEmpty()) {
         Spacer(modifier = Modifier.height(16.dp))
-        Column(
-          modifier = Modifier
-            .fillMaxWidth()
-            .verticalScroll(rememberScrollState())
-        ) {
-          if (sections.size > 1) {
-            SecondaryTabRow(
-              selectedTabIndex = effectiveSelectedIndex,
-              containerColor = appearance.colorBackground,
-              contentColor = appearance.colorPrimary
-            ) {
-              sections.forEachIndexed { index, section ->
-                Tab(
-                  selected = effectiveSelectedIndex == index,
-                  onClick = { selectedTabIndex = index },
-                  text = { Text(section.title) }
-                )
-              }
-            }
-            Spacer(modifier = Modifier.height(12.dp))
-          }
-
-          val content = selectedSection?.content.orEmpty()
-          Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            val textSteps =
-              content.filter { it.type.equals("text", true) && !it.text.isNullOrBlank() }
-                .mapNotNull { it.text }
-            textSteps.forEachIndexed { index, text ->
-              Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.Top
-              ) {
-                Text(
-                  text = "${index + 1}.",
-                  style = MaterialTheme.typography.bodyMedium,
-                  color = appearance.colorText,
-                  modifier = Modifier.padding(end = 8.dp)
-                )
-                Text(
-                  text = parseBoldTags(text),
-                  style = MaterialTheme.typography.bodyMedium,
-                  color = appearance.colorText
-                )
-              }
-            }
-          }
-        }
+        PaymentInstructionsContent(instructions = instructions)
       }
     }
   }
@@ -335,27 +278,5 @@ private fun copyToClipboard(
   scope.launch {
     clipboard.setClipEntry(ClipEntry(ClipData.newPlainText(null, value)))
     snackbarHostState?.showSnackbar(copiedText)
-  }
-}
-
-private fun parseBoldTags(text: String): AnnotatedString {
-  val regex = Regex("<b>(.*?)</b>", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL))
-  return buildAnnotatedString {
-    var currentIndex = 0
-    regex.findAll(text).forEach { match ->
-      val start = match.range.first
-      val end = match.range.last + 1
-      if (start > currentIndex) {
-        append(text.substring(currentIndex, start))
-      }
-      val boldText = match.groups[1]?.value.orEmpty()
-      withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
-        append(boldText)
-      }
-      currentIndex = end
-    }
-    if (currentIndex < text.length) {
-      append(text.substring(currentIndex))
-    }
   }
 }

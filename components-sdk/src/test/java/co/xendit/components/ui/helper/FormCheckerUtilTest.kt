@@ -6,6 +6,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import java.math.BigDecimal
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -118,19 +119,19 @@ class FormCheckerUtilTest {
   @Test
   fun formatAmount_returnsEmpty_whenAmountOrCurrencyMissing() {
     assertEquals("", CurrencyUtil.formatAmount(null, "IDR"))
-    assertEquals("", CurrencyUtil.formatAmount(1000L, null))
-    assertEquals("", CurrencyUtil.formatAmount(1000L, ""))
+    assertEquals("", CurrencyUtil.formatAmount(BigDecimal.valueOf(1000), null))
+    assertEquals("", CurrencyUtil.formatAmount(BigDecimal.valueOf(1000), ""))
   }
 
   @Test
   fun formatAmount_formatsKnownCurrencies_withIndonesianGrouping() {
-    assertEquals("Rp300.000", CurrencyUtil.formatAmount(300_000L, "IDR"))
-    assertEquals("$300.000", CurrencyUtil.formatAmount(300_000L, "USD"))
-    assertEquals("₱300.000", CurrencyUtil.formatAmount(300_000L, "PHP"))
+    assertEquals("Rp300.000", CurrencyUtil.formatAmount(BigDecimal.valueOf(300_000), "IDR"))
+    assertEquals("$300.000", CurrencyUtil.formatAmount(BigDecimal.valueOf(300_000), "USD"))
+    assertEquals("₱300.000", CurrencyUtil.formatAmount(BigDecimal.valueOf(300_000), "PHP"))
   }
 
   @Test
   fun formatAmount_fallsBackToCurrencyCode_whenUnknownCurrency() {
-    assertEquals("EUR300.000", CurrencyUtil.formatAmount(300_000L, "EUR"))
+    assertEquals("EUR300.000", CurrencyUtil.formatAmount(BigDecimal.valueOf(300_000), "EUR"))
   }
 }

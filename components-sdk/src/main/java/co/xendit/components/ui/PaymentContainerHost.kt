@@ -53,7 +53,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import co.xendit.components.BuildConfig
 import co.xendit.components.R
-import co.xendit.components.XenditComponents
 import co.xendit.components.XenditComponentsUiGroup
 import co.xendit.components.core.CoreSdkComponent.globalErrorHandler
 import co.xendit.components.data.model.BffSessionType
