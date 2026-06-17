@@ -48,6 +48,7 @@ import co.xendit.components.ui.banktransfer.BankTransferPaymentUI
 import co.xendit.components.ui.card.CardPaymentUI
 import co.xendit.components.ui.ewallet.EwalletPaymentUI
 import co.xendit.components.ui.helper.SdkImageLoader
+import co.xendit.components.ui.over_the_counter.OverTheCounterPaymentUI
 import co.xendit.components.ui.qrcode.QrPaymentUI
 import co.xendit.components.ui.style.xenditAppearance
 import co.xendit.components.ui.ui_util.CustomShape.createTopRoundedOpenShape
@@ -261,6 +262,31 @@ internal fun PaymentMethodsUI(
                         false
                       )
                     },
+                    modifier = Modifier.padding(bottom = 8.dp)
+                  )
+                }
+
+                XenditComponentsUiGroup.OVER_THE_COUNTER -> {
+                  val draft = selectedDraft
+                  val showSaveCheckbox = canShowSaveCheckbox(selectedDisplayChannelForUi)
+                  OverTheCounterPaymentUI(
+                    displayName = displayName,
+                    channels = groupChannels,
+                    selectedChannel = selectedDisplayChannelForUi,
+                    initialValues = draft?.formValues.orEmpty(),
+                    initialVisibleFields = draft?.visibleFields ?: emptyList(),
+                    initialSaveChecked =
+                      if (showSaveCheckbox) (draft?.savePaymentMethod ?: false) else false,
+                    onSelectChannel = onSelectChannel,
+                    onFormStateChanged = { formValues, visibleFields, isSaveChecked ->
+                      onFormChanged(
+                        selectedDisplayChannelForUi?.channelCode,
+                        formValues,
+                        visibleFields,
+                        isSaveChecked
+                      )
+                    },
+                    showSaveCheckbox = showSaveCheckbox,
                     modifier = Modifier.padding(bottom = 8.dp)
                   )
                 }

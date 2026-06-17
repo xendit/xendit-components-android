@@ -177,7 +177,8 @@ fun PaymentDemo(fontFamily: FontFamily, modifier: Modifier = Modifier) {
             XenditComponentsUiGroup.ONLINE_BANKING,
             XenditComponentsUiGroup.CARDS,
             XenditComponentsUiGroup.EWALLET,
-            XenditComponentsUiGroup.QR_CODE
+            XenditComponentsUiGroup.QR_CODE,
+            XenditComponentsUiGroup.OVER_THE_COUNTER
           )
       ) {
         paymentResultText = it.toString()
