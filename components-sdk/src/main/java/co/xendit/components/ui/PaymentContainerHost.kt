@@ -65,6 +65,7 @@ import co.xendit.components.data.model.XenditError
 import co.xendit.components.data.model.XenditPaymentResult
 import co.xendit.components.internal_entry_point.CardViewModelFactory
 import co.xendit.components.internal_entry_point.PaymentViewModelFactory
+import co.xendit.components.ui.action.ActionBarcodeUI
 import co.xendit.components.ui.action.ActionQrUI
 import co.xendit.components.ui.action.ActionVirtualAccountUI
 import co.xendit.components.ui.action.ActionWebViewUI
@@ -421,6 +422,27 @@ internal fun PaymentContainerHost(
                       qrString = action.value.orEmpty(),
                       amount = mviState.sessionResponse?.session?.amount,
                       currency = mviState.sessionResponse?.session?.currency,
+                      onClose = { viewModel.markClosed() },
+                      onPaymentMade = {
+                        viewModel.dispatch(ActionIntent.SimulatePayment)
+                        viewModel.dispatch(ActionIntent.ChallengeCompleted(true))
+                        viewModel.showLoading()
+                      },
+                      snackbarHostState = snackbarHostState
+                    )
+                  }
+
+                  PaymentActionDescriptor.PAYMENT_CODE -> {
+                    ActionBarcodeUI(
+                      title = action.actionTitle,
+                      subtitle = action.actionSubtitle,
+                      channelName = channelName.ifBlank { "Payment Code" },
+                      channelLogoUrl = channelLogoUrl,
+                      paymentCode = action.value.orEmpty(),
+                      merchantName = merchantName,
+                      amount = mviState.sessionResponse?.session?.amount,
+                      currency = mviState.sessionResponse?.session?.currency,
+                      instructions = action.instructions,
                       onClose = { viewModel.markClosed() },
                       onPaymentMade = {
                         viewModel.dispatch(ActionIntent.SimulatePayment)
