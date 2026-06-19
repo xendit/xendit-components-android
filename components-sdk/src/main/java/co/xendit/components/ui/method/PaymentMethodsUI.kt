@@ -96,55 +96,15 @@ internal fun PaymentMethodsUI(
     remember(channelUiGroups) { channelUiGroups.orEmpty().associateBy { it.id } }
 
   val supportedPaymentType = remember { XenditComponentsPaymentType.SUPPORTED }
-  val groups = remember(channels, merchantPreferredPaymentMethod) {
-    val preferredList = merchantPreferredPaymentMethod ?: emptyList()
-    channels
-      .filter { channel ->
-        channel.pmType in supportedPaymentType &&
-            (preferredList.isEmpty() || channel.pmType in preferredList)
-      }
-      .groupBy { it.uiGroup }
-  }
 
-  val orderedUiGroupsWithChannels = remember(groups, merchantPreferredPaymentMethod, channelUiGroups) {
-    val availableUiGroups = groups.keys.toList()
-    val preferredList = merchantPreferredPaymentMethod ?: emptyList()
-    val masterUiOrder = channelUiGroups?.map { it.id } ?: emptyList()
-
-    // 1. Sort the keys exactly like before
-    val sortedKeys = availableUiGroups.sortedWith(
-      compareBy<String> { uiGroup ->
-        val channelsInGroup = groups[uiGroup] ?: emptyList()
-        val minPreferredIndex = channelsInGroup
-          .map { preferredList.indexOf(it.pmType) }
-          .filter { it != -1 }
-          .minOrNull()
-        minPreferredIndex ?: Int.MAX_VALUE
-      }.thenBy { uiGroup ->
-        val masterIndex = masterUiOrder.indexOf(uiGroup)
-        if (masterIndex != -1) masterIndex else Int.MAX_VALUE
-      }
+  val (groups, orderedUiGroups) = remember(channels, merchantPreferredPaymentMethod, channelUiGroups) {
+    processAndOrderUiGroups(
+      channels = channels,
+      merchantPreferredPaymentMethod = merchantPreferredPaymentMethod,
+      channelUiGroups = channelUiGroups,
+      supportedPaymentTypes = supportedPaymentType
     )
-
-    // 2. Map the sorted keys into Pairs of (uiGroup, List<BffChannel>)
-    sortedKeys.map { uiGroup ->
-      val channelsInGroup = groups[uiGroup] ?: emptyList()
-      Pair(uiGroup, channelsInGroup.firstOrNull()?.pmType)
-    }
   }
-
-//  val filteredUiGroup = remember(groups.keys, merchantPreferredPaymentMethod, channelUiGroups) {
-//    val ordered =
-//      channelUiGroups
-//        ?.map { it.id }
-//        ?.filter { it in groups.keys }
-//        ?: groups.keys.toList()
-//    if (merchantPreferredPaymentMethod.isNullOrEmpty()) {
-//      ordered
-//    } else {
-//      merchantPreferredPaymentMethod.filter { it in groups.keys }
-//    }
-//  }
 
   Column {
     Column(
@@ -159,13 +119,14 @@ internal fun PaymentMethodsUI(
         .clip(RoundedCornerShape(appearance.borderRadius))
         .background(appearance.colorBackground)
     ) {
-      orderedUiGroupsWithChannels.forEachIndexed { index, (uiGroup, pmType) ->
+      orderedUiGroups.forEachIndexed { index, uiGroup ->
         val isExpanded = expandedUiGroup == uiGroup
         val groupMeta = uiGroupMetaById[uiGroup]
         val fallback = fallbackDisplayNameIconForUiGroup(uiGroup)
         val displayName = groupMeta?.label?.takeIf { it.isNotBlank() } ?: fallback.first
         val iconUrl = null //groupMeta?.iconUrl?.takeIf { it.isNotBlank() } cant use this now
         val groupChannels = groups[uiGroup].orEmpty()
+        val pmType = groupChannels.firstOrNull()?.pmType
 
         Box(
           modifier = Modifier
@@ -405,4 +366,41 @@ private fun fallbackDisplayNameIconForUiGroup(uiGroup: String): Pair<String, Int
     XenditComponentsPaymentType.OVER_THE_COUNTER -> "Over The Counter" to R.drawable.ic_bank_va
     else -> uiGroup.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() } to R.drawable.ic_bank_va // Fallback icon
   }
+}
+
+internal fun processAndOrderUiGroups(
+  channels: List<BffChannel>,
+  merchantPreferredPaymentMethod: List<String>?,
+  channelUiGroups: List<BffChannelUiGroup>?,
+  supportedPaymentTypes: List<String> = XenditComponentsPaymentType.SUPPORTED
+): Pair<Map<String, List<BffChannel>>, List<String>> {
+
+  val preferredList = merchantPreferredPaymentMethod
+    ?.filter { it in supportedPaymentTypes }
+    ?: emptyList()
+
+  val masterUiOrder = channelUiGroups?.map { it.id } ?: emptyList()
+
+  val groups = channels
+    .filter { channel ->
+      channel.pmType in supportedPaymentTypes &&
+          (preferredList.isEmpty() || channel.pmType in preferredList)
+    }
+    .groupBy { it.uiGroup }
+
+  val orderedUiGroups = groups.keys.sortedWith(
+    compareBy<String> { uiGroup ->
+      // Grab the single pmType for this group
+      val pmType = groups[uiGroup]?.firstOrNull()?.pmType
+      val merchantIndex = preferredList.indexOf(pmType)
+
+      if (merchantIndex != -1) merchantIndex else Int.MAX_VALUE
+    }.thenBy { uiGroup ->
+      // Tie-breaker: Fall back to default sequence layout index
+      val masterIndex = masterUiOrder.indexOf(uiGroup)
+      if (masterIndex != -1) masterIndex else Int.MAX_VALUE
+    }
+  )
+
+  return Pair(groups, orderedUiGroups)
 }

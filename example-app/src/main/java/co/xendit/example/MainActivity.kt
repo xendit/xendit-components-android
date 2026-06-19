@@ -173,12 +173,12 @@ fun PaymentDemo(fontFamily: FontFamily, modifier: Modifier = Modifier) {
         sessionId,
         merchantPreferredPaymentMethod =
           listOf(
+            XenditComponentsPaymentType.QR_CODE,
             XenditComponentsPaymentType.BANK_TRANSFER,
             XenditComponentsPaymentType.DIRECT_DEBIT,
             XenditComponentsPaymentType.VIRTUAL_ACCOUNT,
             XenditComponentsPaymentType.CARDS,
             XenditComponentsPaymentType.EWALLET,
-            XenditComponentsPaymentType.QR_CODE
           )
       ) {
         paymentResultText = it.toString()

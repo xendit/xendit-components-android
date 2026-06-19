@@ -31,8 +31,8 @@ object XenditComponentsPaymentType {
   const val BANK_TRANSFER = "BANK_TRANSFER"
   const val DIRECT_DEBIT = "DIRECT_DEBIT"
   const val VIRTUAL_ACCOUNT = "VIRTUAL_ACCOUNT"
-  const val OVER_THE_COUNTER = "over_the_counter"
-  val SUPPORTED: Set<String> = setOf(CARDS, EWALLET, QR_CODE, BANK_TRANSFER, DIRECT_DEBIT, VIRTUAL_ACCOUNT)
+  const val OVER_THE_COUNTER = "OVER_THE_COUNTER"
+  val SUPPORTED: List<String> = listOf(CARDS, EWALLET, QR_CODE, BANK_TRANSFER, DIRECT_DEBIT, VIRTUAL_ACCOUNT)
 }
 
 object XenditComponents {
