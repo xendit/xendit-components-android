@@ -1,5 +1,6 @@
 package co.xendit.components.data.mock
 
+import co.xendit.components.XenditComponentsPaymentType
 import co.xendit.components.data.model.BffCardBrand
 import co.xendit.components.data.model.BffCardInfo
 import co.xendit.components.data.model.BffChannel
@@ -16,7 +17,7 @@ internal val SAMPLE_CARD_CHANNEL =
   BffChannel(
     brandName = "Cards",
     channelCode = "CARDS",
-    pmType = "CARDS",
+    pmType = XenditComponentsPaymentType.CARDS,
     brandLogoUrl = "https://assets.xendit.co/payment-session/logos/CARDS.svg",
     uiGroup = "cards",
     allowPayWithoutSave = true,

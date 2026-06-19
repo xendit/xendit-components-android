@@ -2,6 +2,7 @@ package co.xendit.components.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import co.xendit.components.XenditComponentsPaymentType
 import co.xendit.components.core.model.GlobalErrorHandler
 import co.xendit.components.core.model.asApiError
 import co.xendit.components.core.CoreSdkComponent
@@ -78,7 +79,7 @@ internal fun combinePairedChannels(channels: List<BffChannel>): CombinedChannels
   data class ChannelCombineKey(
     val uiGroup: String,
     val brandName: String,
-    val pmType: String?,
+    val pmType: XenditComponentsPaymentType?,
     val requiresCustomerDetails: Boolean?,
   )
 

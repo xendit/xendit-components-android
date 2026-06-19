@@ -56,7 +56,7 @@ import coil.compose.AsyncImage
 internal fun PaymentMethodsUI(
   session: BffSession?,
   bffBusiness: BffBusiness?,
-  merchantPreferredPaymentMethod: List<String>? = null,
+  merchantPreferredPaymentMethod: List<XenditComponentsPaymentType>? = null,
   channels: List<BffChannel>,
   channelUiGroups: List<BffChannelUiGroup>? = null,
   channelVariantsByDisplayCode: Map<String, ChannelVariantChannels> = emptyMap(),
@@ -285,6 +285,8 @@ internal fun PaymentMethodsUI(
                     modifier = Modifier.padding(bottom = 8.dp)
                   )
                 }
+
+                else -> Unit
               }
             }
           }
@@ -357,22 +359,22 @@ private fun SelectableHeaderItem(
 
 private fun fallbackDisplayNameIconForUiGroup(uiGroup: String): Pair<String, Int> {
   return when (uiGroup.lowercase()) {
-    XenditComponentsPaymentType.CARDS -> "Cards" to R.drawable.ic_cards
-    XenditComponentsPaymentType.EWALLET -> "E-Wallet" to R.drawable.ic_e_wallet
-    XenditComponentsPaymentType.QR_CODE -> "QR Code" to R.drawable.ic_qris
-    XenditComponentsPaymentType.BANK_TRANSFER -> "Bank Transfer" to R.drawable.ic_bank_va
-    XenditComponentsPaymentType.DIRECT_DEBIT -> "Online Banking" to R.drawable.ic_bank_va
-    XenditComponentsPaymentType.VIRTUAL_ACCOUNT -> "Virtual Account" to R.drawable.ic_bank_va
-    XenditComponentsPaymentType.OVER_THE_COUNTER -> "Over The Counter" to R.drawable.ic_bank_va
+    XenditComponentsPaymentType.CARDS.value.lowercase() -> "Cards" to R.drawable.ic_cards
+    XenditComponentsPaymentType.EWALLET.value.lowercase() -> "E-Wallet" to R.drawable.ic_e_wallet
+    XenditComponentsPaymentType.QR_CODE.value.lowercase() -> "QR Code" to R.drawable.ic_qris
+    XenditComponentsPaymentType.BANK_TRANSFER.value.lowercase() -> "Bank Transfer" to R.drawable.ic_bank_va
+    XenditComponentsPaymentType.DIRECT_DEBIT.value.lowercase() -> "Online Banking" to R.drawable.ic_bank_va
+    XenditComponentsPaymentType.VIRTUAL_ACCOUNT.value.lowercase() -> "Virtual Account" to R.drawable.ic_bank_va
+    XenditComponentsPaymentType.OVER_THE_COUNTER.value.lowercase() -> "Over The Counter" to R.drawable.ic_bank_va
     else -> uiGroup.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() } to R.drawable.ic_bank_va // Fallback icon
   }
 }
 
 internal fun processAndOrderUiGroups(
   channels: List<BffChannel>,
-  merchantPreferredPaymentMethod: List<String>?,
+  merchantPreferredPaymentMethod: List<XenditComponentsPaymentType>?,
   channelUiGroups: List<BffChannelUiGroup>?,
-  supportedPaymentTypes: List<String> = XenditComponentsPaymentType.SUPPORTED
+  supportedPaymentTypes: List<XenditComponentsPaymentType> = XenditComponentsPaymentType.SUPPORTED
 ): Pair<Map<String, List<BffChannel>>, List<String>> {
 
   val preferredList = merchantPreferredPaymentMethod

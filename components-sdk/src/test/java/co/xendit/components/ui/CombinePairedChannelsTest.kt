@@ -1,5 +1,6 @@
 package co.xendit.components.ui
 
+import co.xendit.components.XenditComponentsPaymentType
 import co.xendit.components.data.model.BffChannel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -15,7 +16,7 @@ class CombinePairedChannelsTest {
         brandName = "OVO",
         brandLogoUrl = null,
         brandColor = "#000000",
-        pmType = "EWALLET",
+        pmType = XenditComponentsPaymentType.EWALLET,
         uiGroup = "ewallet",
         channelCode = "EWALLET_OVO",
         allowPayWithoutSave = true,
@@ -32,7 +33,7 @@ class CombinePairedChannelsTest {
         brandName = "OVO",
         brandLogoUrl = null,
         brandColor = "#000000",
-        pmType = "EWALLET",
+        pmType = XenditComponentsPaymentType.EWALLET,
         uiGroup = "ewallet",
         channelCode = "EWALLET_OVO_SAVE",
         allowPayWithoutSave = true,
@@ -63,7 +64,7 @@ class CombinePairedChannelsTest {
         brandName = "DANA",
         brandLogoUrl = null,
         brandColor = "#000000",
-        pmType = "EWALLET",
+        pmType = XenditComponentsPaymentType.EWALLET,
         uiGroup = "ewallet",
         channelCode = "EWALLET_DANA",
         allowPayWithoutSave = true,

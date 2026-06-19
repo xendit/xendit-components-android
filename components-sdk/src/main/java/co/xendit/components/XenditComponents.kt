@@ -6,6 +6,7 @@ import android.content.ContextWrapper
 import android.view.ViewGroup
 import androidx.activity.ComponentActivity
 import androidx.annotation.VisibleForTesting
+import androidx.annotation.Keep
 import androidx.compose.ui.platform.ComposeView
 import co.xendit.components.util.XLogger
 import androidx.lifecycle.DefaultLifecycleObserver
@@ -14,25 +15,49 @@ import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.lifecycle.setViewTreeViewModelStoreOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import co.xendit.components.core.CoreSdkComponent
+import co.xendit.components.core.model.FallbackValue
 import co.xendit.components.data.model.XenditPaymentResult
 import co.xendit.components.data.model.XenditError
 import co.xendit.components.ui.PaymentContainerHost
 import co.xendit.components.ui.PaymentContainerPresentation
 import co.xendit.components.ui.style.XenditAppearance
 import co.xendit.components.ui.theme.XenditTheme
+import com.google.gson.annotations.SerializedName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 
 /** Main SDK entry point for displaying payment UI */
-object XenditComponentsPaymentType {
-  const val CARDS = "CARDS"
-  const val EWALLET = "EWALLET"
-  const val QR_CODE = "QR_CODE"
-  const val BANK_TRANSFER = "BANK_TRANSFER"
-  const val DIRECT_DEBIT = "DIRECT_DEBIT"
-  const val VIRTUAL_ACCOUNT = "VIRTUAL_ACCOUNT"
-  const val OVER_THE_COUNTER = "OVER_THE_COUNTER"
-  val SUPPORTED: List<String> = listOf(CARDS, EWALLET, QR_CODE, BANK_TRANSFER, DIRECT_DEBIT, VIRTUAL_ACCOUNT)
+@Keep
+enum class XenditComponentsPaymentType(val value: String) {
+  @SerializedName("CARDS")
+  CARDS("CARDS"),
+
+  @SerializedName(value = "EWALLET", alternate = ["E_WALLET"])
+  EWALLET("EWALLET"),
+
+  @SerializedName("QR_CODE")
+  QR_CODE("QR_CODE"),
+
+  @SerializedName("BANK_TRANSFER")
+  BANK_TRANSFER("BANK_TRANSFER"),
+
+  @SerializedName("DIRECT_DEBIT")
+  DIRECT_DEBIT("DIRECT_DEBIT"),
+
+  @SerializedName("VIRTUAL_ACCOUNT")
+  VIRTUAL_ACCOUNT("VIRTUAL_ACCOUNT"),
+
+  @SerializedName("OVER_THE_COUNTER")
+  OVER_THE_COUNTER("OVER_THE_COUNTER"),
+
+  @FallbackValue
+  @SerializedName("UNKNOWN")
+  UNKNOWN("UNKNOWN");
+
+  companion object {
+    val SUPPORTED: List<XenditComponentsPaymentType> =
+      listOf(CARDS, EWALLET, QR_CODE, BANK_TRANSFER, DIRECT_DEBIT, VIRTUAL_ACCOUNT)
+  }
 }
 
 object XenditComponents {
@@ -40,7 +65,7 @@ object XenditComponents {
   private var composeView: ComposeView? = null
   private var currentCallback: ((XenditPaymentResult) -> Unit)? = null
   private var xenditAppearance: XenditAppearance? = null
-  private var merchantPreferredPaymentMethod: List<String>? = null
+  private var merchantPreferredPaymentMethod: List<XenditComponentsPaymentType>? = null
   private var lifecycleOwner: LifecycleOwner? = null
   private var lifecycleObserver: DefaultLifecycleObserver? = null
   private val scope = CoroutineScope(Dispatchers.Main)
@@ -50,7 +75,7 @@ object XenditComponents {
    */
   fun initialize(
     appearance: XenditAppearance? = null,
-    merchantPreferredPaymentMethod: List<String>? = null,
+    merchantPreferredPaymentMethod: List<XenditComponentsPaymentType>? = null,
   ) {
     this.xenditAppearance = appearance
     this.merchantPreferredPaymentMethod = merchantPreferredPaymentMethod
@@ -110,7 +135,7 @@ object XenditComponents {
   fun present(
     activity: ComponentActivity,
     componentsSdkKey: String,
-    merchantPreferredPaymentMethod: List<String>? = null,
+    merchantPreferredPaymentMethod: List<XenditComponentsPaymentType>? = null,
     onPaymentResult: (XenditPaymentResult) -> Unit
   ) {
     if (activity !is Activity) {
