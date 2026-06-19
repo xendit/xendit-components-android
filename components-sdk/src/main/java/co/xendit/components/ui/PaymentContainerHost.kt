@@ -53,7 +53,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import co.xendit.components.BuildConfig
 import co.xendit.components.R
-import co.xendit.components.XenditComponentsUiGroup
+import co.xendit.components.XenditComponentsPaymentType
 import co.xendit.components.core.CoreSdkComponent.globalErrorHandler
 import co.xendit.components.data.model.BffSessionType
 import co.xendit.components.data.model.ChannelFormField
@@ -476,7 +476,7 @@ internal fun PaymentContainerHost(
                                 visibleFields = visibleFields,
                                 savePaymentMethod = save,
                                 installmentPlans =
-                                  if (selectedUiGroup == XenditComponentsUiGroup.CARDS) installmentPlans else null
+                                  if (selectedUiGroup == XenditComponentsPaymentType.CARDS) installmentPlans else null
                               )
                             )
                           )
@@ -535,7 +535,7 @@ internal fun PaymentContainerHost(
                         val draft = mviState.paymentDrafts[selected.channelCode]
                           ?: PaymentDraft(channelCode = selected.channelCode)
                         val installmentPlans =
-                          if (selected.uiGroup == XenditComponentsUiGroup.CARDS) cardState.installmentPlans else draft.installmentPlans
+                          if (selected.uiGroup == XenditComponentsPaymentType.CARDS) cardState.installmentPlans else draft.installmentPlans
                         viewModel.dispatch(
                           ActionIntent.SubmitAction(
                             channelCode = selected.channelCode,

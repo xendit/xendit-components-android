@@ -24,14 +24,15 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 
 /** Main SDK entry point for displaying payment UI */
-object XenditComponentsUiGroup {
-  const val CARDS = "cards"
-  const val EWALLET = "ewallet"
-  const val QR_CODE = "qr_code"
-  const val BANK_TRANSFER = "bank_transfer"
-  const val ONLINE_BANKING = "online_banking"
+object XenditComponentsPaymentType {
+  const val CARDS = "CARDS"
+  const val EWALLET = "EWALLET"
+  const val QR_CODE = "QR_CODE"
+  const val BANK_TRANSFER = "BANK_TRANSFER"
+  const val DIRECT_DEBIT = "DIRECT_DEBIT"
+  const val VIRTUAL_ACCOUNT = "VIRTUAL_ACCOUNT"
   const val OVER_THE_COUNTER = "over_the_counter"
-  val SUPPORTED: Set<String> = setOf(CARDS, EWALLET, QR_CODE, BANK_TRANSFER, ONLINE_BANKING)
+  val SUPPORTED: Set<String> = setOf(CARDS, EWALLET, QR_CODE, BANK_TRANSFER, DIRECT_DEBIT, VIRTUAL_ACCOUNT)
 }
 
 object XenditComponents {
