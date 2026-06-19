@@ -53,7 +53,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import co.xendit.components.BuildConfig
 import co.xendit.components.R
-import co.xendit.components.XenditComponentsUiGroup
+import co.xendit.components.XenditComponentsPaymentType
 import co.xendit.components.core.CoreSdkComponent.globalErrorHandler
 import co.xendit.components.data.model.BffSessionType
 import co.xendit.components.data.model.ChannelFormField
@@ -90,7 +90,7 @@ internal fun PaymentContainerHost(
   presentation: PaymentContainerPresentation,
   sessionAuthKey: String,
   publicKey: String,
-  merchantPreferredPaymentMethod: List<String>?,
+  merchantPreferredPaymentMethod: List<XenditComponentsPaymentType>?,
   style: XenditAppearance,
   onResult: (XenditPaymentResult) -> Unit,
   onCleanup: () -> Unit
@@ -448,7 +448,7 @@ internal fun PaymentContainerHost(
                       .weight(1f)
                       .verticalScroll(rememberScrollState())
                   ) {
-                    val selectedUiGroup by rememberUpdatedState(mviState.selectedChannel?.uiGroup)
+                    val selectedPmType by rememberUpdatedState(mviState.selectedChannel?.pmType)
                     val installmentPlans by rememberUpdatedState(cardState.installmentPlans)
                     val onToggleGroup: (String) -> Unit =
                       remember(viewModel) { { viewModel.dispatch(ActionIntent.ToggleUiGroup(it)) } }
@@ -476,7 +476,7 @@ internal fun PaymentContainerHost(
                                 visibleFields = visibleFields,
                                 savePaymentMethod = save,
                                 installmentPlans =
-                                  if (selectedUiGroup == XenditComponentsUiGroup.CARDS) installmentPlans else null
+                                  if (selectedPmType == XenditComponentsPaymentType.CARDS) installmentPlans else null
                               )
                             )
                           )
@@ -535,7 +535,7 @@ internal fun PaymentContainerHost(
                         val draft = mviState.paymentDrafts[selected.channelCode]
                           ?: PaymentDraft(channelCode = selected.channelCode)
                         val installmentPlans =
-                          if (selected.uiGroup == XenditComponentsUiGroup.CARDS) cardState.installmentPlans else draft.installmentPlans
+                          if (selected.pmType == XenditComponentsPaymentType.CARDS) cardState.installmentPlans else draft.installmentPlans
                         viewModel.dispatch(
                           ActionIntent.SubmitAction(
                             channelCode = selected.channelCode,

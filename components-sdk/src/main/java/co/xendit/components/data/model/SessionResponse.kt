@@ -1,6 +1,7 @@
 package co.xendit.components.data.model
 
 import androidx.annotation.Keep
+import co.xendit.components.XenditComponentsPaymentType
 import com.google.gson.annotations.SerializedName
 import java.math.BigDecimal
 
@@ -92,7 +93,7 @@ internal data class BffChannel(
   @SerializedName("brand_name") val brandName: String,
   @SerializedName("brand_logo_url") val brandLogoUrl: String?,
   @SerializedName("brand_color") val brandColor: String,
-  @SerializedName("pm_type") val pmType: String?,
+  @SerializedName("pm_type") val pmType: XenditComponentsPaymentType?,
   @SerializedName("ui_group") val uiGroup: String,
   @SerializedName("channel_code") val channelCode: String,
   @SerializedName("allow_pay_without_save") val allowPayWithoutSave: Boolean,
