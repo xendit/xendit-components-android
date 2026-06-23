@@ -6,6 +6,7 @@ import androidx.compose.ui.res.stringResource
 import co.xendit.components.R
 import co.xendit.components.data.model.BffBusiness
 import co.xendit.components.data.model.BffChannel
+import co.xendit.components.data.model.BffSession
 import co.xendit.components.data.model.ChannelFormField
 import co.xendit.components.ui.components.PaymentChannelSelectionUI
 
@@ -13,6 +14,7 @@ import co.xendit.components.ui.components.PaymentChannelSelectionUI
 internal fun EwalletPaymentUI(
   channels: List<BffChannel>,
   bffBusiness: BffBusiness?,
+  session: BffSession? = null,
   selectedChannel: BffChannel?,
   effectiveChannel: BffChannel? = selectedChannel,
   initialValues: Map<String, String> = emptyMap(),
@@ -28,6 +30,7 @@ internal fun EwalletPaymentUI(
     headerText = stringResource(id = R.string.ewallet_pay_with),
     placeholderText = stringResource(id = R.string.ewallet_select_placeholder),
     channels = channels,
+    session = session,
     selectedChannel = selectedChannel,
     contentChannel = effectiveChannel,
     initialValues = initialValues,

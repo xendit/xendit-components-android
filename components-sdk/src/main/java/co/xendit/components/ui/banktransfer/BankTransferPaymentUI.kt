@@ -5,6 +5,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import co.xendit.components.R
 import co.xendit.components.data.model.BffChannel
+import co.xendit.components.data.model.BffSession
 import co.xendit.components.data.model.ChannelFormField
 import co.xendit.components.ui.components.PaymentChannelSelectionUI
 
@@ -13,6 +14,7 @@ internal fun BankTransferPaymentUI(
   displayName: String,
   channels: List<BffChannel>,
   selectedChannel: BffChannel?,
+  session: BffSession? = null,
   initialValues: Map<String, String> = emptyMap(),
   initialVisibleFields: List<ChannelFormField> = emptyList(),
   initialSaveChecked: Boolean = false,
@@ -28,6 +30,7 @@ internal fun BankTransferPaymentUI(
         id = R.string.sessionpayment_methods_select_channel_placeholder,
       ).replace("{{groupName}}", displayName),
     channels = channels,
+    session = session,
     selectedChannel = selectedChannel,
     initialValues = initialValues,
     initialVisibleFields = initialVisibleFields,
