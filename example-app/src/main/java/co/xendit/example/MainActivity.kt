@@ -179,6 +179,7 @@ fun PaymentDemo(fontFamily: FontFamily, modifier: Modifier = Modifier) {
             XenditComponentsPaymentType.VIRTUAL_ACCOUNT,
             XenditComponentsPaymentType.CARDS,
             XenditComponentsPaymentType.EWALLET,
+            XenditComponentsPaymentType.OVER_THE_COUNTER
           )
       ) {
         paymentResultText = it.toString()
