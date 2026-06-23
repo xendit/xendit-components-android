@@ -38,7 +38,7 @@ internal object PaymentRequestMapper {
             val dialCode = Country.fromCode(countryCode)?.dialCode ?: ""
             finalValue = "+$dialCode$value"
           }
-          flatMap[prop] = finalValue
+          putFlatValue(flatMap, prop, finalValue)
         }
 
         is List<*> -> {
@@ -64,7 +64,8 @@ internal object PaymentRequestMapper {
           } else {
             val key = prop.firstOrNull()?.toString() ?: ""
             if (key.isNotEmpty()) {
-              flatMap[key] = if (isSensitive) encrypt(value, publicKey, sessionId) else value
+              val finalValue = if (isSensitive) encrypt(value, publicKey, sessionId) else value
+              putFlatValue(flatMap, key, finalValue)
             }
           }
         }
@@ -72,6 +73,28 @@ internal object PaymentRequestMapper {
     }
 
     return unflatten(flatMap)
+  }
+
+  private fun putFlatValue(flatMap: MutableMap<String, Any>, key: String, value: Any) {
+    if (!key.endsWith("[]")) {
+      flatMap[key] = value
+      return
+    }
+
+    val normalizedKey = key.removeSuffix("[]")
+    val existing = flatMap[normalizedKey]
+
+    val newList = when (existing) {
+      null -> mutableListOf(value)
+      is MutableList<*> -> {
+        @Suppress("UNCHECKED_CAST")
+        (existing as MutableList<Any>).apply { add(value) }
+      }
+      is List<*> -> (existing.toMutableList() as MutableList<Any>).apply { add(value) }
+      else -> mutableListOf(existing, value)
+    }
+
+    flatMap[normalizedKey] = newList
   }
 
   private fun isSensitiveField(field: ChannelFormField): Boolean {
