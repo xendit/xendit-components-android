@@ -82,16 +82,13 @@ internal object PaymentRequestMapper {
     }
 
     val normalizedKey = key.removeSuffix("[]")
-    val existing = flatMap[normalizedKey]
 
-    val newList = when (existing) {
+    val newList = when (val existing = flatMap[normalizedKey]) {
       null -> mutableListOf(value)
-      is MutableList<*> -> {
-        @Suppress("UNCHECKED_CAST")
-        (existing as MutableList<Any>).apply { add(value) }
+      is Collection<*> -> existing.toMutableList().apply {
+        if (!contains(value)) add(value)
       }
-      is List<*> -> (existing.toMutableList() as MutableList<Any>).apply { add(value) }
-      else -> mutableListOf(existing, value)
+      else -> if (existing == value) mutableListOf(existing) else mutableListOf(existing, value)
     }
 
     flatMap[normalizedKey] = newList
