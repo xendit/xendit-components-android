@@ -33,6 +33,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import co.xendit.components.R
 import co.xendit.components.data.model.BffChannel
+import co.xendit.components.data.model.BffSession
 import co.xendit.components.data.model.ChannelFormField
 import co.xendit.components.ui.components.molecule.ChannelLogo
 import co.xendit.components.ui.components.molecule.CheckboxWithText
@@ -48,6 +49,7 @@ internal fun PaymentChannelSelectionUI(
   headerText: String,
   placeholderText: String,
   channels: List<BffChannel>,
+  session: BffSession? = null,
   selectedChannel: BffChannel?,
   contentChannel: BffChannel? = selectedChannel,
   initialValues: Map<String, String> = emptyMap(),
@@ -166,6 +168,7 @@ internal fun PaymentChannelSelectionUI(
       Spacer(modifier = Modifier.height(12.dp))
       key(contentChannel?.channelCode) {
         DynamicForm(
+          session = session,
           fields = channelFormFields,
           cardDetails = null,
           initialValues = initialValues,
