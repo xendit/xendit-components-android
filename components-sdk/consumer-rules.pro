@@ -2,7 +2,7 @@
 -keep class co.xendit.components.XenditComponents {
     public *;
 }
--keep class co.xendit.components.XenditComponentsUiGroup {
+-keep class co.xendit.components.XenditComponentsPaymentType {
     public *;
 }
 -keep class co.xendit.components.data.model.XenditPaymentResult { *; }

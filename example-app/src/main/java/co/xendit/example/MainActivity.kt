@@ -41,7 +41,7 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import co.xendit.components.XenditComponents
-import co.xendit.components.XenditComponentsUiGroup
+import co.xendit.components.XenditComponentsPaymentType
 import co.xendit.components.ui.style.XenditAppearance
 import co.xendit.example.ui.theme.XenComponentPrivateTheme
 
@@ -173,12 +173,12 @@ fun PaymentDemo(fontFamily: FontFamily, modifier: Modifier = Modifier) {
         sessionId,
         merchantPreferredPaymentMethod =
           listOf(
-            XenditComponentsUiGroup.BANK_TRANSFER,
-            XenditComponentsUiGroup.ONLINE_BANKING,
-            XenditComponentsUiGroup.CARDS,
-            XenditComponentsUiGroup.EWALLET,
-            XenditComponentsUiGroup.QR_CODE,
-            XenditComponentsUiGroup.OVER_THE_COUNTER
+            XenditComponentsPaymentType.QR_CODE,
+            XenditComponentsPaymentType.BANK_TRANSFER,
+            XenditComponentsPaymentType.DIRECT_DEBIT,
+            XenditComponentsPaymentType.VIRTUAL_ACCOUNT,
+            XenditComponentsPaymentType.CARDS,
+            XenditComponentsPaymentType.EWALLET,
           )
       ) {
         paymentResultText = it.toString()

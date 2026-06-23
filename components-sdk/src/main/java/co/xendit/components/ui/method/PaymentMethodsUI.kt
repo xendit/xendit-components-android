@@ -31,8 +31,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import co.xendit.components.R
-import co.xendit.components.XenditComponents
-import co.xendit.components.XenditComponentsUiGroup
+import co.xendit.components.XenditComponentsPaymentType
 import co.xendit.components.data.model.BffBusiness
 import co.xendit.components.data.model.BffChannel
 import co.xendit.components.data.model.BffChannelUiGroup
@@ -58,7 +57,7 @@ import coil.compose.AsyncImage
 internal fun PaymentMethodsUI(
   session: BffSession?,
   bffBusiness: BffBusiness?,
-  merchantPreferredPaymentMethod: List<String>? = null,
+  merchantPreferredPaymentMethod: List<XenditComponentsPaymentType>? = null,
   channels: List<BffChannel>,
   channelUiGroups: List<BffChannelUiGroup>? = null,
   channelVariantsByDisplayCode: Map<String, ChannelVariantChannels> = emptyMap(),
@@ -96,22 +95,16 @@ internal fun PaymentMethodsUI(
   val selectedDraft = selectedChannel?.let { paymentDrafts[it.channelCode] }
   val uiGroupMetaById =
     remember(channelUiGroups) { channelUiGroups.orEmpty().associateBy { it.id } }
-  val supportedUiGroups = remember { XenditComponentsUiGroup.SUPPORTED }
 
-  val groups = remember(channels) {
-    channels.groupBy { it.uiGroup }.filter { it.key in supportedUiGroups }
-  }
-  val filteredUiGroup = remember(groups.keys, merchantPreferredPaymentMethod, channelUiGroups) {
-    val ordered =
-      channelUiGroups
-        ?.map { it.id }
-        ?.filter { it in groups.keys }
-        ?: groups.keys.toList()
-    if (merchantPreferredPaymentMethod.isNullOrEmpty()) {
-      ordered
-    } else {
-      merchantPreferredPaymentMethod.filter { it in groups.keys }
-    }
+  val supportedPaymentType = remember { XenditComponentsPaymentType.SUPPORTED }
+
+  val (groups, orderedUiGroups) = remember(channels, merchantPreferredPaymentMethod, channelUiGroups) {
+    processAndOrderUiGroups(
+      channels = channels,
+      merchantPreferredPaymentMethod = merchantPreferredPaymentMethod,
+      channelUiGroups = channelUiGroups,
+      supportedPaymentTypes = supportedPaymentType
+    )
   }
 
   Column {
@@ -127,13 +120,14 @@ internal fun PaymentMethodsUI(
         .clip(RoundedCornerShape(appearance.borderRadius))
         .background(appearance.colorBackground)
     ) {
-      filteredUiGroup.forEachIndexed { index, uiGroup ->
+      orderedUiGroups.forEachIndexed { index, uiGroup ->
         val isExpanded = expandedUiGroup == uiGroup
         val groupMeta = uiGroupMetaById[uiGroup]
         val fallback = fallbackDisplayNameIconForUiGroup(uiGroup)
         val displayName = groupMeta?.label?.takeIf { it.isNotBlank() } ?: fallback.first
         val iconUrl = null //groupMeta?.iconUrl?.takeIf { it.isNotBlank() } cant use this now
         val groupChannels = groups[uiGroup].orEmpty()
+        val pmType = groupChannels.firstOrNull()?.pmType
 
         Box(
           modifier = Modifier
@@ -164,8 +158,8 @@ internal fun PaymentMethodsUI(
             // expanded content here
             if (isExpanded) {
               Spacer(modifier = Modifier.height(8.dp))
-              when (uiGroup) {
-                XenditComponentsUiGroup.CARDS -> {
+              when (pmType) {
+                XenditComponentsPaymentType.CARDS -> {
                   val initialValues = selectedDraft?.formValues.orEmpty()
                   CardPaymentUI(
                     session = session,
@@ -186,7 +180,7 @@ internal fun PaymentMethodsUI(
                   )
                 }
 
-                XenditComponentsUiGroup.EWALLET -> {
+                XenditComponentsPaymentType.EWALLET -> {
                   val draft = selectedDraft
                   val saveCodes =
                     remember(channelVariantsByDisplayCode) {
@@ -204,6 +198,7 @@ internal fun PaymentMethodsUI(
                   EwalletPaymentUI(
                     channels = displayChannels,
                     bffBusiness = bffBusiness,
+                    session = session,
                     selectedChannel = selectedDisplayChannelForUi,
                     effectiveChannel = selectedChannel,
                     initialValues = draft?.formValues.orEmpty(),
@@ -249,7 +244,7 @@ internal fun PaymentMethodsUI(
                   )
                 }
 
-                XenditComponentsUiGroup.QR_CODE -> {
+                XenditComponentsPaymentType.QR_CODE -> {
                   QrPaymentUI(
                     channels = groupChannels,
                     selectedChannel = selectedChannel,
@@ -266,7 +261,7 @@ internal fun PaymentMethodsUI(
                   )
                 }
 
-                XenditComponentsUiGroup.OVER_THE_COUNTER -> {
+                XenditComponentsPaymentType.OVER_THE_COUNTER -> {
                   val draft = selectedDraft
                   val showSaveCheckbox = canShowSaveCheckbox(selectedDisplayChannelForUi)
                   OverTheCounterPaymentUI(
@@ -291,13 +286,15 @@ internal fun PaymentMethodsUI(
                   )
                 }
 
-                XenditComponentsUiGroup.BANK_TRANSFER,
-                XenditComponentsUiGroup.ONLINE_BANKING -> {
+                XenditComponentsPaymentType.BANK_TRANSFER,
+                XenditComponentsPaymentType.DIRECT_DEBIT,
+                XenditComponentsPaymentType.VIRTUAL_ACCOUNT -> {
                   val draft = selectedDraft
                   val showSaveCheckbox = canShowSaveCheckbox(selectedDisplayChannelForUi)
                   BankTransferPaymentUI(
                     displayName = displayName,
                     channels = groupChannels,
+                    session = session,
                     selectedChannel = selectedDisplayChannelForUi,
                     initialValues = draft?.formValues.orEmpty(),
                     initialVisibleFields = draft?.visibleFields ?: emptyList(),
@@ -316,6 +313,8 @@ internal fun PaymentMethodsUI(
                     modifier = Modifier.padding(bottom = 8.dp)
                   )
                 }
+
+                else -> Unit
               }
             }
           }
@@ -388,12 +387,50 @@ private fun SelectableHeaderItem(
 
 private fun fallbackDisplayNameIconForUiGroup(uiGroup: String): Pair<String, Int> {
   return when (uiGroup.lowercase()) {
-    XenditComponentsUiGroup.CARDS -> "Cards" to R.drawable.ic_cards
-    XenditComponentsUiGroup.EWALLET -> "E-Wallet" to R.drawable.ic_e_wallet
-    XenditComponentsUiGroup.QR_CODE -> "QR Code" to R.drawable.ic_qris
-    XenditComponentsUiGroup.BANK_TRANSFER -> "Bank Transfer" to R.drawable.ic_bank_va
-    XenditComponentsUiGroup.ONLINE_BANKING -> "Online Banking" to R.drawable.ic_bank_va
-    XenditComponentsUiGroup.OVER_THE_COUNTER -> "Over The Counter" to R.drawable.ic_bank_va
+    XenditComponentsPaymentType.CARDS.value.lowercase() -> "Cards" to R.drawable.ic_cards
+    XenditComponentsPaymentType.EWALLET.value.lowercase() -> "E-Wallet" to R.drawable.ic_e_wallet
+    XenditComponentsPaymentType.QR_CODE.value.lowercase() -> "QR Code" to R.drawable.ic_qris
+    XenditComponentsPaymentType.BANK_TRANSFER.value.lowercase() -> "Bank Transfer" to R.drawable.ic_bank_va
+    XenditComponentsPaymentType.DIRECT_DEBIT.value.lowercase() -> "Online Banking" to R.drawable.ic_bank_va
+    XenditComponentsPaymentType.VIRTUAL_ACCOUNT.value.lowercase() -> "Virtual Account" to R.drawable.ic_bank_va
+    XenditComponentsPaymentType.OVER_THE_COUNTER.value.lowercase() -> "Over The Counter" to R.drawable.ic_bank_va
     else -> uiGroup.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() } to R.drawable.ic_bank_va // Fallback icon
   }
+}
+
+internal fun processAndOrderUiGroups(
+  channels: List<BffChannel>,
+  merchantPreferredPaymentMethod: List<XenditComponentsPaymentType>?,
+  channelUiGroups: List<BffChannelUiGroup>?,
+  supportedPaymentTypes: List<XenditComponentsPaymentType> = XenditComponentsPaymentType.SUPPORTED
+): Pair<Map<String, List<BffChannel>>, List<String>> {
+
+  val preferredList = merchantPreferredPaymentMethod
+    ?.filter { it in supportedPaymentTypes }
+    ?: emptyList()
+
+  val masterUiOrder = channelUiGroups?.map { it.id } ?: emptyList()
+
+  val groups = channels
+    .filter { channel ->
+      channel.pmType in supportedPaymentTypes &&
+          (preferredList.isEmpty() || channel.pmType in preferredList)
+    }
+    .groupBy { it.uiGroup }
+
+  val orderedUiGroups = groups.keys.sortedWith(
+    compareBy<String> { uiGroup ->
+      // Grab the single pmType for this group
+      val pmType = groups[uiGroup]?.firstOrNull()?.pmType
+      val merchantIndex = preferredList.indexOf(pmType)
+
+      if (merchantIndex != -1) merchantIndex else Int.MAX_VALUE
+    }.thenBy { uiGroup ->
+      // Tie-breaker: Fall back to default sequence layout index
+      val masterIndex = masterUiOrder.indexOf(uiGroup)
+      if (masterIndex != -1) masterIndex else Int.MAX_VALUE
+    }
+  )
+
+  return Pair(groups, orderedUiGroups)
 }

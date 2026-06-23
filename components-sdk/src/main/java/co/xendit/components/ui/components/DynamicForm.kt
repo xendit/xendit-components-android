@@ -19,6 +19,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -66,6 +67,8 @@ internal fun DynamicForm(
   val onValuesChangedRef = rememberUpdatedState(onValuesChanged)
   val onCardNumberChangedRef = rememberUpdatedState(onCardNumberChanged)
   val onVisibleFieldsChangedRef = rememberUpdatedState(onVisibleFieldsChanged)
+  val sessionCountry = session?.country
+  val sessionCurrency = session?.currency
 
   val formValues =
     remember {
@@ -83,9 +86,9 @@ internal fun DynamicForm(
   }
 
   val filteredFields =
-    remember(fields, cardDetails, formValues.toMap(), installmentPlans) {
-      filterFormFields(fields, cardDetails, formValues, installmentPlans)
-    }
+    remember(fields, cardDetails, installmentPlans) {
+      derivedStateOf { filterFormFields(fields, cardDetails, formValues, installmentPlans) }
+    }.value
 
   LaunchedEffect(cardDetails) {
     if (cardDetails != null && cardDetails.countryCodes.isNotEmpty()) {
@@ -126,7 +129,7 @@ internal fun DynamicForm(
   }
 
   // Initialize form values
-  LaunchedEffect(filteredFields, installmentPlans) {
+  LaunchedEffect(filteredFields, installmentPlans, sessionCountry) {
     onVisibleFieldsChangedRef.value(filteredFields)
     filteredFields.forEach { field ->
       val propertyKey = field.primaryChannelPropertyKey()
@@ -145,7 +148,7 @@ internal fun DynamicForm(
           if (!formValues.containsKey(countryCodeKey)) {
             // Default to ID or first country if no initial country code
             formValues[countryCodeKey] =
-              initialValues[countryCodeKey] ?: Country.fromCode(session?.country ?: "")?.code
+              initialValues[countryCodeKey] ?: Country.fromCode(sessionCountry ?: "")?.code
                   ?: Country.countries.first().code
           }
         }
@@ -177,7 +180,14 @@ internal fun DynamicForm(
 
   Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(24.dp)) {
     val handleValueChange =
-      remember(formValues, formErrors, onValuesChangedRef, onCardNumberChangedRef) {
+      remember(
+        formValues,
+        formErrors,
+        cardDetails,
+        bffCardInfo,
+        onValuesChangedRef,
+        onCardNumberChangedRef
+      ) {
         { changedField: ChannelFormField, key: String, value: String ->
           formValues[key] = value
           formErrors[key] =
@@ -197,6 +207,8 @@ internal fun DynamicForm(
     val renderContext =
       remember(
         filteredFields,
+        sessionCountry,
+        sessionCurrency,
         cardDetails,
         bffCardInfo,
         installmentPlans,
@@ -204,8 +216,8 @@ internal fun DynamicForm(
         handleValueChange
       ) {
         DynamicFormRenderContext(
-          country = session?.country,
-          currency = session?.currency,
+          country = sessionCountry,
+          currency = sessionCurrency,
           allFields = filteredFields,
           values = formValues,
           errors = formErrors,
