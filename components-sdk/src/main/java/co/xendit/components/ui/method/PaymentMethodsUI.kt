@@ -197,6 +197,7 @@ internal fun PaymentMethodsUI(
                   EwalletPaymentUI(
                     channels = displayChannels,
                     bffBusiness = bffBusiness,
+                    session = session,
                     selectedChannel = selectedDisplayChannelForUi,
                     effectiveChannel = selectedChannel,
                     initialValues = draft?.formValues.orEmpty(),
@@ -267,6 +268,7 @@ internal fun PaymentMethodsUI(
                   BankTransferPaymentUI(
                     displayName = displayName,
                     channels = groupChannels,
+                    session = session,
                     selectedChannel = selectedDisplayChannelForUi,
                     initialValues = draft?.formValues.orEmpty(),
                     initialVisibleFields = draft?.visibleFields ?: emptyList(),
