@@ -38,7 +38,7 @@ import co.xendit.components.data.model.ChannelFormField
 import co.xendit.components.ui.components.molecule.ChannelLogo
 import co.xendit.components.ui.components.molecule.CheckboxWithText
 import co.xendit.components.ui.components.molecule.DashedDivider
-import co.xendit.components.ui.components.molecule.XenditDropdownField
+import co.xendit.components.ui.components.molecule.XenditDropdownHeaderField
 import co.xendit.components.ui.helper.SdkImageLoader
 import co.xendit.components.ui.style.xenditAppearance
 import coil.compose.AsyncImage
@@ -101,7 +101,7 @@ internal fun PaymentChannelSelectionUI(
       onExpandedChange = { if (channels.size > 1) expanded = !expanded },
       modifier = Modifier.fillMaxWidth()
     ) {
-      XenditDropdownField(
+      XenditDropdownHeaderField(
         value = selectedChannel?.brandName ?: "",
         placeholder = placeholderText,
         isExpanded = expanded,
