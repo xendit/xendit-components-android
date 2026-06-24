@@ -156,4 +156,69 @@ class PaymentRequestMapperTest {
     val cardDetails = result["card_details"] as Map<*, *>
     assertEquals("+8000032341", cardDetails["cardholder_phone_number"])
   }
+
+  @Test
+  fun mapFormValuesToChannelProperties_normalizesBracketArrayKeyToList() {
+    val fields =
+      listOf(
+        ChannelFormField(
+          label = "Fund Source",
+          groupLabel = null,
+          placeholder = "CASA",
+          type = FieldType("text", null, null, null, null, null),
+          channelProperty = "fund_source[]",
+          initialValue = null,
+          disabled = false,
+          required = true,
+          span = 1,
+          join = false,
+          flags = null
+        )
+      )
+    val formValues = mapOf("fund_source[]" to "CASA")
+
+    val result =
+      PaymentRequestMapper.mapFormValuesToChannelProperties(
+        formValues,
+        fields,
+        "pub_key",
+        "session_id"
+      )
+
+    assertEquals(listOf("CASA"), result["fund_source"])
+    assertEquals(null, result["fund_source[]"])
+  }
+
+  @Test
+  fun mapFormValuesToChannelProperties_normalizesBracketArrayKeyToList_nestedKey() {
+    val fields =
+      listOf(
+        ChannelFormField(
+          label = "Fund Source",
+          groupLabel = null,
+          placeholder = "CASA",
+          type = FieldType("text", null, null, null, null, null),
+          channelProperty = "payment_details.fund_source[]",
+          initialValue = null,
+          disabled = false,
+          required = true,
+          span = 1,
+          join = false,
+          flags = null
+        )
+      )
+    val formValues = mapOf("payment_details.fund_source[]" to "CASA")
+
+    val result =
+      PaymentRequestMapper.mapFormValuesToChannelProperties(
+        formValues,
+        fields,
+        "pub_key",
+        "session_id"
+      )
+
+    val paymentDetails = result["payment_details"] as Map<*, *>
+    assertEquals(listOf("CASA"), paymentDetails["fund_source"])
+    assertEquals(null, paymentDetails["fund_source[]"])
+  }
 }
