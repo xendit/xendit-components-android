@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import co.xendit.components.util.AmountFormat
+import java.math.BigDecimal
 
 internal data class CardState(
   val cardDetails: CardDetails? = null,
@@ -110,7 +111,7 @@ internal class CardViewModel(
               if (optionsResponse?.isSuccessful == true) {
                 val plans = optionsResponse.body()?.installmentPlans
                 if (!plans.isNullOrEmpty()) {
-                  val amount = optionsResponse.body()?.amount ?: plans.first().totalAmount ?: 0L
+                  val amount = optionsResponse.body()?.amount ?: plans.first().totalAmount ?: BigDecimal.ZERO
                   val currencyCode = optionsResponse.body()?.currency ?: "IDR"
                   val formattedAmount = AmountFormat.format(amount, currencyCode)
                   val dummyPlan =

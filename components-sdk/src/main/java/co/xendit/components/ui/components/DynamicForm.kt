@@ -40,6 +40,7 @@ import co.xendit.components.data.model.primaryChannelPropertyKey
 import co.xendit.components.ui.components.molecule.CVCField
 import co.xendit.components.ui.components.molecule.CardNumberField
 import co.xendit.components.ui.components.molecule.CountryField
+import co.xendit.components.ui.components.molecule.XenditDropdownField
 import co.xendit.components.ui.components.molecule.ExpiryDateField
 import co.xendit.components.ui.components.molecule.InstallmentPlanField
 import co.xendit.components.ui.components.molecule.PhoneNumberField
@@ -659,6 +660,21 @@ private fun FormFieldItem(
         noBorder = noBorder
       )
     }
+
+    is FieldType.Dropdown -> {
+      val selectedOpt = field.type.options.firstOrNull { it.value == currentValue }
+      XenditDropdownField(
+        dropdownOptions = field.type.options,
+        selectedOption = selectedOpt,
+        onChannelSelected = { option ->
+          onValueChange(propertyKey, option.value)
+        },
+        placeholderText = field.placeholder ?: "",
+        modifier = Modifier.fillMaxWidth(),
+        noBorder = noBorder
+      )
+    }
+
 
     else -> {
       XenditTextField(
