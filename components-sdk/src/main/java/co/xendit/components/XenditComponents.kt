@@ -38,25 +38,13 @@ enum class XenditComponentsPaymentType(val value: String) {
   @SerializedName("QR_CODE")
   QR_CODE("QR_CODE"),
 
-  @SerializedName("BANK_TRANSFER")
-  BANK_TRANSFER("BANK_TRANSFER"),
-
-  @SerializedName("DIRECT_DEBIT")
-  DIRECT_DEBIT("DIRECT_DEBIT"),
-
-  @SerializedName("VIRTUAL_ACCOUNT")
-  VIRTUAL_ACCOUNT("VIRTUAL_ACCOUNT"),
-
-  @SerializedName("OVER_THE_COUNTER")
-  OVER_THE_COUNTER("OVER_THE_COUNTER"),
-
   @FallbackValue
   @SerializedName("UNKNOWN")
   UNKNOWN("UNKNOWN");
 
   companion object {
     val SUPPORTED: List<XenditComponentsPaymentType> =
-      listOf(CARDS, EWALLET, QR_CODE, BANK_TRANSFER, DIRECT_DEBIT, VIRTUAL_ACCOUNT)
+      listOf(CARDS)
   }
 }
 
