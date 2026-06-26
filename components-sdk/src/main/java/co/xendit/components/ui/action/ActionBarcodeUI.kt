@@ -30,6 +30,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Alignment.Companion
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
@@ -207,20 +208,23 @@ internal fun ActionBarcodeUI(
           Spacer(modifier = Modifier.height(16.dp))
 
           if (formattedAmount.isNotBlank()) {
-            Row(
+            Column (
               modifier = Modifier.fillMaxWidth(),
-              verticalAlignment = Alignment.CenterVertically
+              horizontalAlignment = Alignment.CenterHorizontally
             ) {
               Text(
                 text = stringResource(R.string.sessionaction_barcode_amount_to_pay),
                 style = MaterialTheme.typography.bodySmall,
                 color = appearance.colorTextSecondary,
-                modifier = Modifier.weight(1f)
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
               )
               Text(
                 text = formattedAmount,
                 style = MaterialTheme.typography.titleMedium,
-                color = appearance.colorText
+                color = appearance.colorText,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
               )
             }
             Spacer(modifier = Modifier.height(12.dp))
@@ -234,13 +238,17 @@ internal fun ActionBarcodeUI(
               Text(
                 text = stringResource(R.string.sessionaction_barcode_payment_code),
                 style = MaterialTheme.typography.bodySmall,
-                color = appearance.colorTextSecondary
+                color = appearance.colorTextSecondary,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
               )
               Spacer(modifier = Modifier.height(4.dp))
               Text(
                 text = paymentCode,
                 style = MaterialTheme.typography.titleSmall,
-                color = appearance.colorText
+                color = appearance.colorText,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
               )
             }
             Spacer(modifier = Modifier.size(16.dp))
@@ -248,13 +256,17 @@ internal fun ActionBarcodeUI(
               Text(
                 text = stringResource(R.string.sessionaction_barcode_seller),
                 style = MaterialTheme.typography.bodySmall,
-                color = appearance.colorTextSecondary
+                color = appearance.colorTextSecondary,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
               )
               Spacer(modifier = Modifier.height(4.dp))
               Text(
                 text = merchantName.orEmpty(),
                 style = MaterialTheme.typography.titleSmall,
-                color = appearance.colorText
+                color = appearance.colorText,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
               )
             }
           }
