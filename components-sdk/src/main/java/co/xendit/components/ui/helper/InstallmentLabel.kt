@@ -5,9 +5,10 @@ import co.xendit.components.R
 import co.xendit.components.data.model.InstallmentPlan
 import co.xendit.components.ui.components.molecule.UiText
 import co.xendit.components.util.AmountFormat
+import java.math.BigDecimal
 
 internal fun InstallmentPlan.toLabelDisplay(context: Context, currency: String?): UiText {
-  val formattedAmount = AmountFormat.format(this.installmentAmount ?: 0, currency)
+  val formattedAmount = AmountFormat.format(this.installmentAmount ?: BigDecimal.ZERO, currency)
   return when (this.terms) {
     0 -> {
       val rawString = context.getString(R.string.sessioninstallment_plan_pay_in_full)

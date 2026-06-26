@@ -173,6 +173,12 @@ internal object AmountFormat {
     return formatInternal(BigDecimal.valueOf(amount), code)
   }
 
+  fun format(amount: BigDecimal?, currency: String?): String {
+    val code = currency?.trim()?.uppercase(Locale.ROOT).orEmpty()
+    if (amount == null || code.isBlank()) return ""
+    return formatInternal(amount, code)
+  }
+
   private fun formatInternal(amount: BigDecimal, currencyCode: String): String {
     val isNegative = amount < BigDecimal.ZERO
     val absAmount = amount.abs()

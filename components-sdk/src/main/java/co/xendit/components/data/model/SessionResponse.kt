@@ -103,7 +103,15 @@ internal data class BffChannel(
   @SerializedName("requires_customer_details") val requiresCustomerDetails: Boolean?,
   @SerializedName("card") val card: BffCardInfo?,
   @SerializedName("form") val form: List<ChannelFormField>?,
-  @SerializedName("instructions") val instructions: List<String>?
+  @SerializedName("instructions") val instructions: List<String>?,
+  @SerializedName("banner") val banner: BffChannelBanner? = null
+)
+
+@Keep
+internal data class BffChannelBanner(
+  @SerializedName("image_url") val imageUrl: String?,
+  @SerializedName("alt_text") val altText: String? = null,
+  @SerializedName("aspect_ratio") val aspectRatio: Float? = null
 )
 
 @Keep

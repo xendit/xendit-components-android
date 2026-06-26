@@ -8,6 +8,7 @@ import io.mockk.every
 import io.mockk.mockk
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import java.math.BigDecimal
 
 class InstallmentLabelTest {
 
@@ -20,7 +21,7 @@ class InstallmentLabelTest {
       interval = null,
       intervalCount = null,
       terms = 0,
-      installmentAmount = 100000L,
+      installmentAmount = BigDecimal(100000),
       totalAmount = null,
       description = null,
       interestRate = null
@@ -40,7 +41,7 @@ class InstallmentLabelTest {
       interval = null,
       intervalCount = null,
       terms = 3,
-      installmentAmount = 33333L,
+      installmentAmount = BigDecimal(33333),
       totalAmount = null,
       description = null,
       interestRate = null
