@@ -20,6 +20,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
@@ -242,9 +243,10 @@ internal fun PaymentChannelSelectionUI(
       )
       Spacer(modifier = Modifier.height(8.dp))
       Row(verticalAlignment = Alignment.CenterVertically) {
-        Image(
+        Icon(
           painter = painterResource(R.drawable.img_phone_app),
           contentDescription = null,
+          tint = appearance.colorText,
           modifier = Modifier.size(60.dp)
         )
         Column {
