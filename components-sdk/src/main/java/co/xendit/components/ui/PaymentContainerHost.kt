@@ -399,6 +399,7 @@ internal fun PaymentContainerHost(
                       subtitle = action.actionSubtitle,
                       channelName = channelName.ifBlank { "Virtual Account" },
                       channelLogoUrl = channelLogoUrl,
+                      channelBrandColor = selectedChannel?.brandColor,
                       virtualAccountNumber = action.value.orEmpty(),
                       merchantName = merchantName,
                       amount = mviState.sessionResponse?.session?.amount,

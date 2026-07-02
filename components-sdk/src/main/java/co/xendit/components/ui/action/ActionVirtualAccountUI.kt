@@ -1,7 +1,9 @@
 package co.xendit.components.ui.action
 
 import android.content.ClipData
-import androidx.compose.foundation.border
+import android.graphics.Color as AndroidColor
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -27,6 +29,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.Clipboard
@@ -52,6 +55,7 @@ internal fun ActionVirtualAccountUI(
   subtitle: String?,
   channelName: String,
   channelLogoUrl: String?,
+  channelBrandColor: String?,
   virtualAccountNumber: String,
   merchantName: String?,
   amount: BigDecimal?,
@@ -69,6 +73,15 @@ internal fun ActionVirtualAccountUI(
   val imageLoader = remember { SdkImageLoader.get(context) }
   val formattedAmount = remember(amount, currency) { CurrencyUtil.formatAmount(amount, currency) }
   val copiedText = stringResource(R.string.sessionaction_va_copied_to_clipboard)
+  val borderedCardColor =
+    remember(channelBrandColor, appearance.colorPrimary) {
+      parseHexColorOrNull(channelBrandColor) ?: appearance.colorPrimary
+    }
+  val borderedCardTitleColor =
+    remember(borderedCardColor) {
+      if (borderedCardColor.luminance() > 0.65f) Color.Black else Color.White
+    }
+  val borderedCardShape = remember(appearance.borderRadius) { RoundedCornerShape(appearance.borderRadius) }
 
   Surface(
     modifier = Modifier
@@ -110,99 +123,60 @@ internal fun ActionVirtualAccountUI(
         modifier = Modifier.fillMaxWidth()
       )
 
-      if (!subtitle.isNullOrBlank()) {
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-          text = subtitle,
-          style = MaterialTheme.typography.bodyMedium,
-          color = appearance.colorTextSecondary,
-          textAlign = TextAlign.Center,
-          modifier = Modifier.fillMaxWidth()
-        )
-      }
-
       Spacer(modifier = Modifier.height(16.dp))
 
       Surface(
-        modifier = Modifier
-          .fillMaxWidth()
-          .border(
-            width = 2.dp,
-            color = appearance.colorPrimary,
-            shape = RoundedCornerShape(appearance.borderRadius)
-          ),
-        shape = RoundedCornerShape(appearance.borderRadius),
+        modifier = Modifier.fillMaxWidth(),
+        border = BorderStroke(width = 3.dp, color = borderedCardColor),
+        shape = borderedCardShape,
         color = appearance.colorBackground,
         tonalElevation = 0.dp
       ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-          Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-          ) {
-            Column(modifier = Modifier.weight(1f)) {
-              Text(
-                text = stringResource(R.string.sessionaction_va_virtual_account_number),
-                style = MaterialTheme.typography.bodySmall,
-                color = appearance.colorTextSecondary
-              )
-              Spacer(modifier = Modifier.height(4.dp))
-              Text(
-                text = virtualAccountNumber,
-                style = MaterialTheme.typography.titleMedium,
-                color = appearance.colorText
-              )
-              if (!merchantName.isNullOrBlank()) {
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                  text = merchantName,
-                  style = MaterialTheme.typography.bodySmall,
-                  color = appearance.colorTextSecondary
-                )
-              }
-            }
-
-            OutlinedButton(
-              onClick = {
-                copyToClipboard(
-                  scope,
-                  clipboard,
-                  virtualAccountNumber,
-                  snackbarHostState,
-                  copiedText
-                )
-              },
-              colors = ButtonDefaults.buttonColors(
-                containerColor = appearance.colorBackground,
-                contentColor = appearance.colorText
-              ),
-              shape = RoundedCornerShape(999.dp)
+        Column {
+          if (!subtitle.isNullOrBlank()) {
+            Box(
+              modifier =
+                Modifier
+                  .fillMaxWidth()
+                  .background(borderedCardColor)
+                  .padding(horizontal = 8.dp, vertical = 8.dp),
+              contentAlignment = Alignment.Center
             ) {
               Text(
-                text = stringResource(R.string.sessionaction_va_copy_number),
-                style = MaterialTheme.typography.titleSmall
+                text = subtitle,
+                style = MaterialTheme.typography.titleSmall,
+                color = borderedCardTitleColor,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
               )
             }
           }
 
-          if (formattedAmount.isNotBlank()) {
-            Spacer(modifier = Modifier.height(16.dp))
+          Column(modifier = Modifier.padding(16.dp)) {
             Row(
               modifier = Modifier.fillMaxWidth(),
               verticalAlignment = Alignment.CenterVertically
             ) {
               Column(modifier = Modifier.weight(1f)) {
                 Text(
-                  text = stringResource(R.string.sessionaction_va_amount_to_pay),
+                  text = stringResource(R.string.sessionaction_va_virtual_account_number),
                   style = MaterialTheme.typography.bodySmall,
                   color = appearance.colorTextSecondary
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                  text = formattedAmount,
+                  text = virtualAccountNumber,
                   style = MaterialTheme.typography.titleMedium,
                   color = appearance.colorText
                 )
+                if (!merchantName.isNullOrBlank()) {
+                  Spacer(modifier = Modifier.height(4.dp))
+                  Text(
+                    text = merchantName,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = appearance.colorTextSecondary
+                  )
+                }
               }
 
               OutlinedButton(
@@ -210,7 +184,7 @@ internal fun ActionVirtualAccountUI(
                   copyToClipboard(
                     scope,
                     clipboard,
-                    amount?.toPlainString().orEmpty(),
+                    virtualAccountNumber,
                     snackbarHostState,
                     copiedText
                   )
@@ -222,39 +196,83 @@ internal fun ActionVirtualAccountUI(
                 shape = RoundedCornerShape(999.dp)
               ) {
                 Text(
-                  text = stringResource(R.string.sessionaction_va_copy_amount),
+                  text = stringResource(R.string.sessionaction_va_copy_number),
                   style = MaterialTheme.typography.titleSmall
                 )
               }
             }
-          }
 
-          Spacer(modifier = Modifier.height(16.dp))
+            if (formattedAmount.isNotBlank()) {
+              Spacer(modifier = Modifier.height(16.dp))
+              Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+              ) {
+                Column(modifier = Modifier.weight(1f)) {
+                  Text(
+                    text = stringResource(R.string.sessionaction_va_amount_to_pay),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = appearance.colorTextSecondary
+                  )
+                  Spacer(modifier = Modifier.height(4.dp))
+                  Text(
+                    text = formattedAmount,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = appearance.colorText
+                  )
+                }
 
-          if (!CoreSdkComponent.isProdLive()) {
-            OutlinedButton(
-              onClick = onPaymentMade,
-              modifier = Modifier.fillMaxWidth(),
-              colors = ButtonDefaults.buttonColors(
-                containerColor = appearance.colorBackground,
-                contentColor = appearance.colorText
-              ),
-              shape = RoundedCornerShape(appearance.borderRadius)
-            ) {
-              Text(
-                text = stringResource(R.string.sessionaction_simulate_payment),
-                style = MaterialTheme.typography.titleSmall
-              )
+                OutlinedButton(
+                  onClick = {
+                    copyToClipboard(
+                      scope,
+                      clipboard,
+                      amount?.toPlainString().orEmpty(),
+                      snackbarHostState,
+                      copiedText
+                    )
+                  },
+                  colors = ButtonDefaults.buttonColors(
+                    containerColor = appearance.colorBackground,
+                    contentColor = appearance.colorText
+                  ),
+                  shape = RoundedCornerShape(999.dp)
+                ) {
+                  Text(
+                    text = stringResource(R.string.sessionaction_va_copy_amount),
+                    style = MaterialTheme.typography.titleSmall
+                  )
+                }
+              }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-              text = stringResource(R.string.sessionaction_simulate_payment_instructions),
-              style = MaterialTheme.typography.bodySmall,
-              color = appearance.colorTextSecondary,
-              textAlign = TextAlign.Center,
-              modifier = Modifier.fillMaxWidth()
-            )
+            Spacer(modifier = Modifier.height(16.dp))
+
+            if (!CoreSdkComponent.isProdLive()) {
+              OutlinedButton(
+                onClick = onPaymentMade,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                  containerColor = appearance.colorBackground,
+                  contentColor = appearance.colorText
+                ),
+                shape = RoundedCornerShape(appearance.borderRadius)
+              ) {
+                Text(
+                  text = stringResource(R.string.sessionaction_simulate_payment),
+                  style = MaterialTheme.typography.titleSmall
+                )
+              }
+
+              Spacer(modifier = Modifier.height(8.dp))
+              Text(
+                text = stringResource(R.string.sessionaction_simulate_payment_instructions),
+                style = MaterialTheme.typography.bodySmall,
+                color = appearance.colorTextSecondary,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+              )
+            }
           }
         }
       }
@@ -265,6 +283,11 @@ internal fun ActionVirtualAccountUI(
       }
     }
   }
+}
+
+private fun parseHexColorOrNull(hexColor: String?): Color? {
+  if (hexColor.isNullOrBlank()) return null
+  return runCatching { Color(AndroidColor.parseColor(hexColor)) }.getOrNull()
 }
 
 private fun copyToClipboard(
