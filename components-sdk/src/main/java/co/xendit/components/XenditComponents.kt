@@ -56,7 +56,7 @@ enum class XenditComponentsPaymentType(val value: String) {
 
   companion object {
     val SUPPORTED: List<XenditComponentsPaymentType> =
-      listOf(CARDS)
+      listOf(CARDS, EWALLET, QR_CODE)
   }
 }
 
