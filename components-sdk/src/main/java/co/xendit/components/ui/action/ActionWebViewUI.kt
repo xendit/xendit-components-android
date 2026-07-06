@@ -46,19 +46,14 @@ internal fun ActionWebViewUI(
           settings.setSupportMultipleWindows(false)
           settings.allowFileAccess = false
           settings.allowContentAccess = false
-          settings.allowFileAccessFromFileURLs = false
-          settings.allowUniversalAccessFromFileURLs = false
-          if (android.os.Build.VERSION.SDK_INT >= 21) {
-            settings.mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
-          }
+          settings.mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
+
           if (android.os.Build.VERSION.SDK_INT >= 26) {
             settings.safeBrowsingEnabled = true
           }
-          if (android.os.Build.VERSION.SDK_INT >= 21) {
-            CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
-          } else {
-            CookieManager.getInstance().setAcceptCookie(true)
-          }
+
+          CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
+
           addJavascriptInterface(
             object {
               @JavascriptInterface
