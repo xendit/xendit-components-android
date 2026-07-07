@@ -42,12 +42,18 @@ internal fun ActionWebViewUI(
           }
           settings.javaScriptEnabled = true
           settings.domStorageEnabled = true
-          settings.mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
-          if (android.os.Build.VERSION.SDK_INT >= 21) {
-            CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
-          } else {
-            CookieManager.getInstance().setAcceptCookie(true)
+          settings.javaScriptCanOpenWindowsAutomatically = false
+          settings.setSupportMultipleWindows(false)
+          settings.allowFileAccess = false
+          settings.allowContentAccess = false
+          settings.mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
+
+          if (android.os.Build.VERSION.SDK_INT >= 26) {
+            settings.safeBrowsingEnabled = true
           }
+
+          CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
+
           addJavascriptInterface(
             object {
               @JavascriptInterface
@@ -76,8 +82,9 @@ internal fun ActionWebViewUI(
                 view: WebView?,
                 request: WebResourceRequest?
               ): Boolean {
-                val u = request?.url
-                return false
+                val u = request?.url ?: return false
+                val scheme = u.scheme?.lowercase() ?: return true
+                return scheme != "http" && scheme != "https" && scheme != "about"
               }
 
               override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
@@ -123,7 +130,8 @@ internal fun ActionWebViewUI(
             }
           val uri = runCatching { Uri.parse(url) }.getOrNull()
           val baseUrl =
-            if (uri != null && uri.scheme != null && uri.host != null) "${uri.scheme}://${uri.host}" else "https://api.xendit.co"
+            if (uri != null && uri.scheme == "https" && uri.host != null) "https://${uri.host}" else "https://api.xendit.co"
+          val iframeSrc = org.json.JSONObject.quote(url)
 
           if (iframeCapable) {
             val data = """
@@ -163,10 +171,13 @@ internal fun ActionWebViewUI(
                     </script>
                 </head>
                 <body>
-                    <iframe 
-                        src="$url" 
-                        onload="handleIframeLoad(this)">
-                    </iframe>
+                    <iframe id="xendit-iframe" onload="handleIframeLoad(this)"></iframe>
+                    <script>
+                        (function() {
+                            var iframe = document.getElementById('xendit-iframe');
+                            iframe.src = $iframeSrc;
+                        })();
+                    </script>
                 </body>
                 </html>
             """.trimIndent()
