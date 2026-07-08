@@ -78,9 +78,10 @@ import kotlin.math.roundToInt
 
 @Composable
 internal fun ActionQrUI(
-  title: String?,
-  channelName: String,
-  channelLogoUrl: String?,
+  title: String? = null,
+  merchantName: String? = null,
+  channelName: String? = null,
+  channelLogoUrl: String? = null,
   qrString: String,
   amount: BigDecimal?,
   currency: String?,
@@ -175,7 +176,7 @@ internal fun ActionQrUI(
         }
 
         Text(
-          text = stringResource(R.string.sessionaction_qr_scan_to_pay),
+          text = title ?: stringResource(R.string.sessionaction_qr_scan_to_pay),
           style = MaterialTheme.typography.titleLarge,
           color = appearance.colorText,
           textAlign = TextAlign.Center,
@@ -211,7 +212,7 @@ internal fun ActionQrUI(
             horizontalAlignment = Alignment.CenterHorizontally
           ) {
             Text(
-              text = title ?: channelName,
+              text = merchantName ?: channelName ?: "",
               style = MaterialTheme.typography.titleMedium,
               color = appearance.colorText,
               textAlign = TextAlign.Center

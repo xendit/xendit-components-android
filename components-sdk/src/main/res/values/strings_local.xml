@@ -4,6 +4,7 @@
   <string name="select_country">Select Country</string>
   <string name="select_province">Select Province</string>
   <string name="save_for_faster_payment_next_time">Save for faster payment next time</string>
+  <string name="save_card_information_for_future_use">Save card information for future use</string>
   <string name="card_brand_not_supported">This card brand is not accepted.</string>
   <string name="form_validation_required">%1$s is required</string>
   <string name="form_validation_invalid">%1$s is not valid</string>
