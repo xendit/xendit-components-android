@@ -44,7 +44,7 @@ internal fun CardNumberField(
   val context = LocalContext.current
   val imageLoader = remember { SdkImageLoader.get(context) }
   val groupedDigitsTransformation =
-    remember { GroupedDigitsTransformation(groupSize = 4, maxDigits = 16) }
+    remember { GroupedDigitsTransformation(groupSize = 4, maxDigits = 19) }
 
   val logoUrl = if (selectedCardScheme != null) {
     bffCardInfo?.brands?.firstOrNull {
@@ -60,7 +60,7 @@ internal fun CardNumberField(
     value = value,
     onValueChange = { newValue ->
       val digitsOnly = newValue.filter { it.isDigit() }
-      if (digitsOnly.length <= 16) {
+      if (digitsOnly.length <= 19) {
         onValueChange(digitsOnly)
       }
     },
