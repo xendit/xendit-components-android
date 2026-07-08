@@ -86,7 +86,7 @@ internal fun CardPaymentUI(
     if (showSaveCheckbox) {
       CheckboxWithText(
         checked = isSaveChecked.value,
-        text = stringResource(id = R.string.save_for_faster_payment_next_time),
+        text = stringResource(id = R.string.save_card_information_for_future_use),
         onCheckedChange = { nextChecked ->
           isSaveChecked.value = nextChecked
           onFormStateChanged(formValues.toMap(), visibleFields.value, isSaveChecked.value)
