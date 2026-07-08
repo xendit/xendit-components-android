@@ -415,7 +415,8 @@ internal fun PaymentContainerHost(
 
                   PaymentActionDescriptor.QR_STRING -> {
                     ActionQrUI(
-                      title = merchantName,
+                      title = action.actionTitle,
+                      merchantName = merchantName,
                       channelName = channelName.ifBlank { "QR Code" },
                       channelLogoUrl = channelLogoUrl,
                       qrString = action.value.orEmpty(),
