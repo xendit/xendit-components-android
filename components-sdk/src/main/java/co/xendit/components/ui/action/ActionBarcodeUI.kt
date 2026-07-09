@@ -216,7 +216,7 @@ internal fun ActionBarcodeUI(
                 containerColor = appearance.colorBackground,
                 contentColor = appearance.colorText
               ),
-              shape = RoundedCornerShape(999.dp)
+              shape = RoundedCornerShape(appearance.borderRadius)
             ) {
               Text(
                 text = stringResource(R.string.sessionaction_barcode_download_barcode),
