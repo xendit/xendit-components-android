@@ -440,6 +440,7 @@ internal fun PaymentContainerHost(
                       subtitle = action.actionSubtitle,
                       channelName = channelName.ifBlank { "Payment Code" },
                       channelLogoUrl = channelLogoUrl,
+                      channelBrandColor = selectedChannel?.brandColor,
                       paymentCode = action.value.orEmpty(),
                       merchantName = merchantName,
                       amount = mviState.sessionResponse?.session?.amount,
