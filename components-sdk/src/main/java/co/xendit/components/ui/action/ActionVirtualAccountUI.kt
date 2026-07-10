@@ -1,7 +1,6 @@
 package co.xendit.components.ui.action
 
 import android.content.ClipData
-import android.graphics.Color as AndroidColor
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -23,7 +22,6 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -41,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import co.xendit.components.R
 import co.xendit.components.core.CoreSdkComponent
 import co.xendit.components.data.model.PaymentInstructionTab
+import co.xendit.components.ui.helper.ColorHelper.parseHexColorOrNull
 import co.xendit.components.ui.helper.CurrencyUtil
 import co.xendit.components.ui.helper.SdkImageLoader
 import co.xendit.components.ui.style.xenditAppearance
@@ -81,7 +80,8 @@ internal fun ActionVirtualAccountUI(
     remember(borderedCardColor) {
       if (borderedCardColor.luminance() > 0.65f) Color.Black else Color.White
     }
-  val borderedCardShape = remember(appearance.borderRadius) { RoundedCornerShape(appearance.borderRadius) }
+  val borderedCardShape =
+    remember(appearance.borderRadius) { RoundedCornerShape(appearance.borderRadius) }
 
   Surface(
     modifier = Modifier
@@ -283,11 +283,6 @@ internal fun ActionVirtualAccountUI(
       }
     }
   }
-}
-
-private fun parseHexColorOrNull(hexColor: String?): Color? {
-  if (hexColor.isNullOrBlank()) return null
-  return runCatching { Color(AndroidColor.parseColor(hexColor)) }.getOrNull()
 }
 
 private fun copyToClipboard(

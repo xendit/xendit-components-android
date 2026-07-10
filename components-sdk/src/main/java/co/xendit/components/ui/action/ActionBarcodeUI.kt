@@ -5,8 +5,9 @@ import android.graphics.Bitmap
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.border
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -30,9 +31,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.Alignment.Companion
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -42,6 +44,7 @@ import co.xendit.components.R
 import co.xendit.components.core.CoreSdkComponent
 import co.xendit.components.data.model.PaymentInstructionTab
 import co.xendit.components.ui.helper.BarcodeGenerator
+import co.xendit.components.ui.helper.ColorHelper.parseHexColorOrNull
 import co.xendit.components.ui.helper.CurrencyUtil
 import co.xendit.components.ui.helper.SdkImageLoader
 import co.xendit.components.ui.style.xenditAppearance
@@ -59,6 +62,7 @@ internal fun ActionBarcodeUI(
   subtitle: String?,
   channelName: String,
   channelLogoUrl: String?,
+  channelBrandColor: String?,
   paymentCode: String,
   merchantName: String?,
   amount: BigDecimal?,
@@ -88,12 +92,22 @@ internal fun ActionBarcodeUI(
         )
       }.getOrNull()
     }
-
+  val borderedCardColor =
+    remember(channelBrandColor, appearance.colorPrimary) {
+      parseHexColorOrNull(channelBrandColor) ?: appearance.colorPrimary
+    }
+  val borderedCardTitleColor =
+    remember(borderedCardColor) {
+      if (borderedCardColor.luminance() > 0.65f) Color.Black else Color.White
+    }
+  val borderedCardShape =
+    remember(appearance.borderRadius) { RoundedCornerShape(appearance.borderRadius) }
   val textDownloadError = stringResource(R.string.sessionaction_image_download_error)
 
   Surface(
     modifier = modifier.fillMaxWidth(),
     color = appearance.colorBackground,
+    tonalElevation = 0.dp
   ) {
     Column(
       modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
@@ -105,7 +119,9 @@ internal fun ActionBarcodeUI(
           imageLoader = imageLoader,
           contentDescription = "toplogo",
           contentScale = ContentScale.Fit,
-          modifier = Modifier.align(Alignment.Center).height(28.dp)
+          modifier = Modifier
+            .align(Alignment.Center)
+            .height(28.dp)
         )
         IconButton(
           onClick = onClose,
@@ -127,155 +143,74 @@ internal fun ActionBarcodeUI(
         modifier = Modifier.fillMaxWidth()
       )
 
-      if (!subtitle.isNullOrBlank()) {
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-          text = subtitle,
-          style = MaterialTheme.typography.bodyMedium,
-          color = appearance.colorTextSecondary,
-          textAlign = TextAlign.Center,
-          modifier = Modifier.fillMaxWidth()
-        )
-      }
-
       Spacer(modifier = Modifier.height(16.dp))
 
       Surface(
-        modifier = Modifier
-          .fillMaxWidth()
-          .border(
-            width = 2.dp,
-            color = appearance.colorPrimary,
-            shape = RoundedCornerShape(appearance.borderRadius)
-          ),
-        shape = RoundedCornerShape(appearance.borderRadius),
+        modifier = Modifier.fillMaxWidth(),
+        border = BorderStroke(width = 3.dp, color = borderedCardColor),
+        shape = borderedCardShape,
         color = appearance.colorBackground,
         tonalElevation = 0.dp
       ) {
-        Column(
-          modifier = Modifier.padding(16.dp),
-          horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-          if (barcodeBitmap != null) {
-            Image(
-              bitmap = barcodeBitmap.asImageBitmap(),
-              contentDescription = null,
-              modifier = Modifier
-                .fillMaxWidth()
-                .height(110.dp)
-            )
-          } else {
-            Text(
-              text = stringResource(R.string.sessionaction_barcode_unable_to_generate),
-              style = MaterialTheme.typography.bodyMedium,
-              color = appearance.colorDanger,
-              textAlign = TextAlign.Center
-            )
-          }
-
-          Spacer(modifier = Modifier.height(8.dp))
-          Text(
-            text = paymentCode,
-            style = MaterialTheme.typography.titleMedium,
-            color = appearance.colorText
-          )
-
-          Spacer(modifier = Modifier.height(12.dp))
-          OutlinedButton(
-            enabled = barcodeBitmap != null,
-            onClick = {
-              val bitmap = barcodeBitmap ?: return@OutlinedButton
-              scope.launch {
-                val success = saveBarcodeToGallery(context = context, bitmap = bitmap)
-                if (!success) {
-                  snackbarHostState?.showSnackbar(textDownloadError)
-                }
-              }
-            },
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(
-              containerColor = appearance.colorBackground,
-              contentColor = appearance.colorText
-            ),
-            shape = RoundedCornerShape(999.dp)
-          ) {
-            Text(
-              text = stringResource(R.string.sessionaction_barcode_download_barcode),
-              style = MaterialTheme.typography.titleSmall
-            )
-          }
-
-          Spacer(modifier = Modifier.height(16.dp))
-
-          if (formattedAmount.isNotBlank()) {
-            Column (
-              modifier = Modifier.fillMaxWidth(),
-              horizontalAlignment = Alignment.CenterHorizontally
+        Column {
+          if (!subtitle.isNullOrBlank()) {
+            Box(
+              modifier =
+                Modifier
+                  .fillMaxWidth()
+                  .background(borderedCardColor)
+                  .padding(horizontal = 8.dp, vertical = 8.dp),
+              contentAlignment = Alignment.Center
             ) {
               Text(
-                text = stringResource(R.string.sessionaction_barcode_amount_to_pay),
-                style = MaterialTheme.typography.bodySmall,
-                color = appearance.colorTextSecondary,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth()
-              )
-              Text(
-                text = formattedAmount,
-                style = MaterialTheme.typography.titleMedium,
-                color = appearance.colorText,
+                text = subtitle,
+                style = MaterialTheme.typography.titleSmall,
+                color = borderedCardTitleColor,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth()
               )
             }
-            Spacer(modifier = Modifier.height(12.dp))
           }
-
-          Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.Top
+          Column(
+            modifier = Modifier.padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
           ) {
-            Column(modifier = Modifier.weight(1f)) {
-              Text(
-                text = stringResource(R.string.sessionaction_barcode_payment_code),
-                style = MaterialTheme.typography.bodySmall,
-                color = appearance.colorTextSecondary,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth()
+            if (barcodeBitmap != null) {
+              Image(
+                bitmap = barcodeBitmap.asImageBitmap(),
+                contentDescription = null,
+                modifier = Modifier
+                  .fillMaxWidth()
+                  .height(110.dp)
               )
-              Spacer(modifier = Modifier.height(4.dp))
+            } else {
               Text(
-                text = paymentCode,
-                style = MaterialTheme.typography.titleSmall,
-                color = appearance.colorText,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth()
-              )
-            }
-            Spacer(modifier = Modifier.size(16.dp))
-            Column(modifier = Modifier.weight(1f)) {
-              Text(
-                text = stringResource(R.string.sessionaction_barcode_seller),
-                style = MaterialTheme.typography.bodySmall,
-                color = appearance.colorTextSecondary,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth()
-              )
-              Spacer(modifier = Modifier.height(4.dp))
-              Text(
-                text = merchantName.orEmpty(),
-                style = MaterialTheme.typography.titleSmall,
-                color = appearance.colorText,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth()
+                text = stringResource(R.string.sessionaction_barcode_unable_to_generate),
+                style = MaterialTheme.typography.bodyMedium,
+                color = appearance.colorDanger,
+                textAlign = TextAlign.Center
               )
             }
-          }
 
-          Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+              text = paymentCode,
+              style = MaterialTheme.typography.titleMedium,
+              color = appearance.colorText
+            )
 
-          if (!CoreSdkComponent.isProdLive()) {
+            Spacer(modifier = Modifier.height(12.dp))
             OutlinedButton(
-              onClick = onPaymentMade,
+              enabled = barcodeBitmap != null,
+              onClick = {
+                val bitmap = barcodeBitmap ?: return@OutlinedButton
+                scope.launch {
+                  val success = saveBarcodeToGallery(context = context, bitmap = bitmap)
+                  if (!success) {
+                    snackbarHostState?.showSnackbar(textDownloadError)
+                  }
+                }
+              },
               modifier = Modifier.fillMaxWidth(),
               colors = ButtonDefaults.buttonColors(
                 containerColor = appearance.colorBackground,
@@ -284,19 +219,104 @@ internal fun ActionBarcodeUI(
               shape = RoundedCornerShape(appearance.borderRadius)
             ) {
               Text(
-                text = stringResource(R.string.sessionaction_simulate_payment),
+                text = stringResource(R.string.sessionaction_barcode_download_barcode),
                 style = MaterialTheme.typography.titleSmall
               )
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-              text = stringResource(R.string.sessionaction_simulate_payment_instructions),
-              style = MaterialTheme.typography.bodySmall,
-              color = appearance.colorTextSecondary,
-              textAlign = TextAlign.Center,
-              modifier = Modifier.fillMaxWidth()
-            )
+            Spacer(modifier = Modifier.height(16.dp))
+
+            if (formattedAmount.isNotBlank()) {
+              Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+              ) {
+                Text(
+                  text = stringResource(R.string.sessionaction_barcode_amount_to_pay),
+                  style = MaterialTheme.typography.bodySmall,
+                  color = appearance.colorTextSecondary,
+                  textAlign = TextAlign.Center,
+                  modifier = Modifier.fillMaxWidth()
+                )
+                Text(
+                  text = formattedAmount,
+                  style = MaterialTheme.typography.titleMedium,
+                  color = appearance.colorText,
+                  textAlign = TextAlign.Center,
+                  modifier = Modifier.fillMaxWidth()
+                )
+              }
+              Spacer(modifier = Modifier.height(12.dp))
+            }
+
+            Row(
+              modifier = Modifier.fillMaxWidth(),
+              verticalAlignment = Alignment.Top
+            ) {
+              Column(modifier = Modifier.weight(1f)) {
+                Text(
+                  text = stringResource(R.string.sessionaction_barcode_payment_code),
+                  style = MaterialTheme.typography.bodySmall,
+                  color = appearance.colorTextSecondary,
+                  textAlign = TextAlign.Center,
+                  modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                  text = paymentCode,
+                  style = MaterialTheme.typography.titleSmall,
+                  color = appearance.colorText,
+                  textAlign = TextAlign.Center,
+                  modifier = Modifier.fillMaxWidth()
+                )
+              }
+              Spacer(modifier = Modifier.size(16.dp))
+              Column(modifier = Modifier.weight(1f)) {
+                Text(
+                  text = stringResource(R.string.sessionaction_barcode_seller),
+                  style = MaterialTheme.typography.bodySmall,
+                  color = appearance.colorTextSecondary,
+                  textAlign = TextAlign.Center,
+                  modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                  text = merchantName.orEmpty(),
+                  style = MaterialTheme.typography.titleSmall,
+                  color = appearance.colorText,
+                  textAlign = TextAlign.Center,
+                  modifier = Modifier.fillMaxWidth()
+                )
+              }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            if (!CoreSdkComponent.isProdLive()) {
+              OutlinedButton(
+                onClick = onPaymentMade,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                  containerColor = appearance.colorBackground,
+                  contentColor = appearance.colorText
+                ),
+                shape = RoundedCornerShape(appearance.borderRadius)
+              ) {
+                Text(
+                  text = stringResource(R.string.sessionaction_simulate_payment),
+                  style = MaterialTheme.typography.titleSmall
+                )
+              }
+
+              Spacer(modifier = Modifier.height(8.dp))
+              Text(
+                text = stringResource(R.string.sessionaction_simulate_payment_instructions),
+                style = MaterialTheme.typography.bodySmall,
+                color = appearance.colorTextSecondary,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+              )
+            }
           }
         }
       }
@@ -310,7 +330,10 @@ internal fun ActionBarcodeUI(
 
 }
 
-private suspend fun saveBarcodeToGallery(context: android.content.Context, bitmap: Bitmap): Boolean {
+private suspend fun saveBarcodeToGallery(
+  context: android.content.Context,
+  bitmap: Bitmap
+): Boolean {
   return withContext(Dispatchers.IO) {
     runCatching {
       val displayName = "xendit_barcode_${UUID.randomUUID()}.png"
@@ -324,7 +347,8 @@ private suspend fun saveBarcodeToGallery(context: android.content.Context, bitma
           }
         }
       val resolver = context.contentResolver
-      val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values) ?: return@runCatching false
+      val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
+        ?: return@runCatching false
       resolver.openOutputStream(uri).use { out: OutputStream? ->
         if (out == null) return@runCatching false
         bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
