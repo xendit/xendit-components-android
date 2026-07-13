@@ -39,7 +39,7 @@ internal fun CardNumberField(
   onValueChange: (String) -> Unit,
   isError: Boolean = false,
   errorMessage: String? = null,
-  selectedCardScheme: String? = null,
+  cardSchemes: List<String>? = null,
   bffCardInfo: BffCardInfo? = null,
   shape: Shape? = null,
   noBorder: Boolean = false,
@@ -50,7 +50,7 @@ internal fun CardNumberField(
   val groupedDigitsTransformation =
     remember { GroupedDigitsTransformation(groupSize = 4, maxDigits = 19) }
   val brands = bffCardInfo?.brands.orEmpty()
-
+  val selectedCardScheme = cardSchemes?.firstOrNull()
   val candidateLogoUrl = if (selectedCardScheme != null) {
     brands.firstOrNull {
       it.name.equals(
@@ -76,9 +76,7 @@ internal fun CardNumberField(
   }
 
   val displayLogoUrl = candidateLogoUrl ?: lastResolvedLogoUrl
-  val showAllLogos =
-    displayLogoUrl == null &&
-      value.length < minDigitsToResolveScheme &&
+  val showAllLogos = (displayLogoUrl == null && value.length < minDigitsToResolveScheme) || cardSchemes?.isEmpty() == true &&
       brands.isNotEmpty()
 
   XenditTextField(
