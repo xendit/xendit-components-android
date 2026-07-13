@@ -76,7 +76,10 @@ internal fun CardNumberField(
   }
 
   val displayLogoUrl = candidateLogoUrl ?: lastResolvedLogoUrl
-  val showAllLogos = (displayLogoUrl == null && value.length < minDigitsToResolveScheme) || cardSchemes?.isEmpty() == true &&
+  val shouldShowSupportedBrands = cardSchemes?.isEmpty() == true && brands.isNotEmpty()
+  val showInitialLogos =
+    displayLogoUrl == null &&
+      value.length < minDigitsToResolveScheme &&
       brands.isNotEmpty()
 
   XenditTextField(
@@ -103,18 +106,18 @@ internal fun CardNumberField(
         horizontalArrangement = Arrangement.spacedBy(2.dp),
         verticalAlignment = Alignment.CenterVertically
       ) {
-        if (displayLogoUrl != null) {
-          CardLogo(
-            logoUrl = displayLogoUrl,
-            imageLoader = imageLoader,
-          )
-        } else if (showAllLogos) {
+        if (shouldShowSupportedBrands || showInitialLogos) {
           brands.forEach { logo ->
             CardLogo(
               logoUrl = logo.logoUrl,
               imageLoader = imageLoader,
             )
           }
+        } else if (displayLogoUrl != null) {
+          CardLogo(
+            logoUrl = displayLogoUrl,
+            imageLoader = imageLoader,
+          )
         }
       }
     }
