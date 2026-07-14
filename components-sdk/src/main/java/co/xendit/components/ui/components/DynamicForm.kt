@@ -557,7 +557,7 @@ private fun FormFieldItem(
         onValueChange = { onValueChange(propertyKey, it) },
         isError = isError,
         errorMessage = errorMessage,
-        selectedCardScheme = cardDetails?.schemes?.firstOrNull(),
+        cardSchemes = cardDetails?.schemes,
         bffCardInfo = bffCardInfo,
         shape = shape,
         noBorder = noBorder

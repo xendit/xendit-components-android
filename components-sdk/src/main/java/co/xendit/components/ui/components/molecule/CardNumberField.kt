@@ -9,8 +9,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -35,7 +39,7 @@ internal fun CardNumberField(
   onValueChange: (String) -> Unit,
   isError: Boolean = false,
   errorMessage: String? = null,
-  selectedCardScheme: String? = null,
+  cardSchemes: List<String>? = null,
   bffCardInfo: BffCardInfo? = null,
   shape: Shape? = null,
   noBorder: Boolean = false,
@@ -45,15 +49,38 @@ internal fun CardNumberField(
   val imageLoader = remember { SdkImageLoader.get(context) }
   val groupedDigitsTransformation =
     remember { GroupedDigitsTransformation(groupSize = 4, maxDigits = 19) }
-
-  val logoUrl = if (selectedCardScheme != null) {
-    bffCardInfo?.brands?.firstOrNull {
+  val brands = bffCardInfo?.brands.orEmpty()
+  val selectedCardScheme = cardSchemes?.firstOrNull()
+  val candidateLogoUrl = if (selectedCardScheme != null) {
+    brands.firstOrNull {
       it.name.equals(
         selectedCardScheme,
         ignoreCase = true
       )
     }?.logoUrl
   } else null
+
+  val minDigitsToResolveScheme = 6
+  var lastResolvedLogoUrl by remember { mutableStateOf<String?>(null) }
+
+  LaunchedEffect(candidateLogoUrl) {
+    if (candidateLogoUrl != null) {
+      lastResolvedLogoUrl = candidateLogoUrl
+    }
+  }
+
+  LaunchedEffect(value.length) {
+    if (value.length < minDigitsToResolveScheme) {
+      lastResolvedLogoUrl = null
+    }
+  }
+
+  val displayLogoUrl = candidateLogoUrl ?: lastResolvedLogoUrl
+  val shouldShowSupportedBrands = cardSchemes?.isEmpty() == true && brands.isNotEmpty()
+  val showInitialLogos =
+    displayLogoUrl == null &&
+      value.length < minDigitsToResolveScheme &&
+      brands.isNotEmpty()
 
   XenditTextField(
     modifier = modifier,
@@ -79,18 +106,18 @@ internal fun CardNumberField(
         horizontalArrangement = Arrangement.spacedBy(2.dp),
         verticalAlignment = Alignment.CenterVertically
       ) {
-        if (logoUrl != null) {
-          CardLogo(
-            logoUrl = logoUrl,
-            imageLoader = imageLoader,
-          )
-        } else {
-          bffCardInfo?.brands?.forEach { logo ->
+        if (shouldShowSupportedBrands || showInitialLogos) {
+          brands.forEach { logo ->
             CardLogo(
               logoUrl = logo.logoUrl,
               imageLoader = imageLoader,
             )
           }
+        } else if (displayLogoUrl != null) {
+          CardLogo(
+            logoUrl = displayLogoUrl,
+            imageLoader = imageLoader,
+          )
         }
       }
     }
