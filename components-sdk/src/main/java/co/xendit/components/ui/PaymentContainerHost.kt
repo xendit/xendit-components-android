@@ -63,6 +63,7 @@ import co.xendit.components.data.model.PaymentRequestStatus
 import co.xendit.components.data.model.PaymentSessionStatus
 import co.xendit.components.data.model.XenditError
 import co.xendit.components.data.model.XenditPaymentResult
+import co.xendit.components.data.model.isAvailableForAmount
 import co.xendit.components.internal_entry_point.CardViewModelFactory
 import co.xendit.components.internal_entry_point.PaymentViewModelFactory
 import co.xendit.components.ui.action.ActionBarcodeUI
@@ -76,6 +77,7 @@ import co.xendit.components.ui.components.molecule.GenericHeader
 import co.xendit.components.ui.helper.FailureCodeMessageUtil
 import co.xendit.components.ui.helper.FormChecker.validateAllField
 import co.xendit.components.ui.method.PaymentMethodsUI
+import co.xendit.components.ui.method.processAndOrderUiGroups
 import co.xendit.components.ui.style.XenditAppearance
 import co.xendit.components.ui.style.xenditAppearance
 import kotlinx.coroutines.launch
@@ -313,6 +315,22 @@ internal fun PaymentContainerHost(
   }
 
   container {
+    val supportedPaymentTypes = remember { XenditComponentsPaymentType.SUPPORTED }
+    val (filteredGroups, orderedUiGroups) =
+      remember(
+        mviState.channels,
+        merchantPreferredPaymentMethod,
+        mviState.sessionResponse?.channelUiGroups,
+        supportedPaymentTypes
+      ) {
+        processAndOrderUiGroups(
+          channels = mviState.channels,
+          merchantPreferredPaymentMethod = merchantPreferredPaymentMethod,
+          channelUiGroups = mviState.sessionResponse?.channelUiGroups,
+          supportedPaymentTypes = supportedPaymentTypes
+        )
+      }
+
     Scaffold(
       snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
       containerColor = style.colorBackground,
@@ -531,6 +549,8 @@ internal fun PaymentContainerHost(
                   val isPaymentSelected =
                     mviState.expandedUiGroup != null && mviState.selectedChannel != null
                   val selectedChannel = mviState.selectedChannel
+                  val isSelectedChannelAvailable =
+                    selectedChannel?.isAvailableForAmount(mviState.sessionResponse?.session?.amount) != false
                   val currentDraft = if (selectedChannel == null) PaymentDraft() else {
                     mviState.paymentDrafts[selectedChannel.channelCode]
                       ?: PaymentDraft(channelCode = selectedChannel.channelCode)
@@ -538,7 +558,7 @@ internal fun PaymentContainerHost(
                   val isFormFilled = currentDraft.visibleFields
                   val formValue = currentDraft.formValues
                   val isPayEnabled =
-                    isPaymentSelected && !mviState.isLoading && validateAllField(
+                    isPaymentSelected && isSelectedChannelAvailable && !mviState.isLoading && validateAllField(
                       isFormFilled,
                       formValue,
                       cardDetails = cardState.cardDetails,
@@ -546,7 +566,7 @@ internal fun PaymentContainerHost(
                     )
                   val payText =
                     if (mviState.sessionType == BffSessionType.SAVE) {
-                      stringResource(id = R.string.sessionpayment_methods_submit_add_payment_method)
+                      stringResource(id = R.string.sessionpayment_methods_add_payment_method)
                     } else {
                       val channelName = mviState.selectedChannel?.brandName ?: "Payment"
                       stringResource(id = R.string.sessionpayment_methods_submit_pay)
@@ -614,6 +634,7 @@ internal fun PaymentContainerHost(
             )
           }
         }
+
         val awaitingPaymentAction = mviState.awaitingPaymentAction
         if (awaitingPaymentAction != null) {
           val resolvedChannelName =

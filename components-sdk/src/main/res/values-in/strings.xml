@@ -132,6 +132,7 @@
   <string name="sessionnetwork_error.title">Belum terkoneksi</string>
   <string name="sessionpage_title.pay">Checkout di {{merchantName}}</string>
   <string name="sessionpage_title.save">Tambah metode pembayaran di {{merchantName}}</string>
+  <string name="sessionpayment.ewallet_save_checkbox_label">Hubungkan {{brandName}} ke {{businessName}} untuk pembelian berikutnya</string>
   <string name="sessionpayment.save_checkbox_label">Simpan metode pembayaran ini untuk pembayaran berulang</string>
   <string name="sessionpayment_items.description">Catatan:</string>
   <string name="sessionpayment_items.subscription_billing_interval_day_one">Setiap hari</string>
@@ -150,6 +151,7 @@
   <string name="sessionpayment_methods.channel_disabled_amount_too_small">Tidak tersedia untuk pembayaran ini</string>
   <string name="sessionpayment_methods.digital_wallet_or">atau</string>
   <string name="sessionpayment_methods.header">Metode Pembayaran</string>
+  <string name="sessionpayment_methods.header_2">Pilih Metode Pembayaran</string>
   <string name="sessionpayment_methods.no_available_payment_methods">Tidak ada metode pembayaran yang tersedia</string>
   <string name="sessionpayment_methods.no_available_payment_methods_subtext">Hubungi penjual untuk mendapatkan bantuan dalam menyelesaikan pembayaran Anda.</string>
   <string name="sessionpayment_methods.pay_with">Bayar dengan</string>
@@ -207,6 +209,8 @@
   <string name="sessionsimulation.simulate_scenario">Simulasikan skenario</string>
   <string name="sessionsimulation.simulate_test_scenario">Simulasikan tes skenario</string>
   <string name="sessionsimulation.want_to_test_all_scenarios">Ingin tes berbagai skenario?</string>
+  <string name="sessionvalidation.card_brand_not_allowed">Merek kartu ini tidak diterima.</string>
+  <string name="sessionvalidation.card_brand_not_supported">Kartu ini tidak didukung untuk transaksi ini.</string>
   <string name="sessionvalidation.card_cvn_invalid">CVN tidak valid</string>
   <string name="sessionvalidation.card_expiry_invalid">Tanggal kedaluwarsa kartu tidak valid</string>
   <string name="sessionvalidation.card_number_incomplete">Nomor kartu tidak lengkap</string>
