@@ -90,8 +90,8 @@ internal fun PaymentChannelSelectionUI(
   val selectedAvailabilityMessageResId =
     remember(selectedChannel, sessionAmount) {
       when (selectedChannel?.amountAvailabilityStatus(sessionAmount)) {
-        AmountAvailabilityStatus.BELOW_MIN,
-        AmountAvailabilityStatus.ABOVE_MAX -> R.string.sessionpayment_methods_channel_disabled_dropdown
+        AmountAvailabilityStatus.BELOW_MIN -> R.string.sessionpayment_methods_channel_disabled_amount_too_small
+        AmountAvailabilityStatus.ABOVE_MAX -> R.string.sessionpayment_methods_channel_disabled_amount_too_large
         else -> null
       }
     }
@@ -167,6 +167,7 @@ internal fun PaymentChannelSelectionUI(
         ) {
           channels.forEach { channel ->
             val isAvailable = channel.isAvailableForAmount(sessionAmount)
+            val availableStatus = channel.amountAvailabilityStatus(sessionAmount)
             DropdownMenuItem(
               enabled = isAvailable,
               text = {
@@ -184,14 +185,26 @@ internal fun PaymentChannelSelectionUI(
                     }
                     Spacer(modifier = Modifier.width(8.dp))
                   }
-                  Column {
+                  Column(
+                    modifier = Modifier.padding(vertical = 1.dp)
+                  ) {
                     Text(
                       text = channel.brandName,
                       color = appearance.colorText.takeIf { isAvailable } ?: appearance.colorTextSecondary
                     )
                     if (!isAvailable) {
                       Text(
-                        text = stringResource(id = R.string.sessionpayment_methods_channel_disabled_dropdown),
+                        text = when (availableStatus) {
+                          AmountAvailabilityStatus.BELOW_MIN -> {
+                            stringResource(id = R.string.sessionpayment_methods_channel_disabled_amount_too_small)
+                          }
+                          AmountAvailabilityStatus.ABOVE_MAX -> {
+                            stringResource(id = R.string.sessionpayment_methods_channel_disabled_amount_too_large)
+                          }
+                          else -> {
+                            stringResource(id = R.string.sessionpayment_methods_channel_disabled_dropdown)
+                          }
+                        },
                         style = MaterialTheme.typography.bodySmall,
                         color = appearance.colorTextSecondary
                       )
