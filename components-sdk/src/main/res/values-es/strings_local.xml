@@ -19,4 +19,7 @@
   <string name="ewallet_select_placeholder">Selecciona un monedero digital</string>
   <string name="ewallet_link_for_future_purchase">Vincula tu %1$s con %2$s para futuras compras</string>
   <string name="sessionpayment_methods_select_payment_method">Seleccionar método de pago</string>
+  <string name="sessionpayment_methods_channel_disabled_dropdown">No disponible para este pago</string>
+  <string name="sessionpayment_methods_channel_disabled_amount_too_large">El monto del pago supera el límite máximo de transacción</string>
+  <string name="sessionpayment_methods_channel_disabled_amount_too_small">El monto del pago está por debajo del límite mínimo de transacción</string>
 </resources>

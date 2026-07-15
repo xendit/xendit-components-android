@@ -19,4 +19,7 @@
   <string name="ewallet_select_placeholder">เลือกอีวอลเล็ต</string>
   <string name="ewallet_link_for_future_purchase">เชื่อมต่อ %1$s ของคุณกับ %2$s เพื่อการซื้อในครั้งถัดไป</string>
   <string name="sessionpayment_methods_select_payment_method">เลือกวิธีการชำระเงิน</string>
+  <string name="sessionpayment_methods_channel_disabled_dropdown">ไม่สามารถใช้ได้กับการชำระเงินนี้</string>
+  <string name="sessionpayment_methods_channel_disabled_amount_too_large">จำนวนเงินที่ชำระสูงกว่าวงเงินธุรกรรมสูงสุด</string>
+  <string name="sessionpayment_methods_channel_disabled_amount_too_small">จำนวนเงินที่ชำระต่ำกว่าวงเงินธุรกรรมขั้นต่ำ</string>
 </resources>

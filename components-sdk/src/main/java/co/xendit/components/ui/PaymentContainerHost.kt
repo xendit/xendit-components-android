@@ -63,6 +63,7 @@ import co.xendit.components.data.model.PaymentRequestStatus
 import co.xendit.components.data.model.PaymentSessionStatus
 import co.xendit.components.data.model.XenditError
 import co.xendit.components.data.model.XenditPaymentResult
+import co.xendit.components.data.model.isAvailableForAmount
 import co.xendit.components.internal_entry_point.CardViewModelFactory
 import co.xendit.components.internal_entry_point.PaymentViewModelFactory
 import co.xendit.components.ui.action.ActionQrUI
@@ -507,6 +508,8 @@ internal fun PaymentContainerHost(
                   val isPaymentSelected =
                     mviState.expandedUiGroup != null && mviState.selectedChannel != null
                   val selectedChannel = mviState.selectedChannel
+                  val isSelectedChannelAvailable =
+                    selectedChannel?.isAvailableForAmount(mviState.sessionResponse?.session?.amount) != false
                   val currentDraft = if (selectedChannel == null) PaymentDraft() else {
                     mviState.paymentDrafts[selectedChannel.channelCode]
                       ?: PaymentDraft(channelCode = selectedChannel.channelCode)
@@ -514,7 +517,7 @@ internal fun PaymentContainerHost(
                   val isFormFilled = currentDraft.visibleFields
                   val formValue = currentDraft.formValues
                   val isPayEnabled =
-                    isPaymentSelected && !mviState.isLoading && validateAllField(
+                    isPaymentSelected && isSelectedChannelAvailable && !mviState.isLoading && validateAllField(
                       isFormFilled,
                       formValue,
                       cardDetails = cardState.cardDetails,

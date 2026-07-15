@@ -146,8 +146,6 @@
   <string name="sessionpayment_items.total">Tổng cộng</string>
   <string name="sessionpayment_items.upcoming_charge"></string>
   <string name="sessionpayment_methods.add_payment_method">Thêm phương thức thanh toán</string>
-  <string name="sessionpayment_methods.channel_disabled_amount_too_large">Không khả dụng cho khoản thanh toán này</string>
-  <string name="sessionpayment_methods.channel_disabled_amount_too_small">Không khả dụng cho khoản thanh toán này</string>
   <string name="sessionpayment_methods.digital_wallet_or"></string>
   <string name="sessionpayment_methods.header">Phương thức Thanh toán</string>
   <string name="sessionpayment_methods.no_available_payment_methods"></string>

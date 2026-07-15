@@ -146,8 +146,6 @@
   <string name="sessionpayment_items.total">รวมทั้งสิ้น</string>
   <string name="sessionpayment_items.upcoming_charge">การชำระเงินครั้งถัดไป</string>
   <string name="sessionpayment_methods.add_payment_method">เพิ่มวิธีการชำระเงิน</string>
-  <string name="sessionpayment_methods.channel_disabled_amount_too_large">ไม่สามารถใช้ได้กับการชำระเงินนี้</string>
-  <string name="sessionpayment_methods.channel_disabled_amount_too_small">ไม่สามารถใช้ได้กับการชำระเงินนี้</string>
   <string name="sessionpayment_methods.digital_wallet_or">หรือ</string>
   <string name="sessionpayment_methods.header">วิธีการชำระเงิน</string>
   <string name="sessionpayment_methods.no_available_payment_methods">ไม่มีวิธีการชำระเงินที่พร้อมใช้งาน</string>

@@ -146,8 +146,6 @@
   <string name="sessionpayment_items.total"></string>
   <string name="sessionpayment_items.upcoming_charge"></string>
   <string name="sessionpayment_methods.add_payment_method"></string>
-  <string name="sessionpayment_methods.channel_disabled_amount_too_large"></string>
-  <string name="sessionpayment_methods.channel_disabled_amount_too_small"></string>
   <string name="sessionpayment_methods.digital_wallet_or"></string>
   <string name="sessionpayment_methods.header"></string>
   <string name="sessionpayment_methods.no_available_payment_methods"></string>

@@ -35,14 +35,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import co.xendit.components.R
+import co.xendit.components.data.model.AmountAvailabilityStatus
 import co.xendit.components.data.model.BffChannel
 import co.xendit.components.data.model.BffSession
 import co.xendit.components.data.model.ChannelFormField
+import co.xendit.components.data.model.amountAvailabilityStatus
+import co.xendit.components.data.model.isAvailableForAmount
 import co.xendit.components.ui.components.molecule.ChannelLogo
 import co.xendit.components.ui.components.molecule.CheckboxWithText
 import co.xendit.components.ui.components.molecule.DashedDivider
@@ -79,6 +84,14 @@ internal fun PaymentChannelSelectionUI(
   val visibleFields = remember { mutableStateOf<List<ChannelFormField>>(emptyList()) }
   val imageLoader = remember { SdkImageLoader.get(context) }
   val isSaveChecked = remember { mutableStateOf(false) }
+  val sessionAmount = session?.amount
+  val hasAvailableChannel = channels.any { it.isAvailableForAmount(sessionAmount) }
+  val selectedAvailabilityMessageResId =
+    when (selectedChannel?.amountAvailabilityStatus(sessionAmount)) {
+      AmountAvailabilityStatus.BELOW_MIN,
+      AmountAvailabilityStatus.ABOVE_MAX -> R.string.sessionpayment_methods_channel_disabled_dropdown
+      else -> null
+    }
 
   LaunchedEffect(
     contentChannel?.channelCode
@@ -106,13 +119,15 @@ internal fun PaymentChannelSelectionUI(
 
     ExposedDropdownMenuBox(
       expanded = expanded,
-      onExpandedChange = { if (channels.size > 1) expanded = !expanded },
+      onExpandedChange = { if (channels.size > 1 && hasAvailableChannel) expanded = !expanded },
       modifier = Modifier.fillMaxWidth()
     ) {
       XenditDropdownHeaderField(
         value = selectedChannel?.brandName ?: "",
         placeholder = placeholderText,
         isExpanded = expanded,
+        contentColor = appearance.colorText.takeIf { hasAvailableChannel } ?: appearance.colorTextSecondary,
+        placeholderColor = appearance.colorTextPlaceholder.takeIf { hasAvailableChannel } ?: appearance.colorTextSecondary,
         leadingContent = selectedChannel?.let { channel ->
           {
             Row(
@@ -137,7 +152,7 @@ internal fun PaymentChannelSelectionUI(
         modifier = Modifier
           .menuAnchor(
             type = ExposedDropdownMenuAnchorType.PrimaryNotEditable,
-            enabled = channels.size > 1
+            enabled = channels.size > 1 && hasAvailableChannel
           )
           .fillMaxWidth()
       )
@@ -148,27 +163,58 @@ internal fun PaymentChannelSelectionUI(
           onDismissRequest = { expanded = false }
         ) {
           channels.forEach { channel ->
+            val isAvailable = channel.isAvailableForAmount(sessionAmount)
             DropdownMenuItem(
+              enabled = isAvailable,
               text = {
-                Row {
+                Row(
+                  verticalAlignment = Alignment.CenterVertically
+                ) {
                   if (channel.brandLogoUrl != null) {
-                    ChannelLogo(
-                      logoUrl = channel.brandLogoUrl,
-                      imageLoader = imageLoader,
-                    )
+                    Box(
+                      modifier = Modifier.graphicsLayer { alpha = if (isAvailable) 1f else 0.38f }
+                    ) {
+                      ChannelLogo(
+                        logoUrl = channel.brandLogoUrl,
+                        imageLoader = imageLoader,
+                      )
+                    }
                     Spacer(modifier = Modifier.width(8.dp))
                   }
-                  Text(channel.brandName)
+                  Column {
+                    Text(
+                      text = channel.brandName,
+                      color = appearance.colorText.takeIf { isAvailable } ?: appearance.colorTextSecondary
+                    )
+                    if (!isAvailable) {
+                      Text(
+                        text = stringResource(id = R.string.sessionpayment_methods_channel_disabled_dropdown),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = appearance.colorTextSecondary
+                      )
+                    }
+                  }
                 }
               },
               onClick = {
-                onSelectChannel(channel.channelCode)
-                expanded = false
+                if (isAvailable) {
+                  onSelectChannel(channel.channelCode)
+                  expanded = false
+                }
               }
             )
           }
         }
       }
+    }
+
+    if (selectedAvailabilityMessageResId != null) {
+      Spacer(modifier = Modifier.height(4.dp))
+      Text(
+        text = stringResource(id = selectedAvailabilityMessageResId),
+        style = MaterialTheme.typography.bodySmall,
+        color = appearance.colorTextSecondary
+      )
     }
 
     val banner = contentChannel?.banner

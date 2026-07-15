@@ -19,4 +19,7 @@
   <string name="ewallet_select_placeholder">Chọn ví điện tử</string>
   <string name="ewallet_link_for_future_purchase">Liên kết %1$s của bạn với %2$s cho lần mua tiếp theo</string>
   <string name="sessionpayment_methods_select_payment_method">Chọn phương thức thanh toán</string>
+  <string name="sessionpayment_methods_channel_disabled_dropdown">Không khả dụng cho khoản thanh toán này</string>
+  <string name="sessionpayment_methods_channel_disabled_amount_too_large">Số tiền thanh toán vượt quá giới hạn giao dịch tối đa</string>
+  <string name="sessionpayment_methods_channel_disabled_amount_too_small">Số tiền thanh toán thấp hơn giới hạn giao dịch tối thiểu</string>
 </resources>

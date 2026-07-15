@@ -146,8 +146,6 @@
   <string name="sessionpayment_items.total">Total</string>
   <string name="sessionpayment_items.upcoming_charge">Upcoming Charge</string>
   <string name="sessionpayment_methods.add_payment_method">Add payment method</string>
-  <string name="sessionpayment_methods.channel_disabled_amount_too_large">The payment amount is above the max. transaction limit</string>
-  <string name="sessionpayment_methods.channel_disabled_amount_too_small">The payment amount is below the min. transaction limit</string>
   <string name="sessionpayment_methods.digital_wallet_or">or</string>
   <string name="sessionpayment_methods.header">Payment Methods</string>
   <string name="sessionpayment_methods.no_available_payment_methods">No payment methods available</string>

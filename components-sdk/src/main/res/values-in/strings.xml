@@ -146,8 +146,6 @@
   <string name="sessionpayment_items.total">Total</string>
   <string name="sessionpayment_items.upcoming_charge">Pembayaran Berikutnya</string>
   <string name="sessionpayment_methods.add_payment_method">Tambah metode pembayaran</string>
-  <string name="sessionpayment_methods.channel_disabled_amount_too_large">Tidak tersedia untuk pembayaran ini</string>
-  <string name="sessionpayment_methods.channel_disabled_amount_too_small">Tidak tersedia untuk pembayaran ini</string>
   <string name="sessionpayment_methods.digital_wallet_or">atau</string>
   <string name="sessionpayment_methods.header">Metode Pembayaran</string>
   <string name="sessionpayment_methods.no_available_payment_methods">Tidak ada metode pembayaran yang tersedia</string>
