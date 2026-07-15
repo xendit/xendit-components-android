@@ -134,12 +134,14 @@ internal fun PaymentMethodsUI(
         val sessionAmount = session?.amount
         val allChannelsUnavailable =
           groupChannels.isNotEmpty() && groupChannels.none { it.isAvailableForAmount(sessionAmount) }
+        val groupAvailabilityStatus =
+          if (allChannelsUnavailable) groupChannels.groupAmountAvailabilityStatus(sessionAmount) else null
         val groupDisabledMessageResId =
           when {
             !allChannelsUnavailable -> null
-            groupChannels.groupAmountAvailabilityStatus(sessionAmount) == AmountAvailabilityStatus.ABOVE_MAX ->
+            groupAvailabilityStatus == AmountAvailabilityStatus.ABOVE_MAX ->
               R.string.sessionpayment_methods_channel_disabled_amount_too_large
-            groupChannels.groupAmountAvailabilityStatus(sessionAmount) == AmountAvailabilityStatus.BELOW_MIN ->
+            groupAvailabilityStatus == AmountAvailabilityStatus.BELOW_MIN ->
               R.string.sessionpayment_methods_channel_disabled_amount_too_small
             else -> R.string.sessionpayment_methods_channel_disabled_dropdown
           }
@@ -425,12 +427,14 @@ internal fun processAndOrderUiGroups(
 
   val masterUiOrder = channelUiGroups?.map { it.id } ?: emptyList()
 
-  val groups = channels
-    .filter { channel ->
-      channel.pmType in supportedPaymentTypes &&
-          (preferredList.isEmpty() || channel.pmType in preferredList)
-    }
-    .groupBy { it.uiGroup }
+  val supportedChannels = channels.filter { it.pmType in supportedPaymentTypes }
+  val preferredChannels =
+    if (preferredList.isNotEmpty()) supportedChannels.filter { it.pmType in preferredList }
+    else supportedChannels
+  val preferredGroups = preferredChannels.groupBy { it.uiGroup }
+  val groups =
+    if (preferredList.isNotEmpty() && preferredGroups.isEmpty()) supportedChannels.groupBy { it.uiGroup }
+    else preferredGroups
 
   val orderedUiGroups = groups.keys.sortedWith(
     compareBy<String> { uiGroup ->

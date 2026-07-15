@@ -329,11 +329,15 @@ internal fun PaymentContainerHost(
           supportedPaymentTypes = supportedPaymentTypes
         )
       }
+    val sessionAmount = mviState.sessionResponse?.session?.amount
     val hasAnyRenderablePaymentMethod =
       orderedUiGroups.any { filteredGroups[it].orEmpty().isNotEmpty() }
     val hasAnyAvailablePaymentMethod =
-      filteredGroups.values.flatten()
-        .any { it.isAvailableForAmount(mviState.sessionResponse?.session?.amount) }
+      remember(filteredGroups, sessionAmount) {
+        filteredGroups.values.any { group ->
+          group.any { it.isAvailableForAmount(sessionAmount) }
+        }
+      }
     val showNoAvailablePaymentMethodsDialog =
       mviState.sessionResponse != null &&
         mviState.errorMessage == null &&

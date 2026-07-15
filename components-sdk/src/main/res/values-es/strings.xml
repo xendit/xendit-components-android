@@ -132,7 +132,7 @@
   <string name="sessionnetwork_error.title">No se puede conectar</string>
   <string name="sessionpage_title.pay">Checkout en {{merchantName}}</string>
   <string name="sessionpage_title.save">Agregar método de pago en {{merchantName}}</string>
-  <string name="sessionpayment.ewallet_save_checkbox_label"></string>
+  <string name="sessionpayment.ewallet_save_checkbox_label">Vincula {{brandName}} a {{businessName}} para futuras compras</string>
   <string name="sessionpayment.save_checkbox_label">Guarda este método de pago para pagos recurrentes</string>
   <string name="sessionpayment_items.description">Nota:</string>
   <string name="sessionpayment_items.subscription_billing_interval_day_one">Todos los días</string>

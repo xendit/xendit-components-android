@@ -34,8 +34,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -85,12 +85,15 @@ internal fun PaymentChannelSelectionUI(
   val imageLoader = remember { SdkImageLoader.get(context) }
   val isSaveChecked = remember { mutableStateOf(false) }
   val sessionAmount = session?.amount
-  val hasAvailableChannel = channels.any { it.isAvailableForAmount(sessionAmount) }
+  val hasAvailableChannel =
+    remember(channels, sessionAmount) { channels.any { it.isAvailableForAmount(sessionAmount) } }
   val selectedAvailabilityMessageResId =
-    when (selectedChannel?.amountAvailabilityStatus(sessionAmount)) {
-      AmountAvailabilityStatus.BELOW_MIN,
-      AmountAvailabilityStatus.ABOVE_MAX -> R.string.sessionpayment_methods_channel_disabled_dropdown
-      else -> null
+    remember(selectedChannel, sessionAmount) {
+      when (selectedChannel?.amountAvailabilityStatus(sessionAmount)) {
+        AmountAvailabilityStatus.BELOW_MIN,
+        AmountAvailabilityStatus.ABOVE_MAX -> R.string.sessionpayment_methods_channel_disabled_dropdown
+        else -> null
+      }
     }
 
   LaunchedEffect(
@@ -172,7 +175,7 @@ internal fun PaymentChannelSelectionUI(
                 ) {
                   if (channel.brandLogoUrl != null) {
                     Box(
-                      modifier = Modifier.graphicsLayer { alpha = if (isAvailable) 1f else 0.38f }
+                      modifier = Modifier.alpha(if (isAvailable) 1f else 0.38f)
                     ) {
                       ChannelLogo(
                         logoUrl = channel.brandLogoUrl,

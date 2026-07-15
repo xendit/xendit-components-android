@@ -25,11 +25,8 @@ internal fun List<BffChannel>.groupAmountAvailabilityStatus(
   amount: BigDecimal?
 ): AmountAvailabilityStatus? {
   if (isEmpty() || amount == null) return null
-  val statuses = map { it.amountAvailabilityStatus(amount) }
-  return when {
-    statuses.all { it == AmountAvailabilityStatus.AVAILABLE } -> AmountAvailabilityStatus.AVAILABLE
-    statuses.all { it == AmountAvailabilityStatus.ABOVE_MAX } -> AmountAvailabilityStatus.ABOVE_MAX
-    statuses.all { it == AmountAvailabilityStatus.BELOW_MIN } -> AmountAvailabilityStatus.BELOW_MIN
-    else -> null
-  }
+
+  val firstStatus = first().amountAvailabilityStatus(amount)
+
+  return if (all { it.amountAvailabilityStatus(amount) == firstStatus }) firstStatus else null
 }
