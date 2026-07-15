@@ -76,6 +76,7 @@ import co.xendit.components.ui.components.molecule.GenericHeader
 import co.xendit.components.ui.helper.FailureCodeMessageUtil
 import co.xendit.components.ui.helper.FormChecker.validateAllField
 import co.xendit.components.ui.method.PaymentMethodsUI
+import co.xendit.components.ui.method.processAndOrderUiGroups
 import co.xendit.components.ui.style.XenditAppearance
 import co.xendit.components.ui.style.xenditAppearance
 import kotlinx.coroutines.launch
@@ -313,6 +314,34 @@ internal fun PaymentContainerHost(
   }
 
   container {
+    val supportedPaymentTypes = remember { XenditComponentsPaymentType.SUPPORTED }
+    val (filteredGroups, orderedUiGroups) =
+      remember(
+        mviState.channels,
+        merchantPreferredPaymentMethod,
+        mviState.sessionResponse?.channelUiGroups,
+        supportedPaymentTypes
+      ) {
+        processAndOrderUiGroups(
+          channels = mviState.channels,
+          merchantPreferredPaymentMethod = merchantPreferredPaymentMethod,
+          channelUiGroups = mviState.sessionResponse?.channelUiGroups,
+          supportedPaymentTypes = supportedPaymentTypes
+        )
+      }
+    val hasAnyRenderablePaymentMethod =
+      orderedUiGroups.any { filteredGroups[it].orEmpty().isNotEmpty() }
+    val hasAnyAvailablePaymentMethod =
+      filteredGroups.values.flatten()
+        .any { it.isAvailableForAmount(mviState.sessionResponse?.session?.amount) }
+    val showNoAvailablePaymentMethodsDialog =
+      mviState.sessionResponse != null &&
+        mviState.errorMessage == null &&
+        mviState.paymentActionRedirect == null &&
+        mviState.presentToCustomerPaymentAction == null &&
+        !mviState.isLoading &&
+        (!hasAnyRenderablePaymentMethod || !hasAnyAvailablePaymentMethod)
+
     Scaffold(
       snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
       containerColor = style.colorBackground,
@@ -587,6 +616,30 @@ internal fun PaymentContainerHost(
               text = { Text(mviState.errorMessage ?: "") },
               confirmButton = {
                 Button(onClick = { onCleanup() }) {
+                  Text(stringResource(R.string.sessiondialog_close))
+                }
+              }
+            )
+          }
+        }
+        if (showNoAvailablePaymentMethodsDialog) {
+          Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            AlertDialog(
+              onDismissRequest = {},
+              properties = DialogProperties(
+                dismissOnBackPress = false,
+                dismissOnClickOutside = false
+              ),
+              title = {
+                Text(stringResource(id = R.string.sessionpayment_methods_no_available_payment_methods))
+              },
+              text = {
+                Text(
+                  stringResource(id = R.string.sessionpayment_methods_no_available_payment_methods_subtext)
+                )
+              },
+              confirmButton = {
+                Button(onClick = dismiss) {
                   Text(stringResource(R.string.sessiondialog_close))
                 }
               }
