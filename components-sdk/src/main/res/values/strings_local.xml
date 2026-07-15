@@ -20,6 +20,4 @@
   <string name="ewallet_link_for_future_purchase">Link your %1$s with %2$s for future purchase</string>
   <string name="sessionpayment_methods_select_payment_method">Select Payment Method</string>
   <string name="sessionpayment_methods_channel_disabled_dropdown">Not available for this payment</string>
-  <string name="sessionpayment_methods_channel_disabled_amount_too_large">The payment amount is above the max transaction limit</string>
-  <string name="sessionpayment_methods_channel_disabled_amount_too_small">The payment amount is below the min transaction limit</string>
 </resources>

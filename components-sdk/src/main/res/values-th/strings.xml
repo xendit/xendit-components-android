@@ -128,10 +128,11 @@
   <string name="sessioninstallment_plan.pay_in_full">ชำระเต็มจำนวน — {{amount}}</string>
   <string name="sessioninstallment_plan.pay_in_installments">{{installments}}x งวด — {{amount}}</string>
   <string name="sessionnavigation.back">กลับ</string>
-  <string name="sessionnetwork_error.subtext"></string>
-  <string name="sessionnetwork_error.title"></string>
+  <string name="sessionnetwork_error.subtext">โปรดตรวจสอบการเชื่อมต่ออินเทอร์เน็ตของคุณแล้วลองใหม่อีกครั้ง</string>
+  <string name="sessionnetwork_error.title">ไม่สามารถเชื่อมต่อได้</string>
   <string name="sessionpage_title.pay">ชำระเงินที่ {{merchantName}}</string>
   <string name="sessionpage_title.save">เพิ่มวิธีการชำระเงินที่ {{merchantName}}</string>
+  <string name="sessionpayment.ewallet_save_checkbox_label">เชื่อมต่อ {{brandName}} กับ {{businessName}} สำหรับการซื้อครั้งถัดไป</string>
   <string name="sessionpayment.save_checkbox_label">บันทึกวิธีการชําระเงินนี้สําหรับการชําระเงินอัตโนมัติ</string>
   <string name="sessionpayment_items.description">คำอธิบาย</string>
   <string name="sessionpayment_items.subscription_billing_interval_day_one">ทุกวัน</string>
@@ -146,8 +147,11 @@
   <string name="sessionpayment_items.total">รวมทั้งสิ้น</string>
   <string name="sessionpayment_items.upcoming_charge">การชำระเงินครั้งถัดไป</string>
   <string name="sessionpayment_methods.add_payment_method">เพิ่มวิธีการชำระเงิน</string>
+  <string name="sessionpayment_methods.channel_disabled_amount_too_large">ไม่สามารถใช้ได้กับการชำระเงินนี้</string>
+  <string name="sessionpayment_methods.channel_disabled_amount_too_small">ไม่สามารถใช้ได้กับการชำระเงินนี้</string>
   <string name="sessionpayment_methods.digital_wallet_or">หรือ</string>
   <string name="sessionpayment_methods.header">วิธีการชำระเงิน</string>
+  <string name="sessionpayment_methods.header_2">เลือกวิธีการชำระเงิน</string>
   <string name="sessionpayment_methods.no_available_payment_methods">ไม่มีวิธีการชำระเงินที่พร้อมใช้งาน</string>
   <string name="sessionpayment_methods.no_available_payment_methods_subtext">กรุณาติดต่อผู้ขายเพื่อขอความช่วยเหลือในการดำเนินการชำระเงินให้เสร็จสิ้น</string>
   <string name="sessionpayment_methods.pay_with">ชำระเงินด้วย</string>
@@ -205,6 +209,8 @@
   <string name="sessionsimulation.simulate_scenario">จำลองสถานการณ์</string>
   <string name="sessionsimulation.simulate_test_scenario">จำลองสถานการณ์ทดสอบ</string>
   <string name="sessionsimulation.want_to_test_all_scenarios">ต้องการทดสอบสถานการณ์อื่นไหม?</string>
+  <string name="sessionvalidation.card_brand_not_allowed">ไม่รองรับบัตรประเภทนี้</string>
+  <string name="sessionvalidation.card_brand_not_supported">แบรนด์บัตรนี้ไม่รองรับสำหรับธุรกรรมนี้</string>
   <string name="sessionvalidation.card_cvn_invalid">CVN ไม่ถูกต้อง</string>
   <string name="sessionvalidation.card_expiry_invalid">วันหมดอายุของบัตรไม่ถูกต้อง</string>
   <string name="sessionvalidation.card_number_incomplete">หมายเลขบัตรไม่ครบถ้วน</string>

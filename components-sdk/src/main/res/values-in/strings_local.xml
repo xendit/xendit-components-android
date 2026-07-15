@@ -20,6 +20,4 @@
   <string name="ewallet_link_for_future_purchase">Hubungkan %1$s Anda dengan %2$s untuk pembelian berikutnya</string>
   <string name="sessionpayment_methods_select_payment_method">Pilih Metode Pembayaran</string>
   <string name="sessionpayment_methods_channel_disabled_dropdown">Tidak tersedia untuk pembayaran ini</string>
-  <string name="sessionpayment_methods_channel_disabled_amount_too_large">Jumlah pembayaran melebihi batas maksimum transaksi</string>
-  <string name="sessionpayment_methods_channel_disabled_amount_too_small">Jumlah pembayaran di bawah batas minimum transaksi</string>
 </resources>

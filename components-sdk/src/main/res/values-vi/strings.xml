@@ -132,6 +132,7 @@
   <string name="sessionnetwork_error.title"></string>
   <string name="sessionpage_title.pay">Thanh toán tại {{merchantName}}</string>
   <string name="sessionpage_title.save">Thêm phương thức thanh toán tại {{merchantName}}</string>
+  <string name="sessionpayment.ewallet_save_checkbox_label">Liên kết {{brandName}} với {{businessName}} cho các lần mua hàng tiếp theo</string>
   <string name="sessionpayment.save_checkbox_label">Lưu phương thức thanh toán này cho các thanh toán định kỳ</string>
   <string name="sessionpayment_items.description">Ghi chú:</string>
   <string name="sessionpayment_items.subscription_billing_interval_day_one"></string>
@@ -146,8 +147,11 @@
   <string name="sessionpayment_items.total">Tổng cộng</string>
   <string name="sessionpayment_items.upcoming_charge"></string>
   <string name="sessionpayment_methods.add_payment_method">Thêm phương thức thanh toán</string>
+  <string name="sessionpayment_methods.channel_disabled_amount_too_large">Không khả dụng cho khoản thanh toán này</string>
+  <string name="sessionpayment_methods.channel_disabled_amount_too_small">Không khả dụng cho khoản thanh toán này</string>
   <string name="sessionpayment_methods.digital_wallet_or"></string>
   <string name="sessionpayment_methods.header">Phương thức Thanh toán</string>
+  <string name="sessionpayment_methods.header_2">Chọn phương thức thanh toán</string>
   <string name="sessionpayment_methods.no_available_payment_methods"></string>
   <string name="sessionpayment_methods.no_available_payment_methods_subtext"></string>
   <string name="sessionpayment_methods.pay_with">Thanh toán bằng</string>
@@ -205,6 +209,8 @@
   <string name="sessionsimulation.simulate_scenario"></string>
   <string name="sessionsimulation.simulate_test_scenario"></string>
   <string name="sessionsimulation.want_to_test_all_scenarios"></string>
+  <string name="sessionvalidation.card_brand_not_allowed"></string>
+  <string name="sessionvalidation.card_brand_not_supported">Thương hiệu thẻ này không được hỗ trợ cho giao dịch này.</string>
   <string name="sessionvalidation.card_cvn_invalid">CVN không hợp lệ</string>
   <string name="sessionvalidation.card_expiry_invalid">Ngày hết hạn thẻ không hợp lệ</string>
   <string name="sessionvalidation.card_number_incomplete">Số thẻ chưa đầy đủ</string>

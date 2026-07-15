@@ -132,6 +132,7 @@
   <string name="sessionnetwork_error.title">Unable to Connect</string>
   <string name="sessionpage_title.pay">Checkout at {{merchantName}}</string>
   <string name="sessionpage_title.save">Add payment method at {{merchantName}}</string>
+  <string name="sessionpayment.ewallet_save_checkbox_label">Link {{brandName}} to {{businessName}} for future purchases</string>
   <string name="sessionpayment.save_checkbox_label">Save this payment method for recurring payments</string>
   <string name="sessionpayment_items.description">Note:</string>
   <string name="sessionpayment_items.subscription_billing_interval_day_one">Every day</string>
@@ -146,8 +147,11 @@
   <string name="sessionpayment_items.total">Total</string>
   <string name="sessionpayment_items.upcoming_charge">Upcoming Charge</string>
   <string name="sessionpayment_methods.add_payment_method">Add payment method</string>
+  <string name="sessionpayment_methods.channel_disabled_amount_too_large">The payment amount is above the max. transaction limit</string>
+  <string name="sessionpayment_methods.channel_disabled_amount_too_small">The payment amount is below the min. transaction limit</string>
   <string name="sessionpayment_methods.digital_wallet_or">or</string>
   <string name="sessionpayment_methods.header">Payment Methods</string>
+  <string name="sessionpayment_methods.header_2">Select Payment Method</string>
   <string name="sessionpayment_methods.no_available_payment_methods">No payment methods available</string>
   <string name="sessionpayment_methods.no_available_payment_methods_subtext">Contact the seller for assistance to complete your payment.</string>
   <string name="sessionpayment_methods.pay_with">Pay with</string>
@@ -205,6 +209,8 @@
   <string name="sessionsimulation.simulate_scenario">Simulate scenario</string>
   <string name="sessionsimulation.simulate_test_scenario">Simulate a test scenario</string>
   <string name="sessionsimulation.want_to_test_all_scenarios">Want to test different scenarios?</string>
+  <string name="sessionvalidation.card_brand_not_allowed">This card brand is not accepted.</string>
+  <string name="sessionvalidation.card_brand_not_supported">This card brand is not supported for this transaction.</string>
   <string name="sessionvalidation.card_cvn_invalid">CVN is not valid</string>
   <string name="sessionvalidation.card_expiry_invalid">Card expiry is not valid</string>
   <string name="sessionvalidation.card_number_incomplete">Card number is incomplete</string>
