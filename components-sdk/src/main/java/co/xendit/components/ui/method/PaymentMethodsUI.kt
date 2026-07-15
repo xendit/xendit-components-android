@@ -28,10 +28,12 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import co.xendit.components.R
 import co.xendit.components.XenditComponentsPaymentType
+import co.xendit.components.data.model.AmountAvailabilityStatus
 import co.xendit.components.data.model.BffBusiness
 import co.xendit.components.data.model.BffChannel
 import co.xendit.components.data.model.BffChannelUiGroup
@@ -42,6 +44,8 @@ import co.xendit.components.data.model.CardDetails
 import co.xendit.components.data.model.ChannelFormField
 import co.xendit.components.data.model.InstallmentPlan
 import co.xendit.components.data.model.PaymentDraft
+import co.xendit.components.data.model.groupAmountAvailabilityStatus
+import co.xendit.components.data.model.isAvailableForAmount
 import co.xendit.components.ui.ChannelVariantChannels
 import co.xendit.components.ui.banktransfer.BankTransferPaymentUI
 import co.xendit.components.ui.card.CardPaymentUI
@@ -127,6 +131,20 @@ internal fun PaymentMethodsUI(
         val iconUrl = null //groupMeta?.iconUrl?.takeIf { it.isNotBlank() } cant use this now
         val groupChannels = groups[uiGroup].orEmpty()
         val pmType = groupChannels.firstOrNull()?.pmType
+        val sessionAmount = session?.amount
+        val allChannelsUnavailable =
+          groupChannels.isNotEmpty() && groupChannels.none { it.isAvailableForAmount(sessionAmount) }
+        val groupAvailabilityStatus =
+          if (allChannelsUnavailable) groupChannels.groupAmountAvailabilityStatus(sessionAmount) else null
+        val groupDisabledMessageResId =
+          when {
+            !allChannelsUnavailable -> null
+            groupAvailabilityStatus == AmountAvailabilityStatus.ABOVE_MAX ->
+              R.string.sessionpayment_methods_channel_disabled_amount_too_large
+            groupAvailabilityStatus == AmountAvailabilityStatus.BELOW_MIN ->
+              R.string.sessionpayment_methods_channel_disabled_amount_too_small
+            else -> R.string.sessionpayment_methods_channel_disabled_dropdown
+          }
 
         Box(
           modifier = Modifier
@@ -147,15 +165,18 @@ internal fun PaymentMethodsUI(
               text = displayName,
               leftIcon = fallback.second,
               leftIconUrl = iconUrl,
-              isExpanded = isExpanded,
-              isSelected = isExpanded,
+              supportingText =
+                groupDisabledMessageResId?.let { stringResource(id = it) },
+              isExpanded = isExpanded && !allChannelsUnavailable,
+              isSelected = isExpanded && !allChannelsUnavailable,
+              enabled = !allChannelsUnavailable,
               onToggle = {
                 onToggleGroup(uiGroup)
               }
             )
 
             // expanded content here
-            if (isExpanded) {
+            if (isExpanded && !allChannelsUnavailable) {
               Spacer(modifier = Modifier.height(8.dp))
               when (pmType) {
                 XenditComponentsPaymentType.CARDS -> {
@@ -304,8 +325,10 @@ private fun SelectableHeaderItem(
   text: String,
   @DrawableRes leftIcon: Int,
   leftIconUrl: String?,
+  supportingText: String? = null,
   isExpanded: Boolean,
   isSelected: Boolean,
+  enabled: Boolean = true,
   onToggle: () -> Unit,
   modifier: Modifier = Modifier
 ) {
@@ -314,14 +337,20 @@ private fun SelectableHeaderItem(
   val imageLoader = remember { SdkImageLoader.get(context) }
   val activeColor = appearance.colorPrimary
   val inactiveColor = MaterialTheme.colorScheme.onSurface
+  val disabledColor = appearance.colorTextSecondary
 
-  val contentColor = if (isSelected) activeColor else inactiveColor
+  val contentColor =
+    when {
+      !enabled -> disabledColor
+      isSelected -> activeColor
+      else -> inactiveColor
+    }
   val fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
 
   Row(
     modifier = modifier
       .fillMaxWidth()
-      .clickable { onToggle() }
+      .clickable(enabled = enabled) { onToggle() }
       .padding(horizontal = 16.dp, vertical = 24.dp),
     verticalAlignment = Alignment.CenterVertically
   ) {
@@ -341,21 +370,34 @@ private fun SelectableHeaderItem(
       )
     }
 
-    Text(
-      text = text,
-      color = contentColor,
-      fontWeight = fontWeight,
+    Column(
       modifier = Modifier
         .weight(1f)
         .padding(start = 16.dp)
-    )
+    ) {
+      Text(
+        text = text,
+        color = contentColor,
+        fontWeight = fontWeight
+      )
+      if (!supportingText.isNullOrBlank()) {
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+          text = supportingText,
+          style = MaterialTheme.typography.bodyMedium,
+          color = disabledColor
+        )
+      }
+    }
 
-    Icon(
-      imageVector = Icons.Default.KeyboardArrowDown,
-      contentDescription = null,
-      tint = contentColor,
-      modifier = Modifier.rotate(if (isExpanded) 180f else 0f)
-    )
+    if (enabled) {
+      Icon(
+        imageVector = Icons.Default.KeyboardArrowDown,
+        contentDescription = null,
+        tint = contentColor,
+        modifier = Modifier.rotate(if (isExpanded) 180f else 0f)
+      )
+    }
   }
 }
 
@@ -385,12 +427,14 @@ internal fun processAndOrderUiGroups(
 
   val masterUiOrder = channelUiGroups?.map { it.id } ?: emptyList()
 
-  val groups = channels
-    .filter { channel ->
-      channel.pmType in supportedPaymentTypes &&
-          (preferredList.isEmpty() || channel.pmType in preferredList)
-    }
-    .groupBy { it.uiGroup }
+  val supportedChannels = channels.filter { it.pmType in supportedPaymentTypes }
+  val preferredChannels =
+    if (preferredList.isNotEmpty()) supportedChannels.filter { it.pmType in preferredList }
+    else supportedChannels
+  val preferredGroups = preferredChannels.groupBy { it.uiGroup }
+  val groups =
+    if (preferredList.isNotEmpty() && preferredGroups.isEmpty()) supportedChannels.groupBy { it.uiGroup }
+    else preferredGroups
 
   val orderedUiGroups = groups.keys.sortedWith(
     compareBy<String> { uiGroup ->

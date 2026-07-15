@@ -19,4 +19,5 @@
   <string name="ewallet_select_placeholder">Select an E-Wallet</string>
   <string name="ewallet_link_for_future_purchase">Link your %1$s with %2$s for future purchase</string>
   <string name="sessionpayment_methods_select_payment_method">Select Payment Method</string>
+  <string name="sessionpayment_methods_channel_disabled_dropdown">Not available for this payment</string>
 </resources>
