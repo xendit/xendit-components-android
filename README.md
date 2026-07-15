@@ -84,6 +84,82 @@ XenditComponents.INSTANCE.present(
 
 The `components_sdk_key` is obtained from the [Create Session](https://developers.xendit.co) API response on your backend.
 
+## Payment Method Preference
+
+Merchants can control which payment methods are shown in the payment sheet by passing `merchantPreferredPaymentMethod`.
+
+The SDK currently supports filtering to these payment methods only:
+
+- `XenditComponentsPaymentType.CARDS`
+- `XenditComponentsPaymentType.EWALLET`
+- `XenditComponentsPaymentType.QR_CODE`
+
+### Set It Globally During Initialization
+
+Use this when you want the same payment method preference for every `present()` call.
+
+```kotlin
+import co.xendit.components.XenditComponents
+import co.xendit.components.XenditComponentsPaymentType
+import co.xendit.components.ui.style.XenditAppearance
+
+XenditComponents.initialize(
+    appearance = XenditAppearance(),
+    merchantPreferredPaymentMethod = listOf(
+        XenditComponentsPaymentType.CARDS,
+        XenditComponentsPaymentType.EWALLET
+    )
+)
+```
+
+### Override It Per Session
+
+Use this when the payment methods should vary depending on the checkout flow.
+
+```kotlin
+import co.xendit.components.XenditComponents
+import co.xendit.components.XenditComponentsPaymentType
+
+XenditComponents.present(
+    activity = this,
+    componentsSdkKey = "<your_components_sdk_key>",
+    merchantPreferredPaymentMethod = listOf(
+        XenditComponentsPaymentType.QR_CODE
+    )
+) { result ->
+    // handle result
+}
+```
+
+### Java
+
+```java
+import java.util.Arrays;
+import java.util.Collections;
+import co.xendit.components.XenditComponents;
+import co.xendit.components.XenditComponentsPaymentType;
+import co.xendit.components.ui.style.XenditAppearance;
+
+XenditComponents.INSTANCE.initialize(
+    new XenditAppearance(),
+    Arrays.asList(
+        XenditComponentsPaymentType.CARDS,
+        XenditComponentsPaymentType.EWALLET
+    )
+);
+
+XenditComponents.INSTANCE.present(
+    this,
+    "<your_components_sdk_key>",
+    Collections.singletonList(XenditComponentsPaymentType.QR_CODE),
+    result -> {
+        // handle result
+    }
+);
+```
+
+> **Note:** Although `XenditComponentsPaymentType` includes other enum values, only `CARDS`, `EWALLET`, and `QR_CODE` are currently supported for merchant preference in the Android SDK. Unsupported values are ignored, and if no supported preference remains, the SDK falls back to the supported payment methods available in the session.
+
 ## Appearance Customization
 
 Use `XenditAppearance` to match the payment sheet to your app's brand. All color properties have built-in defaults — pass only the values you want to override.
