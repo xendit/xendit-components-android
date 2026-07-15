@@ -329,22 +329,6 @@ internal fun PaymentContainerHost(
           supportedPaymentTypes = supportedPaymentTypes
         )
       }
-    val sessionAmount = mviState.sessionResponse?.session?.amount
-    val hasAnyRenderablePaymentMethod =
-      orderedUiGroups.any { filteredGroups[it].orEmpty().isNotEmpty() }
-    val hasAnyAvailablePaymentMethod =
-      remember(filteredGroups, sessionAmount) {
-        filteredGroups.values.any { group ->
-          group.any { it.isAvailableForAmount(sessionAmount) }
-        }
-      }
-    val showNoAvailablePaymentMethodsDialog =
-      mviState.sessionResponse != null &&
-        mviState.errorMessage == null &&
-        mviState.paymentActionRedirect == null &&
-        mviState.presentToCustomerPaymentAction == null &&
-        !mviState.isLoading &&
-        (!hasAnyRenderablePaymentMethod || !hasAnyAvailablePaymentMethod)
 
     Scaffold(
       snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
@@ -626,30 +610,7 @@ internal fun PaymentContainerHost(
             )
           }
         }
-        if (showNoAvailablePaymentMethodsDialog) {
-          Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            AlertDialog(
-              onDismissRequest = {},
-              properties = DialogProperties(
-                dismissOnBackPress = false,
-                dismissOnClickOutside = false
-              ),
-              title = {
-                Text(stringResource(id = R.string.sessionpayment_methods_no_available_payment_methods))
-              },
-              text = {
-                Text(
-                  stringResource(id = R.string.sessionpayment_methods_no_available_payment_methods_subtext)
-                )
-              },
-              confirmButton = {
-                Button(onClick = dismiss) {
-                  Text(stringResource(R.string.sessiondialog_close))
-                }
-              }
-            )
-          }
-        }
+
         val awaitingPaymentAction = mviState.awaitingPaymentAction
         if (awaitingPaymentAction != null) {
           val resolvedChannelName =
