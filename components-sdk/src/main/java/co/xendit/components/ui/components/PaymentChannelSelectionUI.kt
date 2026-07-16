@@ -85,11 +85,14 @@ internal fun PaymentChannelSelectionUI(
   val imageLoader = remember { SdkImageLoader.get(context) }
   val isSaveChecked = remember { mutableStateOf(false) }
   val sessionAmount = session?.amount
+  val sessionType = session?.sessionType
   val hasAvailableChannel =
-    remember(channels, sessionAmount) { channels.any { it.isAvailableForAmount(sessionAmount) } }
+    remember(channels, sessionAmount, sessionType) {
+      channels.any { it.isAvailableForAmount(sessionAmount, sessionType) }
+    }
   val selectedAvailabilityMessageResId =
-    remember(selectedChannel, sessionAmount) {
-      when (selectedChannel?.amountAvailabilityStatus(sessionAmount)) {
+    remember(selectedChannel, sessionAmount, sessionType) {
+      when (selectedChannel?.amountAvailabilityStatus(sessionAmount, sessionType)) {
         AmountAvailabilityStatus.BELOW_MIN -> R.string.sessionpayment_methods_channel_disabled_amount_too_small
         AmountAvailabilityStatus.ABOVE_MAX -> R.string.sessionpayment_methods_channel_disabled_amount_too_large
         else -> null
@@ -166,8 +169,8 @@ internal fun PaymentChannelSelectionUI(
           onDismissRequest = { expanded = false }
         ) {
           channels.forEach { channel ->
-            val isAvailable = channel.isAvailableForAmount(sessionAmount)
-            val availableStatus = channel.amountAvailabilityStatus(sessionAmount)
+            val isAvailable = channel.isAvailableForAmount(sessionAmount, sessionType)
+            val availableStatus = channel.amountAvailabilityStatus(sessionAmount, sessionType)
             DropdownMenuItem(
               enabled = isAvailable,
               text = {

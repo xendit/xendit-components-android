@@ -93,6 +93,38 @@ class BffChannelAvailabilityTest {
   }
 
   @Test
+  fun amountAvailabilityStatus_whenSessionTypeIsSave_ignoresMinMaxLimits() {
+    val channel = createChannel(minAmount = "10.00", maxAmount = "100.00")
+
+    assertEquals(
+      AmountAvailabilityStatus.AVAILABLE,
+      channel.amountAvailabilityStatus(
+        amount = BigDecimal("9.99"),
+        sessionType = BffSessionType.SAVE
+      )
+    )
+    assertEquals(
+      AmountAvailabilityStatus.AVAILABLE,
+      channel.amountAvailabilityStatus(
+        amount = BigDecimal("100.01"),
+        sessionType = BffSessionType.SAVE
+      )
+    )
+    assertTrue(
+      channel.isAvailableForAmount(
+        amount = BigDecimal("9.99"),
+        sessionType = BffSessionType.SAVE
+      )
+    )
+    assertTrue(
+      channel.isAvailableForAmount(
+        amount = BigDecimal("100.01"),
+        sessionType = BffSessionType.SAVE
+      )
+    )
+  }
+
+  @Test
   fun groupAmountAvailabilityStatus_whenAllChannelsAvailable_returnsAvailable() {
     val channels = listOf(
       createChannel(minAmount = "10.00", maxAmount = "100.00"),
@@ -145,6 +177,22 @@ class BffChannelAvailabilityTest {
   fun groupAmountAvailabilityStatus_whenListIsEmptyOrAmountIsNull_returnsNull() {
     assertNull(emptyList<BffChannel>().groupAmountAvailabilityStatus(amount = BigDecimal("50.00")))
     assertNull(listOf(createChannel()).groupAmountAvailabilityStatus(amount = null))
+  }
+
+  @Test
+  fun groupAmountAvailabilityStatus_whenSessionTypeIsSave_returnsAvailable() {
+    val channels = listOf(
+      createChannel(minAmount = "60.00"),
+      createChannel(maxAmount = "40.00")
+    )
+
+    assertEquals(
+      AmountAvailabilityStatus.AVAILABLE,
+      channels.groupAmountAvailabilityStatus(
+        amount = BigDecimal("50.00"),
+        sessionType = BffSessionType.SAVE
+      )
+    )
   }
 
   private fun createChannel(
