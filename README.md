@@ -17,12 +17,12 @@ A drop-in payment UI SDK for Android that lets you accept payments through Xendi
 
 ## Requirements
 
-| Requirement   | Minimum  |
-|---------------|----------|
-| Android        | API 26 (Android 8.0) |
-| Compile SDK    | 37       |
-| Kotlin         | 1.9+     |
-| Jetpack Compose | 1.5+   |
+| Requirement | Minimum              |
+|-------------|----------------------|
+| Android     | API 26 (Android 8.0) |
+| Compile SDK | 37                   |
+| Kotlin      | 2.4+                 |
+| Compose Bom | 2026.05.01+          |
 
 ## Getting Started
 
