@@ -12,7 +12,7 @@ internal fun BffChannel.amountAvailabilityStatus(
   amount: BigDecimal?,
   sessionType: BffSessionType? = null
 ): AmountAvailabilityStatus {
-  if (amount == null || sessionType == BffSessionType.SAVE) return AmountAvailabilityStatus.AVAILABLE
+  if (amount == null || sessionType != BffSessionType.PAY) return AmountAvailabilityStatus.AVAILABLE
   return when {
     minAmount != null && amount.compareTo(minAmount) < 0 -> AmountAvailabilityStatus.BELOW_MIN
     maxAmount != null && amount.compareTo(maxAmount) > 0 -> AmountAvailabilityStatus.ABOVE_MAX
