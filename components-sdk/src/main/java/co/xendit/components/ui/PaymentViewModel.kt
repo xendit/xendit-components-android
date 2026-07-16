@@ -270,7 +270,7 @@ internal class PaymentViewModel(
             }
           } else {
             _state.update {
-              it.copy(isLoading = false, errorMessage = "No payment channels found")
+              it.copy(isLoading = false, sessionResponse = body)
             }
           }
         } else {
