@@ -132,10 +132,15 @@ internal fun PaymentMethodsUI(
         val groupChannels = groups[uiGroup].orEmpty()
         val pmType = groupChannels.firstOrNull()?.pmType
         val sessionAmount = session?.amount
+        val sessionType = session?.sessionType
         val allChannelsUnavailable =
-          groupChannels.isNotEmpty() && groupChannels.none { it.isAvailableForAmount(sessionAmount) }
+          groupChannels.isNotEmpty() && groupChannels.none {
+            it.isAvailableForAmount(sessionAmount, sessionType)
+          }
         val groupAvailabilityStatus =
-          if (allChannelsUnavailable) groupChannels.groupAmountAvailabilityStatus(sessionAmount) else null
+          if (allChannelsUnavailable) {
+            groupChannels.groupAmountAvailabilityStatus(sessionAmount, sessionType)
+          } else null
         val groupDisabledMessageResId =
           when {
             !allChannelsUnavailable -> null

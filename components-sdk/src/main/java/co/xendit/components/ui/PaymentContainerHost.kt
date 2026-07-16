@@ -526,7 +526,10 @@ internal fun PaymentContainerHost(
                     mviState.expandedUiGroup != null && mviState.selectedChannel != null
                   val selectedChannel = mviState.selectedChannel
                   val isSelectedChannelAvailable =
-                    selectedChannel?.isAvailableForAmount(mviState.sessionResponse?.session?.amount) != false
+                    selectedChannel?.isAvailableForAmount(
+                      mviState.sessionResponse?.session?.amount,
+                      mviState.sessionType
+                    ) != false
                   val currentDraft = if (selectedChannel == null) PaymentDraft() else {
                     mviState.paymentDrafts[selectedChannel.channelCode]
                       ?: PaymentDraft(channelCode = selectedChannel.channelCode)
