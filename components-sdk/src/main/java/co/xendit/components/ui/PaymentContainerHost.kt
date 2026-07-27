@@ -568,11 +568,13 @@ internal fun PaymentContainerHost(
                       bffCardInfo = mviState.selectedChannel?.card
                     )
                   val payText =
-                    if (mviState.sessionType == BffSessionType.SAVE) {
-                      stringResource(id = R.string.sessionpayment_methods_add_payment_method)
-                    } else {
-                      val channelName = mviState.selectedChannel?.brandName ?: "Payment"
-                      stringResource(id = R.string.sessionpayment_methods_submit_pay)
+                    when (mviState.sessionType) {
+                      BffSessionType.SAVE ->
+                        stringResource(id = R.string.sessionpayment_methods_add_payment_method)
+                      BffSessionType.SUBSCRIPTION ->
+                        stringResource(id = R.string.sessionchannel_selection_confirm_subscription)
+                      else ->
+                        stringResource(id = R.string.sessionpayment_methods_submit_pay)
                     }
 
                   Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {

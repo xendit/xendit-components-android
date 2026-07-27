@@ -36,6 +36,7 @@ import co.xendit.components.data.model.ChannelFormField
 import co.xendit.components.data.model.Country
 import co.xendit.components.data.model.FieldType
 import co.xendit.components.data.model.InstallmentPlan
+import co.xendit.components.data.model.isPaySession
 import co.xendit.components.data.model.primaryChannelPropertyKey
 import co.xendit.components.ui.components.molecule.CVCField
 import co.xendit.components.ui.components.molecule.CardNumberField
@@ -70,6 +71,7 @@ internal fun DynamicForm(
   val onVisibleFieldsChangedRef = rememberUpdatedState(onVisibleFieldsChanged)
   val sessionCountry = session?.country
   val sessionCurrency = session?.currency
+  val sessionType = session?.sessionType
 
   val formValues =
     remember {
@@ -87,8 +89,16 @@ internal fun DynamicForm(
   }
 
   val filteredFields =
-    remember(fields, cardDetails, installmentPlans) {
-      derivedStateOf { filterFormFields(fields, cardDetails, formValues, installmentPlans) }
+    remember(fields, cardDetails, installmentPlans, sessionType) {
+      derivedStateOf {
+        filterFormFields(
+          fields = fields,
+          sessionTypeIsPay = sessionType.isPaySession(),
+          cardDetails = cardDetails,
+          formValues = formValues,
+          installmentPlans = installmentPlans
+        )
+      }
     }.value
 
   LaunchedEffect(cardDetails) {
@@ -479,6 +489,7 @@ private fun renderDynamicFormFieldOrTwoColumnRow(
  */
 private fun filterFormFields(
   fields: List<ChannelFormField>,
+  sessionTypeIsPay: Boolean,
   cardDetails: CardDetails?,
   formValues: Map<String, String>,
   installmentPlans: List<InstallmentPlan>? = null
@@ -487,8 +498,9 @@ private fun filterFormFields(
   return fields.filter { field ->
     // Check billing information requirement
     val requiresBillingInfo = field.flags?.get("require_billing_information") as? Boolean ?: false
-    if (requiresBillingInfo && !showBillingDetailsFields) {
-      return@filter false
+    if (requiresBillingInfo) {
+      if (!sessionTypeIsPay) return@filter false
+      if (!showBillingDetailsFields) return@filter false
     }
 
     // Check installment plan logic
