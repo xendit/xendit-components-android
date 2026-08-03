@@ -2,6 +2,7 @@ package co.xendit.components.data.model
 
 import androidx.annotation.Keep
 import co.xendit.components.XenditComponentsPaymentType
+import co.xendit.components.core.model.FallbackValue
 import com.google.gson.annotations.SerializedName
 import java.math.BigDecimal
 
@@ -94,11 +95,24 @@ internal data class BffSubscription(
 )
 
 @Keep
+internal enum class BffSubscriptionInterval {
+  @SerializedName("DAY")
+  DAY,
+  @SerializedName("WEEK")
+  WEEK,
+  @SerializedName("MONTH")
+  MONTH,
+  @FallbackValue
+  @SerializedName("UNKNOWN")
+  UNKNOWN
+}
+
+@Keep
 internal data class BffSubscriptionSchedule(
   @SerializedName("anchor_date") val anchorDate: String,
-  @SerializedName("interval") val interval: String,
+  @SerializedName("interval") val interval: BffSubscriptionInterval,
   @SerializedName("interval_count") val intervalCount: Int,
-  @SerializedName("retry_interval") val retryInterval: String? = null,
+  @SerializedName("retry_interval") val retryInterval: BffSubscriptionInterval? = null,
   @SerializedName("retry_interval_count") val retryIntervalCount: Int? = null,
   @SerializedName("total_recurrence") val totalRecurrence: Int? = null,
   @SerializedName("total_retry") val totalRetry: Int? = null
