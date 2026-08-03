@@ -2,6 +2,7 @@ package co.xendit.components.data.model
 
 import androidx.annotation.Keep
 import co.xendit.components.XenditComponentsPaymentType
+import co.xendit.components.core.model.FallbackValue
 import com.google.gson.annotations.SerializedName
 import java.math.BigDecimal
 
@@ -25,6 +26,7 @@ internal data class BffSession(
   @SerializedName("currency") val currency: String?,
   @SerializedName("country") val country: String?,
   @SerializedName("amount") val amount: BigDecimal?,
+  @SerializedName("subscription") val subscription: BffSubscription? = null,
   @SerializedName("items") val items: List<BffItem>?
 )
 
@@ -68,6 +70,14 @@ internal enum class BffSessionType {
   SUBSCRIPTION
 }
 
+internal fun BffSessionType?.usesPaymentTokenSubmission(): Boolean {
+  return this == BffSessionType.SAVE || this == BffSessionType.SUBSCRIPTION
+}
+
+internal fun BffSessionType?.isPaySession(): Boolean {
+  return this == BffSessionType.PAY
+}
+
 @Keep
 internal enum class BffSessionAllowSavePaymentMethod {
   @SerializedName("DISABLED")
@@ -77,6 +87,36 @@ internal enum class BffSessionAllowSavePaymentMethod {
   @SerializedName("OPTIONAL")
   OPTIONAL
 }
+
+@Keep
+internal data class BffSubscription(
+  @SerializedName("immediate_payment") val immediatePayment: Boolean? = null,
+  @SerializedName("schedule") val schedule: BffSubscriptionSchedule
+)
+
+@Keep
+internal enum class BffSubscriptionInterval {
+  @SerializedName("DAY")
+  DAY,
+  @SerializedName("WEEK")
+  WEEK,
+  @SerializedName("MONTH")
+  MONTH,
+  @FallbackValue
+  @SerializedName("UNKNOWN")
+  UNKNOWN
+}
+
+@Keep
+internal data class BffSubscriptionSchedule(
+  @SerializedName("anchor_date") val anchorDate: String,
+  @SerializedName("interval") val interval: BffSubscriptionInterval,
+  @SerializedName("interval_count") val intervalCount: Int,
+  @SerializedName("retry_interval") val retryInterval: BffSubscriptionInterval? = null,
+  @SerializedName("retry_interval_count") val retryIntervalCount: Int? = null,
+  @SerializedName("total_recurrence") val totalRecurrence: Int? = null,
+  @SerializedName("total_retry") val totalRetry: Int? = null
+)
 
 @Keep
 internal data class BffItem(

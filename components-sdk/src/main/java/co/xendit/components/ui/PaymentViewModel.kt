@@ -22,7 +22,9 @@ import co.xendit.components.data.model.PaymentResponse
 import co.xendit.components.data.model.PollResponse
 import co.xendit.components.data.model.SessionResponse
 import co.xendit.components.data.model.SimulatePaymentRequest
+import co.xendit.components.data.model.isPaySession
 import co.xendit.components.data.model.primaryChannelPropertyKey
+import co.xendit.components.data.model.usesPaymentTokenSubmission
 import co.xendit.components.data.network.repo.session.XenditRepository
 import co.xendit.components.ui.components.molecule.UiText
 import co.xendit.components.util.PaymentRequestMapper
@@ -400,7 +402,7 @@ internal class PaymentViewModel(
           )
 
         val response =
-          if (_state.value.sessionType == BffSessionType.SAVE) {
+          if (_state.value.sessionType.usesPaymentTokenSubmission()) {
             xenditRepository.createPaymentToken(request = request)
           } else {
             xenditRepository.createPaymentRequest(request = request)
@@ -536,7 +538,7 @@ internal class PaymentViewModel(
   private fun onSimulatePayment() {
     val authKey = sessionAuthKey ?: return
     viewModelScope.launch {
-      val isPaySession = _state.value.sessionType != BffSessionType.SAVE
+      val isPaySession = _state.value.sessionType.isPaySession()
       val shouldSimulate = isPaySession && !CoreSdkComponent.isProdLive()
       if (shouldSimulate) {
         val prId = lastPaymentRequestId
