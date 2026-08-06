@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
@@ -35,12 +36,23 @@ internal fun CardPaymentUI(
   onCardNumberChanged: (String) -> Unit,
   onFormStateChanged: (Map<String, String>, List<ChannelFormField>, Boolean) -> Unit = { _, _, _ -> },
   modifier: Modifier = Modifier,
-  showSaveCheckbox: Boolean = false
+  showSaveCheckbox: Boolean = false,
+  formWipeNonce: Int = 0
 ) {
   val appearance = xenditAppearance
   val formValues = remember { mutableStateMapOf<String, String>() }
   val isSaveChecked = remember { mutableStateOf(false) }
   val visibleFields = remember { mutableStateOf<List<ChannelFormField>>(emptyList()) }
+
+  LaunchedEffect(formWipeNonce) {
+    if (formWipeNonce > 0) {
+      formValues.clear()
+      isSaveChecked.value = false
+      visibleFields.value = emptyList()
+      onFormStateChanged(emptyMap(), emptyList(), false)
+      onCardNumberChanged("")
+    }
+  }
 
   Column(
     modifier = modifier
@@ -76,7 +88,8 @@ internal fun CardPaymentUI(
             visibleFields.value = it
             onFormStateChanged(formValues.toMap(), visibleFields.value, isSaveChecked.value)
           },
-          bffCardInfo = channelData.card
+          bffCardInfo = channelData.card,
+          formWipeNonce = formWipeNonce
         )
       }
     }

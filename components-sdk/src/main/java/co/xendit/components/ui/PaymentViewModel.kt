@@ -188,6 +188,11 @@ internal class PaymentViewModel(
     viewModelScope.launch(Dispatchers.Default) { Country.warmUp() }
   }
 
+  override fun onCleared() {
+    super.onCleared()
+    wipeAllSensitiveData()
+  }
+
   private val _state = MutableStateFlow(PaymentState())
   val state: StateFlow<PaymentState> = _state.asStateFlow()
 
@@ -202,9 +207,9 @@ internal class PaymentViewModel(
   fun dispatch(intent: ActionIntent) {
     when (intent) {
       is ActionIntent.Initialize -> {
+        wipeAllSensitiveData()
         this.sessionAuthKey = intent.sessionAuthKey
         this.publicKey = intent.publicKey
-        resetForNewSession()
         dispatch(ActionIntent.FetchSession(intent.sessionAuthKey))
       }
 
@@ -558,13 +563,39 @@ internal class PaymentViewModel(
     }
   }
 
-  fun resetForNewSession() {
+  fun wipeAllSensitiveData() {
     markClosed()
+    cancelChallenge()
+    challengePollingJob = null
+
+    sessionAuthKey = null
+    publicKey = null
     paymentSessionId = null
     lastPaymentRequestId = null
     lastSessionTokenRequestId = null
+
     lastSelectedChannelCodeByUiGroup.clear()
+
     _state.value = PaymentState()
+  }
+
+  fun onAppBackgrounded() {
+    if (_state.value.isLoading) return
+
+    cancelChallenge()
+    challengePollingJob = null
+
+    sessionAuthKey = null
+    publicKey = null
+
+    _state.update {
+      it.copy(
+        paymentDrafts = emptyMap(),
+        presentToCustomerPaymentAction = null,
+        paymentActionRedirect = null,
+        awaitingPaymentAction = null
+      )
+    }
   }
 
   fun showLoadingWithAction() {
@@ -605,7 +636,6 @@ internal class PaymentViewModel(
 
   private fun cancelChallenge() {
     challengePollingJob?.cancel()
-    challengePollingJob = null
   }
 
 }

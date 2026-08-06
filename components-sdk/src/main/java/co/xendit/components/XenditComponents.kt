@@ -5,10 +5,9 @@ import android.content.Context
 import android.content.ContextWrapper
 import android.view.ViewGroup
 import androidx.activity.ComponentActivity
-import androidx.annotation.VisibleForTesting
 import androidx.annotation.Keep
+import androidx.annotation.VisibleForTesting
 import androidx.compose.ui.platform.ComposeView
-import co.xendit.components.util.XLogger
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.setViewTreeLifecycleOwner
@@ -16,12 +15,14 @@ import androidx.lifecycle.setViewTreeViewModelStoreOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import co.xendit.components.core.CoreSdkComponent
 import co.xendit.components.core.model.FallbackValue
-import co.xendit.components.data.model.XenditPaymentResult
 import co.xendit.components.data.model.XenditError
+import co.xendit.components.data.model.XenditPaymentResult
 import co.xendit.components.ui.PaymentContainerHost
+import co.xendit.components.ui.PaymentContainerHostSignals
 import co.xendit.components.ui.PaymentContainerPresentation
 import co.xendit.components.ui.style.XenditAppearance
 import co.xendit.components.ui.theme.XenditTheme
+import co.xendit.components.util.XLogger
 import com.google.gson.annotations.SerializedName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -56,7 +57,15 @@ enum class XenditComponentsPaymentType(val value: String) {
 
   companion object {
     val SUPPORTED: List<XenditComponentsPaymentType> =
-      listOf(CARDS, EWALLET, QR_CODE, BANK_TRANSFER, DIRECT_DEBIT, VIRTUAL_ACCOUNT, OVER_THE_COUNTER)
+      listOf(
+        CARDS,
+        EWALLET,
+        QR_CODE,
+        BANK_TRANSFER,
+        DIRECT_DEBIT,
+        VIRTUAL_ACCOUNT,
+        OVER_THE_COUNTER
+      )
   }
 }
 
@@ -69,6 +78,11 @@ object XenditComponents {
   private var lifecycleOwner: LifecycleOwner? = null
   private var lifecycleObserver: DefaultLifecycleObserver? = null
   private val scope = CoroutineScope(Dispatchers.Main)
+
+  private var activeComponentsSdkKey: String? = null
+  private var activeActivity: ComponentActivity? = null
+  private var activeMerchantPreferredPm: List<XenditComponentsPaymentType>? = null
+  private var backgroundedAtMs: Long = 0L
 
   /**
    * Global configuration for the SDK appearance. This is called before show() to apply custom styles.
@@ -167,9 +181,18 @@ object XenditComponents {
 
     cleanup()
 
+    activeComponentsSdkKey = componentsSdkKey
+    activeActivity = activity
+    activeMerchantPreferredPm = merchantPreferredPaymentMethod
+    backgroundedAtMs = 0L
+
     lifecycleOwner = activity
     lifecycleObserver =
       object : DefaultLifecycleObserver {
+        override fun onStop(owner: LifecycleOwner) {
+          PaymentContainerHostSignals.onAppBackgroundedStatic?.invoke()
+        }
+
         override fun onDestroy(owner: LifecycleOwner) {
           cleanup()
         }
@@ -212,11 +235,15 @@ object XenditComponents {
 
   /** Dismisses the payment bottom sheet manually */
   fun dismiss() {
+    PaymentContainerHostSignals.onWipeTriggerStatic?.invoke()
     currentCallback?.invoke(XenditPaymentResult.Canceled)
     cleanup()
   }
 
   private fun cleanup() {
+    PaymentContainerHostSignals.onAppBackgroundedStatic = null
+    PaymentContainerHostSignals.onWipeTriggerStatic = null
+
     val owner = lifecycleOwner
     val observer = lifecycleObserver
     if (owner != null && observer != null) {
@@ -227,6 +254,11 @@ object XenditComponents {
     composeView?.let { view -> (view.parent as? ViewGroup)?.removeView(view) }
     composeView = null
     currentCallback = null
+
+    activeComponentsSdkKey = null
+    activeActivity = null
+    activeMerchantPreferredPm = null
+    backgroundedAtMs = 0L
   }
 
   private fun Context.findActivity(): ComponentActivity? {

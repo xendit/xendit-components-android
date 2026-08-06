@@ -46,6 +46,11 @@ internal class CardViewModel(
 
   private var cardInfoJob: Job? = null
 
+  override fun onCleared() {
+    super.onCleared()
+    wipeAllSensitiveData()
+  }
+
   fun dispatch(intent: CardIntent) {
     when (intent) {
       is CardIntent.ConfigureSession -> {
@@ -56,13 +61,24 @@ internal class CardViewModel(
       }
 
       is CardIntent.CardNumberChanged -> onCardNumberChangedInternal(intent.cardNumber)
-      CardIntent.Reset -> resetInternal()
+      is CardIntent.Reset -> wipeAllSensitiveData()
     }
   }
 
-  private fun resetInternal() {
+  fun wipeAllSensitiveData() {
     cardInfoJob?.cancel()
+    cardInfoJob = null
+    sessionAuthKey = null
+    publicKey = null
+    paymentSessionId = null
     _state.value = CardState()
+  }
+
+  fun onAppBackgrounded() {
+    cardInfoJob?.cancel()
+    cardInfoJob = null
+    sessionAuthKey = null
+    publicKey = null
   }
 
   private fun onCardNumberChangedInternal(cardNumber: String) {

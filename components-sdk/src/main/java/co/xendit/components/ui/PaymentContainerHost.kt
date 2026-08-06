@@ -87,6 +87,11 @@ internal enum class PaymentContainerPresentation {
   BottomSheet
 }
 
+internal object PaymentContainerHostSignals {
+  var onAppBackgroundedStatic: (() -> Unit)? = null
+  var onWipeTriggerStatic: (() -> Unit)? = null
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun PaymentContainerHost(
@@ -109,6 +114,24 @@ internal fun PaymentContainerHost(
   val scope = rememberCoroutineScope()
   val appearance = xenditAppearance
   var pendingSnackbarMessage by remember { mutableStateOf<String?>(null) }
+
+  var formWipeNonce by remember { mutableStateOf(0) }
+
+  DisposableEffect(viewModel, cardViewModel) {
+    PaymentContainerHostSignals.onAppBackgroundedStatic = {
+      viewModel.onAppBackgrounded()
+      cardViewModel.onAppBackgrounded()
+    }
+    PaymentContainerHostSignals.onWipeTriggerStatic = {
+      viewModel.wipeAllSensitiveData()
+      cardViewModel.wipeAllSensitiveData()
+      formWipeNonce++
+    }
+    onDispose {
+      PaymentContainerHostSignals.onAppBackgroundedStatic = null
+      PaymentContainerHostSignals.onWipeTriggerStatic = null
+    }
+  }
 
   LaunchedEffect(
     pendingSnackbarMessage,
@@ -134,12 +157,16 @@ internal fun PaymentContainerHost(
     if (presentation == PaymentContainerPresentation.BottomSheet && sheetState != null) {
       scope.launch {
         sheetState.hide()
-        viewModel.resetForNewSession()
+        viewModel.wipeAllSensitiveData()
+        cardViewModel.wipeAllSensitiveData()
+        formWipeNonce++
         onResult(XenditPaymentResult.Canceled)
         onCleanup()
       }
     } else {
-      viewModel.resetForNewSession()
+      viewModel.wipeAllSensitiveData()
+      cardViewModel.wipeAllSensitiveData()
+      formWipeNonce++
       onResult(XenditPaymentResult.Canceled)
       onCleanup()
     }
@@ -174,7 +201,9 @@ internal fun PaymentContainerHost(
     val bffSession = mviState.sessionResponse?.session ?: return@LaunchedEffect
     when (bffSession.status) {
       PaymentSessionStatus.COMPLETED -> {
-        viewModel.resetForNewSession()
+        viewModel.wipeAllSensitiveData()
+        cardViewModel.wipeAllSensitiveData()
+        formWipeNonce++
         onResult(
           XenditPaymentResult.Success(
             paymentRequestId = bffSession.paymentSessionId,
@@ -185,13 +214,17 @@ internal fun PaymentContainerHost(
       }
 
       PaymentSessionStatus.CANCELED -> {
-        viewModel.resetForNewSession()
+        viewModel.wipeAllSensitiveData()
+        cardViewModel.wipeAllSensitiveData()
+        formWipeNonce++
         onResult(XenditPaymentResult.Canceled)
         onCleanup()
       }
 
       PaymentSessionStatus.EXPIRED -> {
-        viewModel.markClosed()
+        viewModel.wipeAllSensitiveData()
+        cardViewModel.wipeAllSensitiveData()
+        formWipeNonce++
         onResult(XenditPaymentResult.Expired)
         onCleanup()
       }
@@ -221,7 +254,9 @@ internal fun PaymentContainerHost(
 
     when {
       isSuccess -> {
-        viewModel.resetForNewSession()
+        viewModel.wipeAllSensitiveData()
+        cardViewModel.wipeAllSensitiveData()
+        formWipeNonce++
         onResult(
           XenditPaymentResult.Success(
             paymentRequestId = poll.session?.paymentSessionId,
@@ -232,13 +267,17 @@ internal fun PaymentContainerHost(
       }
 
       isCanceled -> {
-        viewModel.resetForNewSession()
+        viewModel.wipeAllSensitiveData()
+        cardViewModel.wipeAllSensitiveData()
+        formWipeNonce++
         onResult(XenditPaymentResult.Canceled)
         onCleanup()
       }
 
       isExpired -> {
-        viewModel.resetForNewSession()
+        viewModel.wipeAllSensitiveData()
+        cardViewModel.wipeAllSensitiveData()
+        formWipeNonce++
         onResult(XenditPaymentResult.Expired)
         onCleanup()
       }
@@ -276,7 +315,8 @@ internal fun PaymentContainerHost(
 
   DisposableEffect(Unit) {
     onDispose {
-      viewModel.resetForNewSession()
+      viewModel.wipeAllSensitiveData()
+      cardViewModel.wipeAllSensitiveData()
     }
   }
 
@@ -542,7 +582,8 @@ internal fun PaymentContainerHost(
                       onToggleGroup = onToggleGroup,
                       onSelectChannel = onSelectChannel,
                       onCardNumberChanged = onCardNumberChanged,
-                      onFormChanged = onFormChanged
+                      onFormChanged = onFormChanged,
+                      formWipeNonce = formWipeNonce
                     )
                   }
 

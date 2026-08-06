@@ -76,7 +76,8 @@ internal fun PaymentMethodsUI(
   onSelectChannel: (String) -> Unit,
   onCardNumberChanged: (String) -> Unit,
   onFormChanged: (String?, Map<String, String>, List<ChannelFormField>, Boolean) -> Unit,
-  modifier: Modifier = Modifier
+  modifier: Modifier = Modifier,
+  formWipeNonce: Int = 0
 ) {
   val appearance = xenditAppearance
   val isSaveOptionalSession =
@@ -202,7 +203,8 @@ internal fun PaymentMethodsUI(
                         isSaveChecked
                       )
                     },
-                    showSaveCheckbox = canShowSaveCheckbox(selectedChannel)
+                    showSaveCheckbox = canShowSaveCheckbox(selectedChannel),
+                    formWipeNonce = formWipeNonce
                   )
                 }
 
