@@ -195,7 +195,6 @@ object XenditComponents {
     activeComponentsSdkKey = componentsSdkKey
     activeActivity = activity
     activeMerchantPreferredPm = merchantPreferredPaymentMethod
-    backgroundedAtMs = 0L
 
     // ===== Mitigation 3: Aggressively purge state when Android signals memory pressure =====
     val callbacks =
