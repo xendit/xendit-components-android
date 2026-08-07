@@ -75,7 +75,8 @@ internal fun PaymentChannelSelectionUI(
       onFormStateChanged(values, visibleFields, isSaveChecked)
     },
   saveCheckboxText: String? = null,
-  modifier: Modifier = Modifier
+  modifier: Modifier = Modifier,
+  formWipeNonce: Int = 0
 ) {
   val context = LocalContext.current
   val appearance = xenditAppearance
@@ -98,6 +99,16 @@ internal fun PaymentChannelSelectionUI(
         else -> null
       }
     }
+
+  LaunchedEffect(formWipeNonce) {
+    if (formWipeNonce > 0) {
+      expanded = false
+      formValues.clear()
+      visibleFields.value = emptyList()
+      isSaveChecked.value = false
+      onFormStateChanged(emptyMap(), emptyList(), false)
+    }
+  }
 
   LaunchedEffect(
     contentChannel?.channelCode
@@ -282,7 +293,8 @@ internal fun PaymentChannelSelectionUI(
             visibleFields.value = it
             onFormStateChanged(formValues.toMap(), visibleFields.value, isSaveChecked.value)
           },
-          bffCardInfo = null
+          bffCardInfo = null,
+          formWipeNonce = formWipeNonce
         )
       }
     }

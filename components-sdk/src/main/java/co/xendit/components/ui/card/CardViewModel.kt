@@ -77,8 +77,6 @@ internal class CardViewModel(
   fun onAppBackgrounded() {
     cardInfoJob?.cancel()
     cardInfoJob = null
-    sessionAuthKey = null
-    publicKey = null
   }
 
   private fun onCardNumberChangedInternal(cardNumber: String) {

@@ -580,22 +580,8 @@ internal class PaymentViewModel(
   }
 
   fun onAppBackgrounded() {
-    if (_state.value.isLoading) return
-
     cancelChallenge()
     challengePollingJob = null
-
-    sessionAuthKey = null
-    publicKey = null
-
-    _state.update {
-      it.copy(
-        paymentDrafts = emptyMap(),
-        presentToCustomerPaymentAction = null,
-        paymentActionRedirect = null,
-        awaitingPaymentAction = null
-      )
-    }
   }
 
   fun showLoadingWithAction() {

@@ -42,7 +42,8 @@ internal fun QrPaymentUI(
   selectedChannel: BffChannel?,
   onSelectChannel: (String) -> Unit,
   onFormStateChanged: (Map<String, String>, List<ChannelFormField>) -> Unit,
-  modifier: Modifier = Modifier
+  modifier: Modifier = Modifier,
+  formWipeNonce: Int = 0
 ) {
   val appearance = xenditAppearance
   val formValues = remember { mutableStateMapOf<String, String>() }
@@ -56,6 +57,14 @@ internal fun QrPaymentUI(
     composition = composition,
     iterations = LottieConstants.IterateForever // Loop it!
   )
+
+  LaunchedEffect(formWipeNonce) {
+    if (formWipeNonce > 0) {
+      formValues.clear()
+      visibleFields.value = emptyList()
+      onFormStateChanged(emptyMap(), emptyList())
+    }
+  }
 
   LaunchedEffect(selectedChannel?.channelCode) {
     formValues.clear()

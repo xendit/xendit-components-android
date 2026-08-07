@@ -268,7 +268,8 @@ internal fun PaymentMethodsUI(
                       }
                     },
                     showSaveCheckbox = showSaveCheckbox,
-                    modifier = Modifier.padding(bottom = 8.dp)
+                    modifier = Modifier.padding(bottom = 8.dp),
+                    formWipeNonce = formWipeNonce
                   )
                 }
 
@@ -285,7 +286,8 @@ internal fun PaymentMethodsUI(
                         false
                       )
                     },
-                    modifier = Modifier.padding(bottom = 8.dp)
+                    modifier = Modifier.padding(bottom = 8.dp),
+                    formWipeNonce = formWipeNonce
                   )
                 }
 
@@ -310,7 +312,8 @@ internal fun PaymentMethodsUI(
                       )
                     },
                     showSaveCheckbox = showSaveCheckbox,
-                    modifier = Modifier.padding(bottom = 8.dp)
+                    modifier = Modifier.padding(bottom = 8.dp),
+                    formWipeNonce = formWipeNonce
                   )
                 }
 
@@ -338,7 +341,8 @@ internal fun PaymentMethodsUI(
                       )
                     },
                     showSaveCheckbox = showSaveCheckbox,
-                    modifier = Modifier.padding(bottom = 8.dp)
+                    modifier = Modifier.padding(bottom = 8.dp),
+                    formWipeNonce = formWipeNonce
                   )
                 }
 
