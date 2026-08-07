@@ -26,6 +26,8 @@ import co.xendit.components.util.XLogger
 import com.google.gson.annotations.SerializedName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /** Main SDK entry point for displaying payment UI */
@@ -83,9 +85,17 @@ object XenditComponents {
   private var activeComponentsSdkKey: String? = null
   private var activeActivity: ComponentActivity? = null
   private var activeMerchantPreferredPm: List<XenditComponentsPaymentType>? = null
-  private var forceGcOnCleanup: Boolean = true
+  private var forceGcOnCleanup: Boolean = false
   private var componentCallbacks: android.content.ComponentCallbacks2? = null
   private const val GC_FINALIZER_WAIT_MS = 150L
+
+  private fun runGcPass() {
+    runCatching {
+      Runtime.getRuntime().gc()
+      Runtime.getRuntime().runFinalization()
+      Runtime.getRuntime().gc()
+    }
+  }
 
   /**
    * Global configuration for the SDK appearance. This is called before show() to apply custom styles.
@@ -159,7 +169,7 @@ object XenditComponents {
     activity: ComponentActivity,
     componentsSdkKey: String,
     merchantPreferredPaymentMethod: List<XenditComponentsPaymentType>? = null,
-    forceGcOnCleanup: Boolean = true,
+    forceGcOnCleanup: Boolean = false,
     onPaymentResult: (XenditPaymentResult) -> Unit
   ) {
     if (activity !is Activity) {
@@ -209,6 +219,7 @@ object XenditComponents {
             PaymentContainerHostSignals.onAppBackgroundedStatic?.invoke()
           }
         }
+
         override fun onConfigurationChanged(newConfig: android.content.res.Configuration) = Unit
         override fun onLowMemory() {
           PaymentContainerHostSignals.onWipeTriggerStatic?.invoke()
@@ -266,16 +277,18 @@ object XenditComponents {
 
   /** Dismisses the payment bottom sheet manually */
   fun dismiss() {
-    PaymentContainerHostSignals.onWipeTriggerStatic?.invoke()
-    val canceledResult = XenditPaymentResult.Canceled
-    currentCallback?.invoke(canceledResult)
-    currentCallback = null
-    cleanup()
+    PaymentContainerHostSignals.onDismissRequestedStatic?.invoke()
   }
 
   private fun cleanup() {
+    val shouldGc = forceGcOnCleanup
+    if (shouldGc) {
+      runGcPass()
+    }
+
     PaymentContainerHostSignals.onAppBackgroundedStatic = null
     PaymentContainerHostSignals.onWipeTriggerStatic = null
+    PaymentContainerHostSignals.onDismissRequestedStatic = null
 
     val owner = lifecycleOwner
     val observer = lifecycleObserver
@@ -289,7 +302,6 @@ object XenditComponents {
     currentCallback = null
 
     val activityForCallbacks = activeActivity
-    val shouldGc = forceGcOnCleanup
 
     // Unregister ComponentCallbacks2 (onTrimMemory / onLowMemory hook)
     val cb = componentCallbacks
@@ -304,20 +316,9 @@ object XenditComponents {
     activeActivity = null
 
     if (shouldGc) {
-      // Explicit GC pass + finalizer run AFTER we null all references.
-      // This forces ART to collect the now-unreachable PAN/CVV/SDK-key String objects
-      // so a subsequent heap dump comes back clean. We do this on a background thread
-      // to avoid blocking the result callback's post-processing.
-      scope.launch {
-        kotlinx.coroutines.delay(GC_FINALIZER_WAIT_MS)
-        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
-          runCatching {
-            Runtime.getRuntime().gc()
-            Runtime.getRuntime().runFinalization()
-            // One more compact pass:
-            Runtime.getRuntime().gc()
-          }
-        }
+      GlobalScope.launch(Dispatchers.Default) {
+        delay(GC_FINALIZER_WAIT_MS)
+        runGcPass()
       }
     }
   }
