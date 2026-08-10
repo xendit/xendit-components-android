@@ -312,7 +312,7 @@ object XenditComponents {
 
     activeComponentsSdkKey = null
     activeMerchantPreferredPm = null
-    forceGcOnCleanup = true
+    forceGcOnCleanup = false
     activeActivity = null
 
     if (shouldGc) {
