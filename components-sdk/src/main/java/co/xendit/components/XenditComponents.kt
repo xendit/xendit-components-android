@@ -26,8 +26,6 @@ import co.xendit.components.util.XLogger
 import com.google.gson.annotations.SerializedName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /** Main SDK entry point for displaying payment UI */
@@ -85,17 +83,7 @@ object XenditComponents {
   private var activeComponentsSdkKey: String? = null
   private var activeActivity: ComponentActivity? = null
   private var activeMerchantPreferredPm: List<XenditComponentsPaymentType>? = null
-  private var forceGcOnCleanup: Boolean = false
   private var componentCallbacks: android.content.ComponentCallbacks2? = null
-  private const val GC_FINALIZER_WAIT_MS = 150L
-
-  private fun runGcPass() {
-    runCatching {
-      Runtime.getRuntime().gc()
-      Runtime.getRuntime().runFinalization()
-      Runtime.getRuntime().gc()
-    }
-  }
 
   /**
    * Global configuration for the SDK appearance. This is called before show() to apply custom styles.
@@ -153,15 +141,17 @@ object XenditComponents {
   /**
    * Initializes and displays the Xendit Payment SDK UI.
    *
+   * After the payment flow finishes (onPaymentResult callback), the SDK has already wiped
+   * all in-memory PAN/CVV buffers it owns. For pen-test / heap-dump compliance, call
+   * [performSensitiveDataGcPass] from your app layer once you receive the
+   * [XenditPaymentResult] and finish processing / storing it — that prompts ART to collect
+   * any short-lived transient String copies the composable frames / Retrofit serializers
+   * produced during the submit window.
+   *
    * @param activity The Android Context (e.g., Activity or Application Context).
    * @param componentsSdkKey The Session ID or Components SDK Key obtained from your backend.
    * @param merchantPreferredPaymentMethod Optional ordered list of preferred payment methods
    *   to surface first.
-   * @param forceGcOnCleanup When true (default), the SDK runs a GC pass + waits for
-   *   finalizers after wiping all in-memory state. This drops unreachable PAN/CVV String
-   *   copies that ART has not yet collected so subsequent heap dumps come back clean.
-   *   Disable only if GC pauses have a measurable user-experience impact on your device
-   *   fleet at the end of a payment.
    * @param onPaymentResult Callback triggered when a payment finishes (Success, Error, or
    *   Canceled).
    */
@@ -169,7 +159,6 @@ object XenditComponents {
     activity: ComponentActivity,
     componentsSdkKey: String,
     merchantPreferredPaymentMethod: List<XenditComponentsPaymentType>? = null,
-    forceGcOnCleanup: Boolean = false,
     onPaymentResult: (XenditPaymentResult) -> Unit
   ) {
     if (activity !is Activity) {
@@ -179,7 +168,6 @@ object XenditComponents {
     CoreSdkComponent.headerProvider.setMerchantAppId(activity.packageName ?: "")
 
     this.merchantPreferredPaymentMethod = merchantPreferredPaymentMethod
-    this.forceGcOnCleanup = forceGcOnCleanup
 
     val keys =
       try {
@@ -280,12 +268,51 @@ object XenditComponents {
     PaymentContainerHostSignals.onDismissRequestedStatic?.invoke()
   }
 
-  private fun cleanup() {
-    val shouldGc = forceGcOnCleanup
-    if (shouldGc) {
-      runGcPass()
-    }
+  /**
+   * Synchronously wipes every sensitive buffer the SDK currently holds (PAN / CVV TextField
+   * states, card details, auth keys, draft form values). This is already invoked automatically
+   * by the SDK at the end of every payment flow (including Cancel / Dismiss) and on Android
+   * [ComponentCallbacks2.TRIM_MEMORY_BACKGROUND]. You only need to call this yourself if you
+   * keep the SDK retained across long user journeys and want to drop sensitive state at an
+   * intermediate checkpoint (e.g. after the user navigates away from the card screen).
+   *
+   * After wiping, call [performSensitiveDataGcPass] from the merchant app layer to prompt ART
+   * to collect any transient short-lived String copies left on the heap.
+   */
+  @Keep
+  fun wipeAllSensitiveData() {
+    PaymentContainerHostSignals.onWipeTriggerStatic?.invoke()
+  }
 
+  /**
+   * Runs an ART garbage-collection pass from the **merchant app layer** to collect any
+   * short-lived PAN / CVV transient String copies produced by composable frame rendering or
+   * network payload serialisation.
+   *
+   * The SDK itself never calls `Runtime.gc()` internally. Use this helper once you receive
+   * the [XenditPaymentResult] callback (or after you call [wipeAllSensitiveData] at an
+   * intermediate checkpoint) to clean up the transient strings that have not yet been
+   * reclaimed by ART's normal collection cadence. A typical pen-test-safe sequence looks
+   * like:
+   *
+   * ```
+   * XenditComponents.present(activity, key) { result ->
+   *     // persist / log result first, then:
+   *     XenditComponents.wipeAllSensitiveData()
+   *     XenditComponents.performSensitiveDataGcPass()
+   * }
+   * ```
+   */
+  @Keep
+  fun performSensitiveDataGcPass() {
+    runCatching {
+      Runtime.getRuntime().gc()
+      Runtime.getRuntime().runFinalization()
+      Runtime.getRuntime().gc()
+    }
+  }
+
+  private fun cleanup() {
     PaymentContainerHostSignals.onAppBackgroundedStatic = null
     PaymentContainerHostSignals.onWipeTriggerStatic = null
     PaymentContainerHostSignals.onDismissRequestedStatic = null
@@ -313,13 +340,6 @@ object XenditComponents {
     activeComponentsSdkKey = null
     activeMerchantPreferredPm = null
     activeActivity = null
-
-    if (shouldGc) {
-      GlobalScope.launch(Dispatchers.Default) {
-        delay(GC_FINALIZER_WAIT_MS)
-        runGcPass()
-      }
-    }
   }
 
   private fun Context.findActivity(): ComponentActivity? {

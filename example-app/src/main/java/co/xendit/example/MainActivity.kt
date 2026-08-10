@@ -180,10 +180,11 @@ fun PaymentDemo(fontFamily: FontFamily, modifier: Modifier = Modifier) {
             XenditComponentsPaymentType.CARDS,
             XenditComponentsPaymentType.EWALLET,
             XenditComponentsPaymentType.OVER_THE_COUNTER
-          ),
-        forceGcOnCleanup = true
-      ) {
-        paymentResultText = it.toString()
+          )
+      ) { result ->
+        paymentResultText = result.toString()
+        XenditComponents.wipeAllSensitiveData()
+        XenditComponents.performSensitiveDataGcPass()
       }
     }
   }

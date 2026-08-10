@@ -33,7 +33,9 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -80,7 +82,9 @@ import co.xendit.components.ui.method.PaymentMethodsUI
 import co.xendit.components.ui.method.processAndOrderUiGroups
 import co.xendit.components.ui.style.XenditAppearance
 import co.xendit.components.ui.style.xenditAppearance
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.yield
 import kotlin.time.Duration
@@ -120,7 +124,6 @@ internal fun PaymentContainerHost(
   val appearance = xenditAppearance
   var pendingSnackbarMessage by remember { mutableStateOf<String?>(null) }
 
-  var formWipeNonce by remember { mutableStateOf(0) }
 
   val sheetState =
     if (presentation == PaymentContainerPresentation.BottomSheet) {
@@ -130,11 +133,12 @@ internal fun PaymentContainerHost(
     }
 
   suspend fun performHardWipeAndThen(onWipeFlushed: suspend () -> Unit) {
-    formWipeNonce += 1
     viewModel.wipeAllSensitiveData()
     cardViewModel.wipeAllSensitiveData()
     yield()
     delay(15.milliseconds)
+    yield()
+    viewModel.runFormWipeNonce()
     yield()
     onWipeFlushed()
   }
@@ -566,7 +570,7 @@ internal fun PaymentContainerHost(
                       onSelectChannel = onSelectChannel,
                       onCardNumberChanged = onCardNumberChanged,
                       onFormChanged = onFormChanged,
-                      formWipeNonce = formWipeNonce
+                      formWipeNonce = mviState.formWipeNonce
                     )
                   }
 

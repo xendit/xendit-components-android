@@ -57,7 +57,8 @@ internal data class PaymentState(
   val pollResponse: PollResponse? = null,
   val sessionType: BffSessionType? = null,
   val allowSavePaymentMethod: BffSessionAllowSavePaymentMethod? = null,
-  val paymentDrafts: Map<String, PaymentDraft> = emptyMap()
+  val paymentDrafts: Map<String, PaymentDraft> = emptyMap(),
+  val formWipeNonce: Int = 0
 )
 
 internal sealed interface AwaitingPaymentAction {
@@ -563,6 +564,10 @@ internal class PaymentViewModel(
     }
   }
 
+  fun runFormWipeNonce() {
+    _state.update { it.copy(formWipeNonce = it.formWipeNonce + 1) }
+  }
+
   fun wipeAllSensitiveData() {
     markClosed()
     cancelChallenge()
@@ -576,7 +581,18 @@ internal class PaymentViewModel(
 
     lastSelectedChannelCodeByUiGroup.clear()
 
-    _state.value = PaymentState()
+    _state.update { current ->
+      current.copy(
+        isLoading = false,
+        awaitingPaymentAction = null,
+        paymentActionRedirect = null,
+        presentToCustomerPaymentAction = null,
+        errorMessage = null,
+        paymentResponse = null,
+        pollResponse = null,
+        paymentDrafts = emptyMap(),
+      )
+    }
   }
 
   fun onAppBackgrounded() {
