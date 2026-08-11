@@ -33,6 +33,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import co.xendit.components.R
 import co.xendit.components.XenditComponentsPaymentType
+import co.xendit.components.XenditComponentsPaymentType.Companion.BLACKLISTED_CHANNEL
 import co.xendit.components.data.model.AmountAvailabilityStatus
 import co.xendit.components.data.model.BffBusiness
 import co.xendit.components.data.model.BffChannel
@@ -103,7 +104,11 @@ internal fun PaymentMethodsUI(
 
   val supportedPaymentType = remember { XenditComponentsPaymentType.SUPPORTED }
 
-  val (groups, orderedUiGroups) = remember(channels, merchantPreferredPaymentMethod, channelUiGroups) {
+  val (groups, orderedUiGroups) = remember(
+    channels,
+    merchantPreferredPaymentMethod,
+    channelUiGroups
+  ) {
     processAndOrderUiGroups(
       channels = channels,
       merchantPreferredPaymentMethod = merchantPreferredPaymentMethod,
@@ -148,8 +153,10 @@ internal fun PaymentMethodsUI(
             !allChannelsUnavailable -> null
             groupAvailabilityStatus == AmountAvailabilityStatus.ABOVE_MAX ->
               R.string.sessionpayment_methods_channel_disabled_amount_too_large
+
             groupAvailabilityStatus == AmountAvailabilityStatus.BELOW_MIN ->
               R.string.sessionpayment_methods_channel_disabled_amount_too_small
+
             else -> R.string.sessionpayment_methods_channel_disabled_dropdown
           }
 
@@ -464,7 +471,11 @@ internal fun processAndOrderUiGroups(
 
   val masterUiOrder = channelUiGroups?.map { it.id } ?: emptyList()
 
-  val supportedChannels = channels.filter { it.pmType in supportedPaymentTypes }
+  val supportedChannels = channels.filter {
+    it.pmType in supportedPaymentTypes
+  }.filter {
+    !BLACKLISTED_CHANNEL.contains(it.channelCode)
+  }
   val preferredChannels =
     if (preferredList.isNotEmpty()) supportedChannels.filter { it.pmType in preferredList }
     else supportedChannels

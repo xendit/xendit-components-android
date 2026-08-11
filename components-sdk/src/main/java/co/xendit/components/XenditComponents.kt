@@ -67,6 +67,9 @@ enum class XenditComponentsPaymentType(val value: String) {
         VIRTUAL_ACCOUNT,
         OVER_THE_COUNTER
       )
+    val BLACKLISTED_CHANNEL = listOf(
+      "BRI_DIRECT_DEBIT"
+    )
   }
 }
 

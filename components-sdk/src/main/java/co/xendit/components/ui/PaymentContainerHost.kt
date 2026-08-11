@@ -33,9 +33,7 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -82,12 +80,9 @@ import co.xendit.components.ui.method.PaymentMethodsUI
 import co.xendit.components.ui.method.processAndOrderUiGroups
 import co.xendit.components.ui.style.XenditAppearance
 import co.xendit.components.ui.style.xenditAppearance
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.yield
-import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 
 internal enum class PaymentContainerPresentation {
@@ -123,7 +118,6 @@ internal fun PaymentContainerHost(
   val scope = rememberCoroutineScope()
   val appearance = xenditAppearance
   var pendingSnackbarMessage by remember { mutableStateOf<String?>(null) }
-
 
   val sheetState =
     if (presentation == PaymentContainerPresentation.BottomSheet) {
@@ -599,8 +593,10 @@ internal fun PaymentContainerHost(
                     when (mviState.sessionType) {
                       BffSessionType.SAVE ->
                         stringResource(id = R.string.sessionpayment_methods_add_payment_method)
+
                       BffSessionType.SUBSCRIPTION ->
                         stringResource(id = R.string.sessionchannel_selection_confirm_subscription)
+
                       else ->
                         stringResource(id = R.string.sessionpayment_methods_submit_pay)
                     }
