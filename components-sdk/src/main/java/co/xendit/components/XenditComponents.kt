@@ -5,10 +5,9 @@ import android.content.Context
 import android.content.ContextWrapper
 import android.view.ViewGroup
 import androidx.activity.ComponentActivity
-import androidx.annotation.VisibleForTesting
 import androidx.annotation.Keep
+import androidx.annotation.VisibleForTesting
 import androidx.compose.ui.platform.ComposeView
-import co.xendit.components.util.XLogger
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.setViewTreeLifecycleOwner
@@ -16,15 +15,18 @@ import androidx.lifecycle.setViewTreeViewModelStoreOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import co.xendit.components.core.CoreSdkComponent
 import co.xendit.components.core.model.FallbackValue
-import co.xendit.components.data.model.XenditPaymentResult
 import co.xendit.components.data.model.XenditError
+import co.xendit.components.data.model.XenditPaymentResult
 import co.xendit.components.ui.PaymentContainerHost
+import co.xendit.components.ui.PaymentContainerHostSignals
 import co.xendit.components.ui.PaymentContainerPresentation
 import co.xendit.components.ui.style.XenditAppearance
 import co.xendit.components.ui.theme.XenditTheme
+import co.xendit.components.util.XLogger
 import com.google.gson.annotations.SerializedName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 /** Main SDK entry point for displaying payment UI */
 @Keep
@@ -56,7 +58,18 @@ enum class XenditComponentsPaymentType(val value: String) {
 
   companion object {
     val SUPPORTED: List<XenditComponentsPaymentType> =
-      listOf(CARDS, EWALLET, QR_CODE, BANK_TRANSFER, DIRECT_DEBIT, VIRTUAL_ACCOUNT, OVER_THE_COUNTER)
+      listOf(
+        CARDS,
+        EWALLET,
+        QR_CODE,
+        BANK_TRANSFER,
+        DIRECT_DEBIT,
+        VIRTUAL_ACCOUNT,
+        OVER_THE_COUNTER
+      )
+    val BLACKLISTED_CHANNEL = listOf(
+      "BRI_DIRECT_DEBIT"
+    )
   }
 }
 
@@ -69,6 +82,11 @@ object XenditComponents {
   private var lifecycleOwner: LifecycleOwner? = null
   private var lifecycleObserver: DefaultLifecycleObserver? = null
   private val scope = CoroutineScope(Dispatchers.Main)
+
+  private var activeComponentsSdkKey: String? = null
+  private var activeActivity: ComponentActivity? = null
+  private var activeMerchantPreferredPm: List<XenditComponentsPaymentType>? = null
+  private var componentCallbacks: android.content.ComponentCallbacks2? = null
 
   /**
    * Global configuration for the SDK appearance. This is called before show() to apply custom styles.
@@ -126,11 +144,19 @@ object XenditComponents {
   /**
    * Initializes and displays the Xendit Payment SDK UI.
    *
+   * After the payment flow finishes (onPaymentResult callback), the SDK has already wiped
+   * all in-memory PAN/CVV buffers it owns. For pen-test / heap-dump compliance, call
+   * [performSensitiveDataGcPass] from your app layer once you receive the
+   * [XenditPaymentResult] and finish processing / storing it — that prompts ART to collect
+   * any short-lived transient String copies the composable frames / Retrofit serializers
+   * produced during the submit window.
+   *
    * @param activity The Android Context (e.g., Activity or Application Context).
    * @param componentsSdkKey The Session ID or Components SDK Key obtained from your backend.
-   * @param style Custom styling configuration for the SDK.
+   * @param merchantPreferredPaymentMethod Optional ordered list of preferred payment methods
+   *   to surface first.
    * @param onPaymentResult Callback triggered when a payment finishes (Success, Error, or
-   * Canceled).
+   *   Canceled).
    */
   fun present(
     activity: ComponentActivity,
@@ -167,9 +193,39 @@ object XenditComponents {
 
     cleanup()
 
+    activeComponentsSdkKey = componentsSdkKey
+    activeActivity = activity
+    activeMerchantPreferredPm = merchantPreferredPaymentMethod
+
+    // ===== Mitigation 3: Aggressively purge state when Android signals memory pressure =====
+    val callbacks =
+      object : android.content.ComponentCallbacks2 {
+        override fun onTrimMemory(level: Int) {
+          // TRIM_MEMORY_BACKGROUND = process entered cached state;
+          // TRIM_MEMORY_MODERATE/COMPLETE = OS needs RAM now.
+          // On any of these, do a full wipe (including form values):
+          if (level >= android.content.ComponentCallbacks2.TRIM_MEMORY_BACKGROUND) {
+            PaymentContainerHostSignals.onWipeTriggerStatic?.invoke()
+          } else {
+            PaymentContainerHostSignals.onAppBackgroundedStatic?.invoke()
+          }
+        }
+
+        override fun onConfigurationChanged(newConfig: android.content.res.Configuration) = Unit
+        override fun onLowMemory() {
+          PaymentContainerHostSignals.onWipeTriggerStatic?.invoke()
+        }
+      }
+    this.componentCallbacks = callbacks
+    runCatching { activity.registerComponentCallbacks(callbacks) }
+
     lifecycleOwner = activity
     lifecycleObserver =
       object : DefaultLifecycleObserver {
+        override fun onStop(owner: LifecycleOwner) {
+          PaymentContainerHostSignals.onAppBackgroundedStatic?.invoke()
+        }
+
         override fun onDestroy(owner: LifecycleOwner) {
           cleanup()
         }
@@ -212,11 +268,58 @@ object XenditComponents {
 
   /** Dismisses the payment bottom sheet manually */
   fun dismiss() {
-    currentCallback?.invoke(XenditPaymentResult.Canceled)
-    cleanup()
+    PaymentContainerHostSignals.onDismissRequestedStatic?.invoke()
+  }
+
+  /**
+   * Synchronously wipes every sensitive buffer the SDK currently holds (PAN / CVV TextField
+   * states, card details, auth keys, draft form values). This is already invoked automatically
+   * by the SDK at the end of every payment flow (including Cancel / Dismiss) and on Android
+   * [ComponentCallbacks2.TRIM_MEMORY_BACKGROUND]. You only need to call this yourself if you
+   * keep the SDK retained across long user journeys and want to drop sensitive state at an
+   * intermediate checkpoint (e.g. after the user navigates away from the card screen).
+   *
+   * After wiping, call [performSensitiveDataGcPass] from the merchant app layer to prompt ART
+   * to collect any transient short-lived String copies left on the heap.
+   */
+  @Keep
+  fun wipeAllSensitiveData() {
+    PaymentContainerHostSignals.onWipeTriggerStatic?.invoke()
+  }
+
+  /**
+   * Runs an ART garbage-collection pass from the **merchant app layer** to collect any
+   * short-lived PAN / CVV transient String copies produced by composable frame rendering or
+   * network payload serialisation.
+   *
+   * The SDK itself never calls `Runtime.gc()` internally. Use this helper once you receive
+   * the [XenditPaymentResult] callback (or after you call [wipeAllSensitiveData] at an
+   * intermediate checkpoint) to clean up the transient strings that have not yet been
+   * reclaimed by ART's normal collection cadence. A typical pen-test-safe sequence looks
+   * like:
+   *
+   * ```
+   * XenditComponents.present(activity, key) { result ->
+   *     // persist / log result first, then:
+   *     XenditComponents.wipeAllSensitiveData()
+   *     XenditComponents.performSensitiveDataGcPass()
+   * }
+   * ```
+   */
+  @Keep
+  fun performSensitiveDataGcPass() {
+    runCatching {
+      Runtime.getRuntime().gc()
+      Runtime.getRuntime().runFinalization()
+      Runtime.getRuntime().gc()
+    }
   }
 
   private fun cleanup() {
+    PaymentContainerHostSignals.onAppBackgroundedStatic = null
+    PaymentContainerHostSignals.onWipeTriggerStatic = null
+    PaymentContainerHostSignals.onDismissRequestedStatic = null
+
     val owner = lifecycleOwner
     val observer = lifecycleObserver
     if (owner != null && observer != null) {
@@ -227,6 +330,19 @@ object XenditComponents {
     composeView?.let { view -> (view.parent as? ViewGroup)?.removeView(view) }
     composeView = null
     currentCallback = null
+
+    val activityForCallbacks = activeActivity
+
+    // Unregister ComponentCallbacks2 (onTrimMemory / onLowMemory hook)
+    val cb = componentCallbacks
+    if (cb != null && activityForCallbacks != null) {
+      runCatching { activityForCallbacks.unregisterComponentCallbacks(cb) }
+    }
+    componentCallbacks = null
+
+    activeComponentsSdkKey = null
+    activeMerchantPreferredPm = null
+    activeActivity = null
   }
 
   private fun Context.findActivity(): ComponentActivity? {

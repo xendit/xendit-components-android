@@ -24,7 +24,8 @@ internal fun EwalletPaymentUI(
   onFormStateChanged: (Map<String, String>, List<ChannelFormField>, Boolean) -> Unit = { _, _, _ -> },
   onSaveCheck: (Boolean, Map<String, String>, List<ChannelFormField>) -> Unit = { _, _, _ -> },
   showSaveCheckbox: Boolean = false,
-  modifier: Modifier = Modifier
+  modifier: Modifier = Modifier,
+  formWipeNonce: Int = 0
 ) {
   PaymentChannelSelectionUI(
     headerText = stringResource(id = R.string.ewallet_pay_with),
@@ -49,6 +50,7 @@ internal fun EwalletPaymentUI(
       } else {
         null
       },
-    modifier = modifier
+    modifier = modifier,
+    formWipeNonce = formWipeNonce
   )
 }

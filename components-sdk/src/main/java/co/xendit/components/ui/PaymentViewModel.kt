@@ -3,9 +3,10 @@ package co.xendit.components.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import co.xendit.components.XenditComponentsPaymentType
+import co.xendit.components.XenditComponentsPaymentType.Companion.BLACKLISTED_CHANNEL
+import co.xendit.components.core.CoreSdkComponent
 import co.xendit.components.core.model.GlobalErrorHandler
 import co.xendit.components.core.model.asApiError
-import co.xendit.components.core.CoreSdkComponent
 import co.xendit.components.data.model.BffChannel
 import co.xendit.components.data.model.BffSessionAllowSavePaymentMethod
 import co.xendit.components.data.model.BffSessionType
@@ -14,8 +15,8 @@ import co.xendit.components.data.model.Country
 import co.xendit.components.data.model.FieldType
 import co.xendit.components.data.model.InstallmentPlan
 import co.xendit.components.data.model.PaymentAction
-import co.xendit.components.data.model.PaymentDraft
 import co.xendit.components.data.model.PaymentActionDescriptor
+import co.xendit.components.data.model.PaymentDraft
 import co.xendit.components.data.model.PaymentRequest
 import co.xendit.components.data.model.PaymentRequestStatus
 import co.xendit.components.data.model.PaymentResponse
@@ -57,7 +58,8 @@ internal data class PaymentState(
   val pollResponse: PollResponse? = null,
   val sessionType: BffSessionType? = null,
   val allowSavePaymentMethod: BffSessionAllowSavePaymentMethod? = null,
-  val paymentDrafts: Map<String, PaymentDraft> = emptyMap()
+  val paymentDrafts: Map<String, PaymentDraft> = emptyMap(),
+  val formWipeNonce: Int = 0
 )
 
 internal sealed interface AwaitingPaymentAction {
@@ -188,6 +190,11 @@ internal class PaymentViewModel(
     viewModelScope.launch(Dispatchers.Default) { Country.warmUp() }
   }
 
+  override fun onCleared() {
+    super.onCleared()
+    wipeAllSensitiveData()
+  }
+
   private val _state = MutableStateFlow(PaymentState())
   val state: StateFlow<PaymentState> = _state.asStateFlow()
 
@@ -202,9 +209,9 @@ internal class PaymentViewModel(
   fun dispatch(intent: ActionIntent) {
     when (intent) {
       is ActionIntent.Initialize -> {
+        wipeAllSensitiveData()
         this.sessionAuthKey = intent.sessionAuthKey
         this.publicKey = intent.publicKey
-        resetForNewSession()
         dispatch(ActionIntent.FetchSession(intent.sessionAuthKey))
       }
 
@@ -236,6 +243,7 @@ internal class PaymentViewModel(
         }
         markClosed()
       }
+
       is ActionIntent.ClearPaymentActionRedirect -> {
         _state.update { it.copy(paymentActionRedirect = null) }
       }
@@ -250,7 +258,9 @@ internal class PaymentViewModel(
         if (response.isSuccessful) {
           val body = response.body()
           val session = body?.session
-          val channels = body?.paymentChannels.orEmpty()
+          val channels = body?.paymentChannels.orEmpty().filter {
+            !BLACKLISTED_CHANNEL.contains(it.channelCode)
+          }
           val variantsByDisplayCode = combinePairedChannels(channels).variantsByDisplayCode
           this@PaymentViewModel.paymentSessionId =
             session?.paymentSessionId ?: session?.id
@@ -309,8 +319,10 @@ internal class PaymentViewModel(
         currentSelected
       } else {
         val lastSelectedCode = lastSelectedChannelCodeByUiGroup[newExpandedUiGroup]
-        val lastSelected = lastSelectedCode?.let { code -> channels.firstOrNull { it.channelCode == code } }
-        lastSelected ?: (groups[newExpandedUiGroup]?.firstOrNull().takeIf { groups[newExpandedUiGroup]?.size == 1 })
+        val lastSelected =
+          lastSelectedCode?.let { code -> channels.firstOrNull { it.channelCode == code } }
+        lastSelected ?: (groups[newExpandedUiGroup]?.firstOrNull()
+          .takeIf { groups[newExpandedUiGroup]?.size == 1 })
       }
 
     if (nextSelected != null) {
@@ -423,9 +435,9 @@ internal class PaymentViewModel(
             val presentToCustomer =
               actions.firstOrNull {
                 it.type == "PRESENT_TO_CUSTOMER" &&
-                  it.value != null &&
-                  (it.descriptor == PaymentActionDescriptor.VIRTUAL_ACCOUNT_NUMBER ||
-                    it.descriptor == PaymentActionDescriptor.QR_STRING)
+                    it.value != null &&
+                    (it.descriptor == PaymentActionDescriptor.VIRTUAL_ACCOUNT_NUMBER ||
+                        it.descriptor == PaymentActionDescriptor.QR_STRING)
               } ?: actions.firstOrNull { it.type == "PRESENT_TO_CUSTOMER" && it.value != null }
             when {
               redirect?.value != null -> {
@@ -475,18 +487,36 @@ internal class PaymentViewModel(
               }
             }
           } else {
-            _state.update { it.copy(isLoading = false, awaitingPaymentAction = null, paymentResponse = body) }
+            _state.update {
+              it.copy(
+                isLoading = false,
+                awaitingPaymentAction = null,
+                paymentResponse = body
+              )
+            }
           }
           onChallengeCompletedInternal() // start pooling here
         } else {
           val error = response.errorBody()?.asApiError()
           val errorMessage = error?.errorContent?.message1 ?: error?.message ?: "Payment Failed"
-          _state.update { it.copy(isLoading = false, awaitingPaymentAction = null, errorMessage = errorMessage) }
+          _state.update {
+            it.copy(
+              isLoading = false,
+              awaitingPaymentAction = null,
+              errorMessage = errorMessage
+            )
+          }
         }
       } catch (e: Exception) {
         val errorMessage = e.message ?: "Payment Error"
         globalErrorHandler.postError(errorMessage = UiText.DynamicString(errorMessage))
-        _state.update { it.copy(isLoading = false, awaitingPaymentAction = null, errorMessage = errorMessage) }
+        _state.update {
+          it.copy(
+            isLoading = false,
+            awaitingPaymentAction = null,
+            errorMessage = errorMessage
+          )
+        }
       }
     }
   }
@@ -495,7 +525,9 @@ internal class PaymentViewModel(
     val authKey = sessionAuthKey ?: return
     val tokenReqId = lastSessionTokenRequestId
 
-    if (forceStart) { cancelChallenge() }
+    if (forceStart) {
+      cancelChallenge()
+    }
 
     if (challengePollingJob?.isActive == true) return
 
@@ -558,13 +590,29 @@ internal class PaymentViewModel(
     }
   }
 
-  fun resetForNewSession() {
+  fun runFormWipeNonce() {
+    _state.update { it.copy(formWipeNonce = it.formWipeNonce + 1) }
+  }
+
+  fun wipeAllSensitiveData() {
     markClosed()
+    cancelChallenge()
+    challengePollingJob = null
+
+    sessionAuthKey = null
+    publicKey = null
     paymentSessionId = null
     lastPaymentRequestId = null
     lastSessionTokenRequestId = null
+
     lastSelectedChannelCodeByUiGroup.clear()
+
     _state.value = PaymentState()
+  }
+
+  fun onAppBackgrounded() {
+    cancelChallenge()
+    challengePollingJob = null
   }
 
   fun showLoadingWithAction() {
@@ -605,7 +653,6 @@ internal class PaymentViewModel(
 
   private fun cancelChallenge() {
     challengePollingJob?.cancel()
-    challengePollingJob = null
   }
 
 }

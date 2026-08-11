@@ -63,7 +63,8 @@ internal fun DynamicForm(
   onVisibleFieldsChanged: (List<ChannelFormField>) -> Unit,
   bffCardInfo: BffCardInfo? = null,
   installmentPlans: List<InstallmentPlan>? = null,
-  mockData: Map<String, String> = mapOf()
+  mockData: Map<String, String> = mapOf(),
+  formWipeNonce: Int = 0
 ) {
   val appearance = xenditAppearance
   val onValuesChangedRef = rememberUpdatedState(onValuesChanged)
@@ -80,6 +81,15 @@ internal fun DynamicForm(
       }
     }
   val formErrors = remember { mutableStateMapOf<String, UiText?>() }
+
+  LaunchedEffect(formWipeNonce) {
+    if (formWipeNonce > 0) {
+      formValues.clear()
+      formErrors.clear()
+      onValuesChangedRef.value(emptyMap())
+      onVisibleFieldsChangedRef.value(emptyList())
+    }
+  }
 
   LaunchedEffect(mockData) {
     if (mockData.isNotEmpty()) {

@@ -80,11 +80,20 @@ import co.xendit.components.ui.method.PaymentMethodsUI
 import co.xendit.components.ui.method.processAndOrderUiGroups
 import co.xendit.components.ui.style.XenditAppearance
 import co.xendit.components.ui.style.xenditAppearance
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.yield
+import kotlin.time.Duration.Companion.milliseconds
 
 internal enum class PaymentContainerPresentation {
   Dialog,
   BottomSheet
+}
+
+internal object PaymentContainerHostSignals {
+  var onAppBackgroundedStatic: (() -> Unit)? = null
+  var onWipeTriggerStatic: (() -> Unit)? = null
+  var onDismissRequestedStatic: (() -> Unit)? = null
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -110,6 +119,58 @@ internal fun PaymentContainerHost(
   val appearance = xenditAppearance
   var pendingSnackbarMessage by remember { mutableStateOf<String?>(null) }
 
+  val sheetState =
+    if (presentation == PaymentContainerPresentation.BottomSheet) {
+      rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    } else {
+      null
+    }
+
+  suspend fun performHardWipeAndThen(onWipeFlushed: suspend () -> Unit) {
+    viewModel.wipeAllSensitiveData()
+    cardViewModel.wipeAllSensitiveData()
+    yield()
+    delay(15.milliseconds)
+    yield()
+    viewModel.runFormWipeNonce()
+    yield()
+    onWipeFlushed()
+  }
+
+  suspend fun finishWith(result: XenditPaymentResult) {
+    performHardWipeAndThen {
+      onResult(result)
+      onCleanup()
+    }
+  }
+
+  fun cancelAndDismiss() {
+    scope.launch {
+      if (presentation == PaymentContainerPresentation.BottomSheet && sheetState != null) {
+        sheetState.hide()
+      }
+      finishWith(XenditPaymentResult.Canceled)
+    }
+  }
+
+  DisposableEffect(viewModel, cardViewModel) {
+    PaymentContainerHostSignals.onAppBackgroundedStatic = {
+      viewModel.onAppBackgrounded()
+      cardViewModel.onAppBackgrounded()
+    }
+    PaymentContainerHostSignals.onWipeTriggerStatic = {
+      scope.launch {
+        performHardWipeAndThen { }
+      }
+    }
+    PaymentContainerHostSignals.onDismissRequestedStatic = ::cancelAndDismiss
+    onDispose {
+      PaymentContainerHostSignals.onAppBackgroundedStatic = null
+      PaymentContainerHostSignals.onWipeTriggerStatic = null
+      PaymentContainerHostSignals.onDismissRequestedStatic = null
+    }
+  }
+
   LaunchedEffect(
     pendingSnackbarMessage,
     mviState.paymentActionRedirect,
@@ -123,27 +184,7 @@ internal fun PaymentContainerHost(
     pendingSnackbarMessage = null
   }
 
-  val sheetState =
-    if (presentation == PaymentContainerPresentation.BottomSheet) {
-      rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    } else {
-      null
-    }
-
-  val dismiss: () -> Unit = {
-    if (presentation == PaymentContainerPresentation.BottomSheet && sheetState != null) {
-      scope.launch {
-        sheetState.hide()
-        viewModel.resetForNewSession()
-        onResult(XenditPaymentResult.Canceled)
-        onCleanup()
-      }
-    } else {
-      viewModel.resetForNewSession()
-      onResult(XenditPaymentResult.Canceled)
-      onCleanup()
-    }
-  }
+  val dismiss: () -> Unit = ::cancelAndDismiss
 
   LaunchedEffect(sessionAuthKey, publicKey) {
     viewModel.dispatch(ActionIntent.Initialize(sessionAuthKey, publicKey))
@@ -173,33 +214,21 @@ internal fun PaymentContainerHost(
     val session = mviState.sessionResponse ?: return@LaunchedEffect
     val bffSession = mviState.sessionResponse?.session ?: return@LaunchedEffect
     when (bffSession.status) {
-      PaymentSessionStatus.COMPLETED -> {
-        viewModel.resetForNewSession()
-        onResult(
+      PaymentSessionStatus.COMPLETED ->
+        finishWith(
           XenditPaymentResult.Success(
             paymentRequestId = bffSession.paymentSessionId,
             channelCode = session.succeededChannel?.channelCode
           )
         )
-        onCleanup()
-      }
 
-      PaymentSessionStatus.CANCELED -> {
-        viewModel.resetForNewSession()
-        onResult(XenditPaymentResult.Canceled)
-        onCleanup()
-      }
+      PaymentSessionStatus.CANCELED ->
+        finishWith(XenditPaymentResult.Canceled)
 
-      PaymentSessionStatus.EXPIRED -> {
-        viewModel.markClosed()
-        onResult(XenditPaymentResult.Expired)
-        onCleanup()
-      }
+      PaymentSessionStatus.EXPIRED ->
+        finishWith(XenditPaymentResult.Expired)
 
-      else -> {
-
-      }
-
+      else -> Unit
     }
   }
 
@@ -220,28 +249,19 @@ internal fun PaymentContainerHost(
       sessionStatus == PaymentSessionStatus.EXPIRED || prStatus == PaymentRequestStatus.EXPIRED
 
     when {
-      isSuccess -> {
-        viewModel.resetForNewSession()
-        onResult(
+      isSuccess ->
+        finishWith(
           XenditPaymentResult.Success(
             paymentRequestId = poll.session?.paymentSessionId,
             channelCode = poll.succeededChannel?.channelCode ?: poll.paymentRequest?.channelCode
           )
         )
-        onCleanup()
-      }
 
-      isCanceled -> {
-        viewModel.resetForNewSession()
-        onResult(XenditPaymentResult.Canceled)
-        onCleanup()
-      }
+      isCanceled ->
+        finishWith(XenditPaymentResult.Canceled)
 
-      isExpired -> {
-        viewModel.resetForNewSession()
-        onResult(XenditPaymentResult.Expired)
-        onCleanup()
-      }
+      isExpired ->
+        finishWith(XenditPaymentResult.Expired)
 
       isFailed -> {
         val pollFailureCode = poll.paymentRequest.failure_code
@@ -276,7 +296,8 @@ internal fun PaymentContainerHost(
 
   DisposableEffect(Unit) {
     onDispose {
-      viewModel.resetForNewSession()
+      viewModel.wipeAllSensitiveData()
+      cardViewModel.wipeAllSensitiveData()
     }
   }
 
@@ -542,7 +563,8 @@ internal fun PaymentContainerHost(
                       onToggleGroup = onToggleGroup,
                       onSelectChannel = onSelectChannel,
                       onCardNumberChanged = onCardNumberChanged,
-                      onFormChanged = onFormChanged
+                      onFormChanged = onFormChanged,
+                      formWipeNonce = mviState.formWipeNonce
                     )
                   }
 
@@ -571,8 +593,10 @@ internal fun PaymentContainerHost(
                     when (mviState.sessionType) {
                       BffSessionType.SAVE ->
                         stringResource(id = R.string.sessionpayment_methods_add_payment_method)
+
                       BffSessionType.SUBSCRIPTION ->
                         stringResource(id = R.string.sessionchannel_selection_confirm_subscription)
+
                       else ->
                         stringResource(id = R.string.sessionpayment_methods_submit_pay)
                     }

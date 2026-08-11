@@ -181,8 +181,10 @@ fun PaymentDemo(fontFamily: FontFamily, modifier: Modifier = Modifier) {
             XenditComponentsPaymentType.EWALLET,
             XenditComponentsPaymentType.OVER_THE_COUNTER
           )
-      ) {
-        paymentResultText = it.toString()
+      ) { result ->
+        paymentResultText = result.toString()
+        XenditComponents.wipeAllSensitiveData()
+        XenditComponents.performSensitiveDataGcPass()
       }
     }
   }

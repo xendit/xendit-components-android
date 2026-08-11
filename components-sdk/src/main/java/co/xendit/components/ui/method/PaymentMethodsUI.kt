@@ -76,7 +76,8 @@ internal fun PaymentMethodsUI(
   onSelectChannel: (String) -> Unit,
   onCardNumberChanged: (String) -> Unit,
   onFormChanged: (String?, Map<String, String>, List<ChannelFormField>, Boolean) -> Unit,
-  modifier: Modifier = Modifier
+  modifier: Modifier = Modifier,
+  formWipeNonce: Int = 0
 ) {
   val appearance = xenditAppearance
   val isSaveOptionalSession =
@@ -102,7 +103,11 @@ internal fun PaymentMethodsUI(
 
   val supportedPaymentType = remember { XenditComponentsPaymentType.SUPPORTED }
 
-  val (groups, orderedUiGroups) = remember(channels, merchantPreferredPaymentMethod, channelUiGroups) {
+  val (groups, orderedUiGroups) = remember(
+    channels,
+    merchantPreferredPaymentMethod,
+    channelUiGroups
+  ) {
     processAndOrderUiGroups(
       channels = channels,
       merchantPreferredPaymentMethod = merchantPreferredPaymentMethod,
@@ -147,8 +152,10 @@ internal fun PaymentMethodsUI(
             !allChannelsUnavailable -> null
             groupAvailabilityStatus == AmountAvailabilityStatus.ABOVE_MAX ->
               R.string.sessionpayment_methods_channel_disabled_amount_too_large
+
             groupAvailabilityStatus == AmountAvailabilityStatus.BELOW_MIN ->
               R.string.sessionpayment_methods_channel_disabled_amount_too_small
+
             else -> R.string.sessionpayment_methods_channel_disabled_dropdown
           }
 
@@ -202,7 +209,8 @@ internal fun PaymentMethodsUI(
                         isSaveChecked
                       )
                     },
-                    showSaveCheckbox = canShowSaveCheckbox(selectedChannel)
+                    showSaveCheckbox = canShowSaveCheckbox(selectedChannel),
+                    formWipeNonce = formWipeNonce
                   )
                 }
 
@@ -266,7 +274,8 @@ internal fun PaymentMethodsUI(
                       }
                     },
                     showSaveCheckbox = showSaveCheckbox,
-                    modifier = Modifier.padding(bottom = 8.dp)
+                    modifier = Modifier.padding(bottom = 8.dp),
+                    formWipeNonce = formWipeNonce
                   )
                 }
 
@@ -283,7 +292,8 @@ internal fun PaymentMethodsUI(
                         false
                       )
                     },
-                    modifier = Modifier.padding(bottom = 8.dp)
+                    modifier = Modifier.padding(bottom = 8.dp),
+                    formWipeNonce = formWipeNonce
                   )
                 }
 
@@ -308,7 +318,8 @@ internal fun PaymentMethodsUI(
                       )
                     },
                     showSaveCheckbox = showSaveCheckbox,
-                    modifier = Modifier.padding(bottom = 8.dp)
+                    modifier = Modifier.padding(bottom = 8.dp),
+                    formWipeNonce = formWipeNonce
                   )
                 }
 
@@ -336,7 +347,8 @@ internal fun PaymentMethodsUI(
                       )
                     },
                     showSaveCheckbox = showSaveCheckbox,
-                    modifier = Modifier.padding(bottom = 8.dp)
+                    modifier = Modifier.padding(bottom = 8.dp),
+                    formWipeNonce = formWipeNonce
                   )
                 }
 
@@ -458,7 +470,9 @@ internal fun processAndOrderUiGroups(
 
   val masterUiOrder = channelUiGroups?.map { it.id } ?: emptyList()
 
-  val supportedChannels = channels.filter { it.pmType in supportedPaymentTypes }
+  val supportedChannels = channels.filter {
+    it.pmType in supportedPaymentTypes
+  }
   val preferredChannels =
     if (preferredList.isNotEmpty()) supportedChannels.filter { it.pmType in preferredList }
     else supportedChannels
