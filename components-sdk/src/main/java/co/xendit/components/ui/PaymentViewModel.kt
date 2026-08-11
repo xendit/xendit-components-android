@@ -162,6 +162,14 @@ internal sealed class ActionIntent {
   ) : ActionIntent()
 
   /**
+   * Submits a Google Pay payment using the signed payment data JSON from Google.
+   */
+  data class SubmitGooglePay(
+    val paymentDataJson: String,
+    val channelCode: String
+  ) : ActionIntent()
+
+  /**
    * Calls the simulate endpoint to advance the payment state before polling for the result.
    * This is typically used for non-production and QR-based payment flows.
    */
@@ -225,6 +233,11 @@ internal class PaymentViewModel(
           intent.fields,
           intent.savePaymentMethod,
           intent.installmentPlans
+        )
+      is ActionIntent.SubmitGooglePay ->
+        submitGooglePayInternal(
+          paymentDataJson = intent.paymentDataJson,
+          channelCode = intent.channelCode
         )
 
       is ActionIntent.UpdatePaymentDraft -> onUpdatePaymentDraft(intent.paymentDraft)
@@ -519,6 +532,133 @@ internal class PaymentViewModel(
         }
       }
     }
+  }
+
+  private fun submitGooglePayInternal(
+    paymentDataJson: String,
+    channelCode: String
+  ) {
+    viewModelScope.launch {
+      _state.update {
+        it.copy(
+          isLoading = true,
+          awaitingPaymentAction = null,
+          errorMessage = null,
+          paymentResponse = null,
+          paymentActionRedirect = null,
+          presentToCustomerPaymentAction = null,
+          pollResponse = null
+        )
+      }
+      try {
+        val key = publicKey ?: throw IllegalStateException("Public Key not set")
+        val authKey = sessionAuthKey ?: throw IllegalStateException("Session ID not set")
+        val paySid = paymentSessionId ?: throw IllegalStateException("Payment Session ID not set")
+
+        val channelProperties = buildGooglePayChannelProperties(paymentDataJson)
+
+        val request = PaymentRequest(
+          sessionId = authKey,
+          channelCode = channelCode,
+          channelProperties = channelProperties
+        )
+
+        val response =
+          if (_state.value.sessionType.usesPaymentTokenSubmission()) {
+            xenditRepository.createPaymentToken(request = request)
+          } else {
+            xenditRepository.createPaymentRequest(request = request)
+          }
+        if (response.isSuccessful && response.body() != null) {
+          val body = response.body()!!
+          lastPaymentRequestId = body.id
+          lastSessionTokenRequestId = body.sessionTokenRequestId
+          val actions = body.paymentActions.orEmpty()
+          val redirect =
+            actions.firstOrNull {
+              it.type == "REDIRECT_CUSTOMER" &&
+                  (it.descriptor == PaymentActionDescriptor.WEB_URL ||
+                      it.descriptor == PaymentActionDescriptor.DEEPLINK_URL ||
+                      it.descriptor == PaymentActionDescriptor.WEB_GOOGLE_PAYLINK)
+            }
+          if (body.status == PaymentRequestStatus.REQUIRES_ACTION) {
+            val presentToCustomer =
+              actions.firstOrNull {
+                it.type == "PRESENT_TO_CUSTOMER" &&
+                    it.value != null &&
+                    (it.descriptor == PaymentActionDescriptor.VIRTUAL_ACCOUNT_NUMBER ||
+                        it.descriptor == PaymentActionDescriptor.QR_STRING)
+              } ?: actions.firstOrNull { it.type == "PRESENT_TO_CUSTOMER" && it.value != null }
+            when {
+              redirect?.value != null -> {
+                _state.update {
+                  it.copy(
+                    isLoading = false,
+                    awaitingPaymentAction = null,
+                    paymentActionRedirect = redirect,
+                    presentToCustomerPaymentAction = null,
+                    paymentResponse = null
+                  )
+                }
+              }
+
+              presentToCustomer != null -> {
+                _state.update {
+                  it.copy(
+                    isLoading = false,
+                    awaitingPaymentAction = null,
+                    presentToCustomerPaymentAction = presentToCustomer,
+                    paymentActionRedirect = null,
+                    paymentResponse = null
+                  )
+                }
+              }
+
+              actions.isEmpty() -> {
+                _state.update {
+                  it.copy(
+                    isLoading = false,
+                    awaitingPaymentAction = AwaitingPaymentAction.EmptyPaymentActions,
+                    paymentActionRedirect = null,
+                    presentToCustomerPaymentAction = null,
+                    paymentResponse = body
+                  )
+                }
+              }
+
+              else -> {
+                _state.update {
+                  it.copy(
+                    isLoading = false,
+                    awaitingPaymentAction = null,
+                    paymentResponse = body
+                  )
+                }
+              }
+            }
+          } else {
+            _state.update { it.copy(isLoading = false, awaitingPaymentAction = null, paymentResponse = body) }
+          }
+          onChallengeCompletedInternal()
+        } else {
+          val error = response.errorBody()?.asApiError()
+          val errorMessage = error?.errorContent?.message1 ?: error?.message ?: "Google Pay Payment Failed"
+          _state.update { it.copy(isLoading = false, awaitingPaymentAction = null, errorMessage = errorMessage) }
+        }
+      } catch (e: Exception) {
+        val errorMessage = e.message ?: "Google Pay Payment Error"
+        globalErrorHandler.postError(errorMessage = UiText.DynamicString(errorMessage))
+        _state.update { it.copy(isLoading = false, awaitingPaymentAction = null, errorMessage = errorMessage) }
+      }
+    }
+  }
+
+  private fun buildGooglePayChannelProperties(
+    paymentDataJson: String
+  ): Map<String, Any> {
+    return mapOf(
+      "google_pay" to paymentDataJson
+    )
   }
 
   private fun onChallengeCompletedInternal(forceStart: Boolean = false) {

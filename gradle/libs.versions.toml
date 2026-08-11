@@ -23,6 +23,8 @@ libphonenumber = "9.0.32"
 vanniktech = "0.37.0"
 zxing = "3.5.4"
 lottie_version = "6.7.1"
+playServicesWallet = "19.4.0"
+
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -61,6 +63,7 @@ coil = { group = "io.coil-kt", name = "coil", version.ref = "coil" }
 google-libphonenumber = { group = "com.googlecode.libphonenumber", name = "libphonenumber", version.ref = "libphonenumber" }
 zxing-core = { group = "com.google.zxing", name = "core", version.ref = "zxing" }
 lottie-compose = { group = "com.airbnb.android", name = "lottie-compose", version.ref = "lottie_version" }
+google-play-services-wallet = { group = "com.google.android.gms", name = "play-services-wallet", version.ref = "playServicesWallet" }
 
 kotlin-stdlib = { group = "org.jetbrains.kotlin", name = "kotlin-stdlib", version.ref = "kotlin" }
 kotlin-reflect = { group = "org.jetbrains.kotlin", name = "kotlin-reflect", version.ref = "kotlin" }

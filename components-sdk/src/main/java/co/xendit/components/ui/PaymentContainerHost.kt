@@ -54,6 +54,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import co.xendit.components.BuildConfig
 import co.xendit.components.R
 import co.xendit.components.XenditComponentsPaymentType
+import co.xendit.components.core.CoreSdkComponent
 import co.xendit.components.core.CoreSdkComponent.globalErrorHandler
 import co.xendit.components.data.model.BffSessionType
 import co.xendit.components.data.model.ChannelFormField
@@ -74,6 +75,7 @@ import co.xendit.components.ui.card.CardIntent
 import co.xendit.components.ui.card.CardViewModel
 import co.xendit.components.ui.components.molecule.AwaitingPaymentDialog
 import co.xendit.components.ui.components.molecule.GenericHeader
+import co.xendit.components.ui.digital_wallet.GooglePaySection
 import co.xendit.components.ui.helper.FailureCodeMessageUtil
 import co.xendit.components.ui.helper.FormChecker.validateAllField
 import co.xendit.components.ui.method.PaymentMethodsUI
@@ -127,13 +129,12 @@ internal fun PaymentContainerHost(
     }
 
   suspend fun performHardWipeAndThen(onWipeFlushed: suspend () -> Unit) {
-    viewModel.wipeAllSensitiveData()
-    cardViewModel.wipeAllSensitiveData()
-    yield()
     delay(15.milliseconds)
     yield()
     viewModel.runFormWipeNonce()
     yield()
+    viewModel.wipeAllSensitiveData()
+    cardViewModel.wipeAllSensitiveData()
     onWipeFlushed()
   }
 
@@ -546,6 +547,25 @@ internal fun PaymentContainerHost(
                           )
                         }
                       }
+                    GooglePaySection(
+                      googlePay = mviState.sessionResponse?.digitalWallets?.googlePay,
+                      businessName = mviState.sessionResponse?.business?.name.orEmpty(),
+                      paymentSessionId = mviState.sessionResponse?.session?.paymentSessionId,
+                      amount = mviState.sessionResponse?.session?.amount,
+                      currency = mviState.sessionResponse?.session?.currency,
+                      isTest = !CoreSdkComponent.isProdLive(),
+                      isLoading = mviState.isLoading,
+                      onPaymentDataReceived = { json, channelCode ->
+                        viewModel.dispatch(
+                          ActionIntent.SubmitGooglePay(
+                            paymentDataJson = json,
+                            channelCode = channelCode
+                          )
+                        )
+                      },
+                      modifier = Modifier.padding(top = 8.dp)
+                    )
+
                     PaymentMethodsUI(
                       session = mviState.sessionResponse?.session,
                       bffBusiness = mviState.sessionResponse?.business,
