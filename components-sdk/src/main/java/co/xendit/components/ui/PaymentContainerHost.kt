@@ -555,11 +555,11 @@ internal fun PaymentContainerHost(
                       currency = mviState.sessionResponse?.session?.currency,
                       isTest = !CoreSdkComponent.isProdLive(),
                       isLoading = mviState.isLoading,
-                      onPaymentDataReceived = { json, channelCode ->
+                      onPaymentDataReceived = { json, paymentMethodType ->
                         viewModel.dispatch(
                           ActionIntent.SubmitGooglePay(
                             paymentDataJson = json,
-                            channelCode = channelCode
+                            paymentMethodType = paymentMethodType
                           )
                         )
                       },

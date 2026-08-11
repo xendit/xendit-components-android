@@ -163,10 +163,15 @@ internal sealed class ActionIntent {
 
   /**
    * Submits a Google Pay payment using the signed payment data JSON from Google.
+   *
+   * [paymentMethodType] is the raw `paymentMethodData.type` extracted from Google's JSON
+   * (e.g. "CARD", "PAYPAL"). It is resolved against `digitalWallets.google_pay.allowed_payment_methods[i].payment_method_specification.type`
+   * inside this ViewModel — resolution errors are propagated to `_state.errorMessage` and
+   * `globalErrorHandler` instead of crashing.
    */
   data class SubmitGooglePay(
     val paymentDataJson: String,
-    val channelCode: String
+    val paymentMethodType: String? = null
   ) : ActionIntent()
 
   /**
@@ -237,7 +242,7 @@ internal class PaymentViewModel(
       is ActionIntent.SubmitGooglePay ->
         submitGooglePayInternal(
           paymentDataJson = intent.paymentDataJson,
-          channelCode = intent.channelCode
+          paymentMethodType = intent.paymentMethodType
         )
 
       is ActionIntent.UpdatePaymentDraft -> onUpdatePaymentDraft(intent.paymentDraft)
@@ -412,13 +417,64 @@ internal class PaymentViewModel(
 
   private fun submitGooglePayInternal(
     paymentDataJson: String,
-    channelCode: String
-  ) = submitPaymentInternal(errorPrefix = "Google Pay Payment") { authKey, _key, _paySid ->
-    PaymentRequest(
-      sessionId = authKey,
-      channelCode = channelCode,
-      channelProperties = buildGooglePayChannelProperties(paymentDataJson)
-    )
+    paymentMethodType: String?
+  ) {
+    val channelResolution = resolveGooglePayChannelCodeOrError(paymentMethodType)
+    val channelCode = when (channelResolution) {
+      is Resolved.Ok -> channelResolution.code
+      is Resolved.Err -> {
+        val userMessage = channelResolution.userMessage
+        globalErrorHandler.postError(errorMessage = UiText.DynamicString(userMessage))
+        _state.update {
+          it.copy(
+            isLoading = false,
+            errorMessage = userMessage
+          )
+        }
+        return
+      }
+    }
+    return submitPaymentInternal(errorPrefix = "Google Pay Payment") { authKey, _key, _paySid ->
+      PaymentRequest(
+        sessionId = authKey,
+        channelCode = channelCode,
+        channelProperties = buildGooglePayChannelProperties(paymentDataJson, channelCode)
+      )
+    }
+  }
+
+  private sealed interface Resolved {
+    data class Ok(val code: String) : Resolved
+    data class Err(val userMessage: String) : Resolved
+  }
+
+  private fun resolveGooglePayChannelCodeOrError(paymentMethodType: String?): Resolved {
+    val googlePay = _state.value.sessionResponse?.digitalWallets?.googlePay
+    if (googlePay == null) {
+      return Resolved.Err("Google Pay configuration is missing from the session response.")
+    }
+    val firstAllowed = googlePay.allowedPaymentMethods.firstOrNull()
+      ?: return Resolved.Err("Google Pay configuration is empty (no allowed payment methods).")
+    if (paymentMethodType.isNullOrBlank()) {
+      return Resolved.Ok(firstAllowed.channelCode)
+    }
+    val match = googlePay.allowedPaymentMethods.firstOrNull { allowed ->
+      allowed.paymentMethodSpecification
+        ?.get("type")
+        ?.asString
+        ?.equals(paymentMethodType, ignoreCase = true) == true
+    }
+    return if (match != null) {
+      Resolved.Ok(match.channelCode)
+    } else {
+      val availableTypes = googlePay.allowedPaymentMethods.mapNotNull {
+        it.paymentMethodSpecification?.get("type")?.asString
+      }
+      Resolved.Err(
+        "Google Pay payment method not supported: $paymentMethodType. " +
+          "Configured methods: ${availableTypes.ifEmpty { "(none)" }}"
+      )
+    }
   }
 
   private inline fun submitPaymentInternal(
@@ -557,11 +613,14 @@ internal class PaymentViewModel(
   }
 
   private fun buildGooglePayChannelProperties(
-    paymentDataJson: String
+    paymentDataJson: String,
+    channelCode: String
   ): Map<String, Any> {
-    return mapOf(
-      "google_pay" to paymentDataJson
-    )
+    return if (channelCode == "CARDS") {
+      mapOf("google_pay" to paymentDataJson)
+    } else {
+      emptyMap()
+    }
   }
 
   private fun onChallengeCompletedInternal(forceStart: Boolean = false) {

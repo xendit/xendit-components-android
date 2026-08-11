@@ -37,6 +37,7 @@ import com.google.android.gms.common.api.ResolvableApiException
 import com.google.android.gms.wallet.PaymentData
 import co.xendit.components.data.model.BffGooglePay
 import co.xendit.components.ui.helper.GooglePayHelper
+import com.google.gson.JsonParser
 import java.math.BigDecimal
 
 private tailrec fun Context.findActivity(): Activity? {
@@ -47,17 +48,24 @@ private tailrec fun Context.findActivity(): Activity? {
   }
 }
 
+private fun extractPaymentMethodType(paymentDataJson: String): String? {
+  return runCatching {
+    JsonParser.parseString(paymentDataJson)
+      ?.asJsonObject
+      ?.getAsJsonObject("paymentMethodData")
+      ?.get("type")
+      ?.asString
+  }.getOrNull()
+}
+
 private fun handlePaymentData(
   paymentData: PaymentData?,
   googlePay: BffGooglePay?,
-  onPaymentDataReceived: (paymentDataJson: String, channelCode: String) -> Unit
+  onPaymentDataReceived: (paymentDataJson: String, paymentMethodType: String?) -> Unit
 ) {
-  val json = paymentData?.toJson()
-  if (json != null) {
-    val channelCode =
-      googlePay?.allowedPaymentMethods?.firstOrNull()?.channelCode ?: ""
-    onPaymentDataReceived(json, channelCode)
-  }
+  val json = paymentData?.toJson() ?: return
+  val paymentMethodType = extractPaymentMethodType(json)
+  onPaymentDataReceived(json, paymentMethodType)
 }
 
 @Composable
@@ -69,7 +77,7 @@ internal fun GooglePaySection(
   currency: String?,
   isTest: Boolean,
   isLoading: Boolean,
-  onPaymentDataReceived: (paymentDataJson: String, channelCode: String) -> Unit,
+  onPaymentDataReceived: (paymentDataJson: String, paymentMethodType: String?) -> Unit,
   modifier: Modifier = Modifier
 ) {
   if (googlePay == null ||
