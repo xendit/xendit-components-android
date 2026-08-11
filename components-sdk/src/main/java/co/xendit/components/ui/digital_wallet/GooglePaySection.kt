@@ -47,6 +47,19 @@ private tailrec fun Context.findActivity(): Activity? {
   }
 }
 
+private fun handlePaymentData(
+  paymentData: PaymentData?,
+  googlePay: BffGooglePay?,
+  onPaymentDataReceived: (paymentDataJson: String, channelCode: String) -> Unit
+) {
+  val json = paymentData?.toJson()
+  if (json != null) {
+    val channelCode =
+      googlePay?.allowedPaymentMethods?.firstOrNull()?.channelCode ?: ""
+    onPaymentDataReceived(json, channelCode)
+  }
+}
+
 @Composable
 internal fun GooglePaySection(
   googlePay: BffGooglePay?,
@@ -105,12 +118,7 @@ internal fun GooglePaySection(
     when (result.resultCode) {
       Activity.RESULT_OK -> {
         val paymentData = if (data != null) PaymentData.getFromIntent(data) else null
-        val json = paymentData?.toJson()
-        if (json != null) {
-          val channelCode =
-            googlePay.allowedPaymentMethods.firstOrNull()?.channelCode ?: "CARDS"
-          onPaymentDataReceived(json, channelCode)
-        }
+        handlePaymentData(paymentData, googlePay, onPaymentDataReceived)
       }
     }
   }
@@ -129,12 +137,7 @@ internal fun GooglePaySection(
       onClick = {
         val loadTask = paymentsClient.loadPaymentData(paymentDataRequest)
         loadTask.addOnSuccessListener { paymentData ->
-          val json = paymentData.toJson()
-          if (json != null) {
-            val channelCode =
-              googlePay.allowedPaymentMethods.firstOrNull()?.channelCode ?: "CARDS"
-            onPaymentDataReceived(json, channelCode)
-          }
+          handlePaymentData(paymentData, googlePay, onPaymentDataReceived)
         }
         loadTask.addOnFailureListener { exception ->
           if (exception is ResolvableApiException) {
