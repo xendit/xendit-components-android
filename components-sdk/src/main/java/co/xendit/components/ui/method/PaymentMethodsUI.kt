@@ -33,7 +33,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import co.xendit.components.R
 import co.xendit.components.XenditComponentsPaymentType
-import co.xendit.components.XenditComponentsPaymentType.Companion.BLACKLISTED_CHANNEL
 import co.xendit.components.data.model.AmountAvailabilityStatus
 import co.xendit.components.data.model.BffBusiness
 import co.xendit.components.data.model.BffChannel
@@ -473,8 +472,6 @@ internal fun processAndOrderUiGroups(
 
   val supportedChannels = channels.filter {
     it.pmType in supportedPaymentTypes
-  }.filter {
-    !BLACKLISTED_CHANNEL.contains(it.channelCode)
   }
   val preferredChannels =
     if (preferredList.isNotEmpty()) supportedChannels.filter { it.pmType in preferredList }
