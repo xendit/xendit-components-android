@@ -3,6 +3,7 @@ package co.xendit.components.ui.digital_wallet
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
+import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.IntentSenderRequest
@@ -33,10 +34,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.google.android.gms.common.api.ApiException
 import com.google.android.gms.common.api.ResolvableApiException
 import com.google.android.gms.wallet.PaymentData
 import co.xendit.components.data.model.BffGooglePay
 import co.xendit.components.ui.helper.GooglePayHelper
+import com.google.android.gms.common.api.CommonStatusCodes
 import com.google.gson.JsonParser
 import java.math.BigDecimal
 
@@ -58,6 +61,50 @@ private fun extractPaymentMethodType(paymentDataJson: String): String? {
   }.getOrNull()
 }
 
+internal data class GooglePayPaymentError(
+  val code: String,
+  val title: String,
+  val message: String
+)
+
+private fun mapGooglePayStatusToError(statusCodeRaw: Int?): GooglePayPaymentError? {
+  val statusCode = statusCodeRaw ?: Int.MIN_VALUE
+  @Suppress("MagicNumber")
+  val (code, title, message) = when (statusCode) {
+    CommonStatusCodes.CANCELED -> {
+      // Matches web code 1:1; explicitly ignored (user voluntarily dismissed the sheet).
+      Triple("GOOGLE_PAY_CANCELED", "", "")
+    }
+    CommonStatusCodes.DEVELOPER_ERROR ->
+      Triple(
+        "GOOGLE_PAY_DEVELOPER_ERROR",
+        "Google Pay Error",
+        "Something went wrong with Google Pay. Please try again or use a different payment method."
+      )
+    CommonStatusCodes.INTERNAL_ERROR ->
+      Triple(
+        "GOOGLE_PAY_INTERNAL_ERROR",
+        "Google Pay Error",
+        "Something went wrong with Google Pay. Please try again or use a different payment method."
+      )
+    else ->
+      Triple(
+        "GOOGLE_PAY_UNKNOWN_ERROR",
+        "Google Pay Error",
+        "An unknown error occurred with Google Pay. The error code is $statusCode."
+      )
+  }
+  return if (code == "GOOGLE_PAY_CANCELED") null else GooglePayPaymentError(code, title, message)
+}
+
+private fun extractStatusCode(exception: Exception?): Int? = runCatching {
+  when (exception) {
+    is ApiException -> exception.statusCode
+    is ResolvableApiException -> exception.statusCode
+    else -> null
+  }
+}.getOrNull()
+
 private fun handlePaymentData(
   paymentData: PaymentData?,
   googlePay: BffGooglePay?,
@@ -78,6 +125,7 @@ internal fun GooglePaySection(
   isTest: Boolean,
   isLoading: Boolean,
   onPaymentDataReceived: (paymentDataJson: String, paymentMethodType: String?) -> Unit,
+  onPaymentFailed: (GooglePayPaymentError) -> Unit,
   modifier: Modifier = Modifier
 ) {
   if (googlePay == null ||
@@ -122,11 +170,22 @@ internal fun GooglePaySection(
   val activityResultLauncher = rememberLauncherForActivityResult(
     contract = ActivityResultContracts.StartIntentSenderForResult()
   ) { result: ActivityResult ->
-    val data: android.content.Intent? = result.data
     when (result.resultCode) {
       Activity.RESULT_OK -> {
+        val data: Intent? = result.data
         val paymentData = if (data != null) PaymentData.getFromIntent(data) else null
         handlePaymentData(paymentData, googlePay, onPaymentDataReceived)
+      }
+      Activity.RESULT_CANCELED -> {
+        // User canceled the resolution flow (dismissed dialog, etc.) — same as web CANCELED: ignore
+      }
+      else -> {
+        val statusExtra = runCatching {
+          result.data
+            ?.getIntExtra("com.google.android.gms.common.api.AutoResolveHelper.status", -1)
+            ?.takeIf { it != -1 }
+        }.getOrNull()
+        mapGooglePayStatusToError(statusExtra)?.let(onPaymentFailed)
       }
     }
   }
@@ -152,6 +211,11 @@ internal fun GooglePaySection(
             val pending = exception.resolution
             val intentSenderRequest = IntentSenderRequest.Builder(pending).build()
             activityResultLauncher.launch(intentSenderRequest)
+          } else {
+            val exceptionAsStatus = extractStatusCode(exception as? Exception)
+            val mappedError = mapGooglePayStatusToError(exceptionAsStatus)
+              ?: mapGooglePayStatusToError(null)
+            mappedError?.let(onPaymentFailed)
           }
         }
       }

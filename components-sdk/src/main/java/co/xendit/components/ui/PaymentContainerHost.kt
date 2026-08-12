@@ -563,6 +563,15 @@ internal fun PaymentContainerHost(
                           )
                         )
                       },
+                      onPaymentFailed = { err ->
+                        viewModel.dispatch(
+                          ActionIntent.GooglePayPaymentFailed(
+                            code = err.code,
+                            title = err.title,
+                            message = err.message
+                          )
+                        )
+                      },
                       modifier = Modifier.padding(top = 8.dp)
                     )
 

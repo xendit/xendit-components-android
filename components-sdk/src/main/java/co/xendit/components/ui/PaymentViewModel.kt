@@ -175,6 +175,18 @@ internal sealed class ActionIntent {
   ) : ActionIntent()
 
   /**
+   * Raises a Google Pay UI error to the MVI state without a payment submission attempt.
+   * This is triggered by SDK-level failures such as canceled resolutions, buyer account
+   * errors, developer configuration errors, temporary internal errors, or unknown
+   * failures from loadPaymentData / its resolution activity result.
+   */
+  data class GooglePayPaymentFailed(
+    val code: String,
+    val title: String,
+    val message: String
+  ) : ActionIntent()
+
+  /**
    * Calls the simulate endpoint to advance the payment state before polling for the result.
    * This is typically used for non-production and QR-based payment flows.
    */
@@ -243,6 +255,12 @@ internal class PaymentViewModel(
         submitGooglePayInternal(
           paymentDataJson = intent.paymentDataJson,
           paymentMethodType = intent.paymentMethodType
+        )
+      is ActionIntent.GooglePayPaymentFailed ->
+        onGooglePayPaymentFailedInternal(
+          code = intent.code,
+          title = intent.title,
+          message = intent.message
         )
 
       is ActionIntent.UpdatePaymentDraft -> onUpdatePaymentDraft(intent.paymentDraft)
@@ -456,7 +474,7 @@ internal class PaymentViewModel(
     val firstAllowed = googlePay.allowedPaymentMethods.firstOrNull()
       ?: return Resolved.Err("Google Pay configuration is empty (no allowed payment methods).")
     if (paymentMethodType.isNullOrBlank()) {
-      return Resolved.Ok(firstAllowed.channelCode)
+      return Resolved.Err("No Payment Method Selected")
     }
     val match = googlePay.allowedPaymentMethods.firstOrNull { allowed ->
       allowed.paymentMethodSpecification
@@ -473,6 +491,28 @@ internal class PaymentViewModel(
       Resolved.Err(
         "Google Pay payment method not supported: $paymentMethodType. " +
           "Configured methods: ${availableTypes.ifEmpty { "(none)" }}"
+      )
+    }
+  }
+
+  private fun onGooglePayPaymentFailedInternal(
+    code: String,
+    title: String,
+    message: String
+  ) {
+    val userMessage = if (title.isNotBlank() && message.isNotBlank()) {
+      "$title. $message"
+    } else if (title.isNotBlank()) {
+      title
+    } else {
+      message.ifBlank { code }
+    }
+    XLogger.d("Google Pay failed with code=$code title=$title message=$message")
+    globalErrorHandler.postError(errorMessage = UiText.DynamicString(userMessage))
+    _state.update {
+      it.copy(
+        isLoading = false,
+        errorMessage = userMessage
       )
     }
   }
