@@ -68,7 +68,7 @@ internal data class GooglePayPaymentError(
 )
 
 private fun mapGooglePayStatusToError(statusCodeRaw: Int?): GooglePayPaymentError? {
-  val statusCode = statusCodeRaw ?: Int.MIN_VALUE
+  val statusCode = statusCodeRaw ?: -1
   @Suppress("MagicNumber")
   val (code, title, message) = when (statusCode) {
     CommonStatusCodes.CANCELED -> {
