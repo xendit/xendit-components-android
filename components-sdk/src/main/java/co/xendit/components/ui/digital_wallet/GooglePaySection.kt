@@ -8,18 +8,23 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -30,16 +35,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.google.android.gms.common.api.ApiException
-import com.google.android.gms.common.api.ResolvableApiException
-import com.google.android.gms.wallet.PaymentData
+import co.xendit.components.R
 import co.xendit.components.data.model.BffGooglePay
 import co.xendit.components.ui.helper.GooglePayHelper
+import co.xendit.components.ui.style.xenditAppearance
+import com.google.android.gms.common.api.ApiException
 import com.google.android.gms.common.api.CommonStatusCodes
+import com.google.android.gms.common.api.ResolvableApiException
+import com.google.android.gms.wallet.PaymentData
 import com.google.gson.JsonParser
 import java.math.BigDecimal
 
@@ -75,18 +82,21 @@ private fun mapGooglePayStatusToError(statusCodeRaw: Int?): GooglePayPaymentErro
       // Matches web code 1:1; explicitly ignored (user voluntarily dismissed the sheet).
       Triple("GOOGLE_PAY_CANCELED", "", "")
     }
+
     CommonStatusCodes.DEVELOPER_ERROR ->
       Triple(
         "GOOGLE_PAY_DEVELOPER_ERROR",
         "Google Pay Error",
         "Something went wrong with Google Pay. Please try again or use a different payment method."
       )
+
     CommonStatusCodes.INTERNAL_ERROR ->
       Triple(
         "GOOGLE_PAY_INTERNAL_ERROR",
         "Google Pay Error",
         "Something went wrong with Google Pay. Please try again or use a different payment method."
       )
+
     else ->
       Triple(
         "GOOGLE_PAY_UNKNOWN_ERROR",
@@ -176,9 +186,11 @@ internal fun GooglePaySection(
         val paymentData = if (data != null) PaymentData.getFromIntent(data) else null
         handlePaymentData(paymentData, googlePay, onPaymentDataReceived)
       }
+
       Activity.RESULT_CANCELED -> {
         // User canceled the resolution flow (dismissed dialog, etc.) — same as web CANCELED: ignore
       }
+
       else -> {
         val statusExtra = runCatching {
           result.data
@@ -229,13 +241,22 @@ internal fun GooglePayButton(
   onClick: () -> Unit,
   modifier: Modifier = Modifier
 ) {
+  val appearance = xenditAppearance
   val interactionSource = remember { MutableInteractionSource() }
+  val isLightBackground = remember(appearance.colorBackground) {
+    appearance.colorBackground.luminance() > 0.65f
+  }
+
+  // Light background -> Black button with White text
+  // Dark background  -> White button with Black text
+  val buttonBgColor = if (isLightBackground) Color.Black else Color.White
+  val textColor = if (isLightBackground) Color.White else Color.Black
   Box(
     modifier = modifier
       .fillMaxWidth()
       .height(52.dp)
       .background(
-        color = Color.Black,
+        color = buttonBgColor,
         shape = RoundedCornerShape(12.dp)
       )
       .then(
@@ -256,12 +277,22 @@ internal fun GooglePayButton(
         modifier = Modifier.size(20.dp)
       )
     } else {
-      Text(
-        text = "Pay with Google Pay",
-        color = Color.White,
-        fontSize = 16.sp,
-        fontWeight = FontWeight.SemiBold
-      )
+      Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center
+      ) {
+        Image(
+          painter = painterResource(id = R.drawable.ic_google_pay),
+          contentDescription = "Google Logo",
+          modifier = Modifier.size(20.dp)
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+          text = "Pay",
+          color = textColor,
+          style = MaterialTheme.typography.titleLarge,
+        )
+      }
     }
   }
 }
