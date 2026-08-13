@@ -45,6 +45,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import co.xendit.components.XenditComponents
 import co.xendit.components.XenditComponentsPaymentType
+import co.xendit.components.data.model.XenditPaymentResult
 import co.xendit.components.ui.style.XenditAppearance
 import co.xendit.example.ui.theme.XenComponentPrivateTheme
 
@@ -124,7 +125,7 @@ fun PaymentDemo(fontFamily: FontFamily, modifier: Modifier = Modifier) {
             customAppearance = customAppearance.copy(colorText = it)
           }
           parseColorOrNull(colorTextSecondaryHex)?.let {
-            customAppearance = customAppearance.copy(colorTextSecondary = it)
+            customAppearance = customAppearance.copy(colorTextSecondary = it)f
           }
           parseColorOrNull(colorTextPlaceholderHex)?.let {
             customAppearance = customAppearance.copy(colorTextPlaceholder = it)
@@ -196,8 +197,10 @@ fun PaymentDemo(fontFamily: FontFamily, modifier: Modifier = Modifier) {
           )
       ) { result ->
         paymentResultText = result.toString()
-        XenditComponents.wipeAllSensitiveData()
-        XenditComponents.performSensitiveDataGcPass()
+        if (result !is XenditPaymentResult.Failed) {
+          XenditComponents.wipeAllSensitiveData()
+          XenditComponents.performSensitiveDataGcPass()
+        }
       }
     }
   }
