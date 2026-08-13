@@ -76,7 +76,6 @@ internal data class GooglePayPaymentError(
 
 private fun mapGooglePayStatusToError(statusCodeRaw: Int?): GooglePayPaymentError? {
   val statusCode = statusCodeRaw ?: -1
-  @Suppress("MagicNumber")
   val (code, title, message) = when (statusCode) {
     CommonStatusCodes.CANCELED -> {
       // Matches web code 1:1; explicitly ignored (user voluntarily dismissed the sheet).
@@ -246,9 +245,6 @@ internal fun GooglePayButton(
   val isLightBackground = remember(appearance.colorBackground) {
     appearance.colorBackground.luminance() > 0.65f
   }
-
-  // Light background -> Black button with White text
-  // Dark background  -> White button with Black text
   val buttonBgColor = if (isLightBackground) Color.Black else Color.White
   val textColor = if (isLightBackground) Color.White else Color.Black
   Box(

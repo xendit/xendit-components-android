@@ -35,6 +35,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
@@ -114,17 +117,27 @@ fun PaymentDemo(fontFamily: FontFamily, modifier: Modifier = Modifier) {
         if (selectedPreset == AppearancePreset.Custom) {
           var customAppearance = XenditAppearance(fontFamily = fontFamily)
 
-          parseColorOrNull(colorPrimaryHex)?.let { customAppearance = customAppearance.copy(colorPrimary = it) }
-          parseColorOrNull(colorTextHex)?.let { customAppearance = customAppearance.copy(colorText = it) }
+          parseColorOrNull(colorPrimaryHex)?.let {
+            customAppearance = customAppearance.copy(colorPrimary = it)
+          }
+          parseColorOrNull(colorTextHex)?.let {
+            customAppearance = customAppearance.copy(colorText = it)
+          }
           parseColorOrNull(colorTextSecondaryHex)?.let {
             customAppearance = customAppearance.copy(colorTextSecondary = it)
           }
           parseColorOrNull(colorTextPlaceholderHex)?.let {
             customAppearance = customAppearance.copy(colorTextPlaceholder = it)
           }
-          parseColorOrNull(colorDisabledHex)?.let { customAppearance = customAppearance.copy(colorDisabled = it) }
-          parseColorOrNull(colorDangerHex)?.let { customAppearance = customAppearance.copy(colorDanger = it) }
-          parseColorOrNull(colorBorderHex)?.let { customAppearance = customAppearance.copy(colorBorder = it) }
+          parseColorOrNull(colorDisabledHex)?.let {
+            customAppearance = customAppearance.copy(colorDisabled = it)
+          }
+          parseColorOrNull(colorDangerHex)?.let {
+            customAppearance = customAppearance.copy(colorDanger = it)
+          }
+          parseColorOrNull(colorBorderHex)?.let {
+            customAppearance = customAppearance.copy(colorBorder = it)
+          }
           parseColorOrNull(colorBackgroundHex)?.let {
             customAppearance = customAppearance.copy(colorBackground = it)
           }
@@ -191,7 +204,8 @@ fun PaymentDemo(fontFamily: FontFamily, modifier: Modifier = Modifier) {
 
   Scaffold(
     modifier = modifier
-      .fillMaxSize(),
+      .fillMaxSize()
+      .semantics { testTagsAsResourceId = true },
     bottomBar = {
       Box(
         modifier = Modifier
@@ -205,6 +219,7 @@ fun PaymentDemo(fontFamily: FontFamily, modifier: Modifier = Modifier) {
           modifier = Modifier
             .fillMaxWidth()
             .height(56.dp)
+            .testTag("launch_payment_button")
         ) {
           Text("Launch Xendit Payment SDK")
         }
@@ -237,7 +252,9 @@ fun PaymentDemo(fontFamily: FontFamily, modifier: Modifier = Modifier) {
         value = sessionId,
         onValueChange = { sessionId = it },
         label = { Text("Enter Session ID") },
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+          .fillMaxWidth()
+          .testTag("session_id_input")
       )
 
       if (paymentResultText.isNotEmpty()) {
