@@ -125,7 +125,7 @@ fun PaymentDemo(fontFamily: FontFamily, modifier: Modifier = Modifier) {
             customAppearance = customAppearance.copy(colorText = it)
           }
           parseColorOrNull(colorTextSecondaryHex)?.let {
-            customAppearance = customAppearance.copy(colorTextSecondary = it)f
+            customAppearance = customAppearance.copy(colorTextSecondary = it)
           }
           parseColorOrNull(colorTextPlaceholderHex)?.let {
             customAppearance = customAppearance.copy(colorTextPlaceholder = it)
