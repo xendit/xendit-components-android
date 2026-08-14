@@ -36,8 +36,6 @@ internal object XenditTestTags {
   const val GENERIC_HEADER_TRAILING_BUTTON = "button:header:trailing"
 
   // ── PaymentMethodsUI: channel selector UI groups & rows ───────────────────────────
-  /** Toggle/expandable row for a payment method group. Append group name / channel code. */
-  const val UI_GROUP_ROW = "ui:group:row:"
   const val SAVE_CARD_CHECKBOX = "checkbox:save_card"
   const val AWAITING_PAYMENT_DIALOG_CLOSE = "button:awaiting_payment:close"
 
@@ -50,7 +48,6 @@ internal object XenditTestTags {
   const val COUNTRY_PICKER_SHEET_CLOSE = "button:picker:country:close"
   const val COUNTRY_PICKER_SEARCH = PICKER_SEARCH_PREFIX + "country"
 
-  const val PROVINCE_PICKER_TRIGGER = "picker:province:trigger"
   const val PROVINCE_PICKER_SHEET = "picker:province:sheet"
   const val PROVINCE_PICKER_SHEET_CLOSE = "button:picker:province:close"
   const val PROVINCE_PICKER_SEARCH = PICKER_SEARCH_PREFIX + "province"

@@ -462,7 +462,7 @@ internal class PaymentViewModel(
         PaymentRequest(
           sessionId = authKey,
           channelCode = channelCode,
-          channelProperties = buildGooglePayChannelProperties(paymentDataJson, channelCode)
+          channelProperties = channelProperties
         )
       }
     }

@@ -1,5 +1,6 @@
 package co.xendit.components.ui
 
+import co.xendit.components.XenditComponentsPaymentType
 import co.xendit.components.data.model.BffGooglePay
 import co.xendit.components.data.model.BffGooglePayAllowedMethod
 
@@ -58,7 +59,7 @@ internal fun buildGooglePayChannelProperties(
   paymentDataJson: String,
   channelCode: String
 ): Map<String, Any> {
-  return if (channelCode == "CARDS") {
+  return if (channelCode == XenditComponentsPaymentType.CARDS.value) {
     mapOf("google_pay" to paymentDataJson)
   } else {
     emptyMap()
