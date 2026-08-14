@@ -16,9 +16,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import co.xendit.components.ui.XenditTestTags
 import co.xendit.components.ui.style.xenditAppearance
 
 @Composable
@@ -41,7 +43,10 @@ internal fun GenericHeader(
     // Left Icon Slot
     Box(modifier = Modifier.size(48.dp), contentAlignment = Alignment.Center) {
       if (leftIcon != null && onLeftClick != null) {
-        IconButton(onClick = { onLeftClick.invoke() }) {
+        IconButton(
+          onClick = { onLeftClick.invoke() },
+          modifier = Modifier.testTag(XenditTestTags.GENERIC_HEADER_LEADING_BUTTON)
+        ) {
           Icon(
             imageVector = leftIcon,
             contentDescription = "Back",
@@ -67,7 +72,10 @@ internal fun GenericHeader(
     // Right Icon Slot
     Box(modifier = Modifier.size(48.dp), contentAlignment = Alignment.Center) {
       if (rightIcon != null) {
-        IconButton(onClick = { onRightClick?.invoke() }) {
+        IconButton(
+          onClick = { onRightClick?.invoke() },
+          modifier = Modifier.testTag(XenditTestTags.GENERIC_HEADER_TRAILING_BUTTON)
+        ) {
           Icon(
             imageVector = rightIcon,
             contentDescription = "Action",

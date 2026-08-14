@@ -18,6 +18,7 @@ internal fun CVCField(
   errorMessage: String? = null,
   shape: Shape? = null,
   noBorder: Boolean = false,
+  testTag: String = "",
 ) {
   XenditTextField(
     value = value,
@@ -35,6 +36,7 @@ internal fun CVCField(
     modifier = modifier,
     errorMessage = errorMessage,
     shape = shape,
-    noBorder = noBorder
+    noBorder = noBorder,
+    testTag = testTag
   )
 }

@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
@@ -49,6 +50,7 @@ internal fun XenditTextField(
   leadingIcon: (@Composable (() -> Unit))? = null,
   trailingIcon: (@Composable (() -> Unit))? = null,
   disabledTextColor: Color? = null,
+  testTag: String = "",
 ) {
   val appearance = xenditAppearance
   val interactionSource = remember { MutableInteractionSource() }
@@ -68,7 +70,9 @@ internal fun XenditTextField(
     BasicTextField(
       value = value,
       onValueChange = { if (it.length <= maxLength) onValueChange(it) },
-      modifier = Modifier.fillMaxWidth(),
+      modifier = Modifier
+        .fillMaxWidth()
+        .then(if (testTag.isNotBlank()) Modifier.testTag(testTag) else Modifier),
       enabled = enabled,
       readOnly = readOnly,
       textStyle = textStyle.copy(color = appearance.colorText),

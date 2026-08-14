@@ -25,8 +25,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import co.xendit.components.ui.XenditTestTags
 import co.xendit.components.ui.helper.SdkImageLoader
 import co.xendit.components.ui.style.XenditAppearance
 import coil.compose.AsyncImage
@@ -78,6 +80,7 @@ internal fun AwaitingPaymentDialog(
               .align(Alignment.TopEnd)
               .size(24.dp)
               .clickable { onClose() }
+              .testTag(XenditTestTags.AWAITING_PAYMENT_DIALOG_CLOSE)
         )
       }
 

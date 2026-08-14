@@ -15,7 +15,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import co.xendit.components.data.model.InstallmentPlan
+import co.xendit.components.ui.XenditTestTags
 import co.xendit.components.ui.helper.toLabelDisplay
 import co.xendit.components.ui.style.xenditAppearance
 
@@ -33,6 +35,7 @@ internal fun InstallmentPlanField(
   errorMessage: String? = null,
   shape: Shape? = null,
   noBorder: Boolean = false,
+  testTag: String = "",
 ) {
   val appearance = xenditAppearance
   val context = LocalContext.current
@@ -41,7 +44,12 @@ internal fun InstallmentPlanField(
   ExposedDropdownMenuBox(
     expanded = expanded,
     onExpandedChange = { expanded = !expanded },
-    modifier = modifier.fillMaxWidth()
+    modifier = modifier
+      .fillMaxWidth()
+      .then(
+        if (testTag.isNotBlank()) Modifier.testTag(XenditTestTags.FORM_DROPDOWN_PREFIX + testTag)
+        else Modifier.testTag(XenditTestTags.INSTALLMENT_PLAN_TRIGGER)
+      )
   ) {
     XenditTextField(
       value = selectedPlanDesc,
@@ -76,7 +84,8 @@ internal fun InstallmentPlanField(
           onClick = {
             onPlanSelected(plan)
             expanded = false
-          }
+          },
+          modifier = Modifier.testTag(XenditTestTags.XENDIT_DROPDOWN_MENU_ITEM + plan.terms.toString())
         )
       }
     }

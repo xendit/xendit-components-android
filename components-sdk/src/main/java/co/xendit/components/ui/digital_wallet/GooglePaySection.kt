@@ -37,10 +37,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import co.xendit.components.R
 import co.xendit.components.data.model.BffGooglePay
+import co.xendit.components.ui.XenditTestTags
 import co.xendit.components.ui.helper.GooglePayHelper
 import co.xendit.components.ui.style.xenditAppearance
 import com.google.android.gms.common.api.ApiException
@@ -263,6 +265,7 @@ internal fun GooglePayButton(
           onClick = onClick
         )
       )
+      .testTag(XenditTestTags.GOOGLE_PAY_BUTTON)
       .padding(horizontal = 16.dp),
     contentAlignment = Alignment.Center
   ) {

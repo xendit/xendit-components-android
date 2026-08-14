@@ -43,6 +43,7 @@ internal fun CardNumberField(
   bffCardInfo: BffCardInfo? = null,
   shape: Shape? = null,
   noBorder: Boolean = false,
+  testTag: String = "",
 ) {
   val appearance = xenditAppearance
   val context = LocalContext.current
@@ -100,6 +101,7 @@ internal fun CardNumberField(
     errorMessage = errorMessage,
     shape = shape,
     noBorder = noBorder,
+    testTag = testTag,
     trailingIcon = {
       Row(
         modifier = Modifier.padding(end = 12.dp), // Space from the right edge

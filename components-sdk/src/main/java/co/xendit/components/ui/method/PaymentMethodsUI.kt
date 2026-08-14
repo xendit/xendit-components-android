@@ -27,6 +27,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -47,6 +48,7 @@ import co.xendit.components.data.model.PaymentDraft
 import co.xendit.components.data.model.groupAmountAvailabilityStatus
 import co.xendit.components.data.model.isAvailableForAmount
 import co.xendit.components.ui.ChannelVariantChannels
+import co.xendit.components.ui.XenditTestTags
 import co.xendit.components.ui.banktransfer.BankTransferPaymentUI
 import co.xendit.components.ui.card.CardPaymentUI
 import co.xendit.components.ui.ewallet.EwalletPaymentUI
@@ -183,6 +185,7 @@ internal fun PaymentMethodsUI(
               isExpanded = isExpanded && !allChannelsUnavailable,
               isSelected = isExpanded && !allChannelsUnavailable,
               enabled = !allChannelsUnavailable,
+              testTag = XenditTestTags.CHANNEL_PREFIX + uiGroup,
               onToggle = {
                 onToggleGroup(uiGroup)
               }
@@ -373,6 +376,7 @@ private fun SelectableHeaderItem(
   isSelected: Boolean,
   enabled: Boolean = true,
   onToggle: () -> Unit,
+  testTag: String = "",
   modifier: Modifier = Modifier
 ) {
   val appearance = xenditAppearance
@@ -394,6 +398,7 @@ private fun SelectableHeaderItem(
     modifier = modifier
       .fillMaxWidth()
       .clickable(enabled = enabled) { onToggle() }
+      .then(if (testTag.isNotBlank()) Modifier.testTag(testTag) else Modifier)
       .padding(horizontal = 16.dp, vertical = 24.dp),
     verticalAlignment = Alignment.CenterVertically
   ) {

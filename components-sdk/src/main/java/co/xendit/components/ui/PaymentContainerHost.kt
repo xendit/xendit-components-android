@@ -45,6 +45,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInteropFilter
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -314,7 +315,13 @@ internal fun PaymentContainerHost(
               usePlatformDefaultWidth = false
             )
         ) {
-          content()
+          Box(
+            modifier = Modifier
+              .fillMaxSize()
+              .testTag(XenditTestTags.PAYMENT_DIALOG)
+          ) {
+            content()
+          }
         }
       }
 
@@ -322,7 +329,8 @@ internal fun PaymentContainerHost(
         ModalBottomSheet(
           onDismissRequest = dismiss,
           sheetState = sheetState!!,
-          containerColor = style.colorBackground
+          containerColor = style.colorBackground,
+          modifier = Modifier.testTag(XenditTestTags.PAYMENT_SHEET)
         ) {
           Box(
             modifier = Modifier
@@ -649,7 +657,9 @@ internal fun PaymentContainerHost(
                           )
                         )
                       },
-                      modifier = Modifier.fillMaxWidth(),
+                      modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag(XenditTestTags.DIALOG_SUBMIT_BUTTON),
                       shape = RoundedCornerShape(appearance.borderRadius),
                       colors = ButtonDefaults.buttonColors(
                         containerColor = style.colorPrimary,
@@ -685,7 +695,10 @@ internal fun PaymentContainerHost(
               title = { Text(stringResource(id = R.string.sessiondefault_error_title)) },
               text = { Text(mviState.errorMessage ?: "") },
               confirmButton = {
-                Button(onClick = { onCleanup() }) {
+                Button(
+                  onClick = { onCleanup() },
+                  modifier = Modifier.testTag(XenditTestTags.DIALOG_ERROR_CLOSE_BUTTON)
+                ) {
                   Text(stringResource(R.string.sessiondialog_close))
                 }
               }

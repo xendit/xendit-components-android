@@ -14,10 +14,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import co.xendit.components.data.model.Country
 import co.xendit.components.data.model.findCountryByCode
+import co.xendit.components.ui.XenditTestTags
 import co.xendit.components.ui.style.xenditAppearance
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -32,6 +34,7 @@ internal fun CountryField(
   isError: Boolean = false,
   errorMessage: String? = null,
   noBorder: Boolean = false,
+  testTag: String = "",
 ) {
   var expanded by remember { mutableStateOf(false) }
   val appearance = xenditAppearance
@@ -55,11 +58,13 @@ internal fun CountryField(
 
   selectedCountry?.let { country ->
     Column(
-      modifier = Modifier.border(
-        width = 1.dp,
-        color = if (noBorder) Color.Transparent else appearance.colorBorder,
-        shape = RoundedCornerShape(xenditAppearance.borderRadius)
-      )
+      modifier = Modifier
+        .border(
+          width = 1.dp,
+          color = if (noBorder) Color.Transparent else appearance.colorBorder,
+          shape = RoundedCornerShape(xenditAppearance.borderRadius)
+        )
+        .then(if (testTag.isNotBlank()) Modifier.testTag(XenditTestTags.FORM_DROPDOWN_PREFIX + testTag) else Modifier)
     ) {
       CountryPicker(
         modifier = Modifier
