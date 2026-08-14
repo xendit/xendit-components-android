@@ -47,6 +47,8 @@ import androidx.compose.ui.input.pointer.pointerInteropFilter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -318,6 +320,7 @@ internal fun PaymentContainerHost(
           Box(
             modifier = Modifier
               .fillMaxSize()
+              .semantics { testTagsAsResourceId = true }
               .testTag(XenditTestTags.PAYMENT_DIALOG)
           ) {
             content()
@@ -336,6 +339,7 @@ internal fun PaymentContainerHost(
             modifier = Modifier
               .fillMaxWidth()
               .fillMaxHeight(0.8f)
+              .semantics { testTagsAsResourceId = true }
           ) {
             content()
           }

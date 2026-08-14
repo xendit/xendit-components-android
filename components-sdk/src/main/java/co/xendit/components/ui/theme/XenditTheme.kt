@@ -22,6 +22,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight.Companion.W500
 import androidx.compose.ui.tooling.preview.Preview
@@ -87,8 +89,14 @@ internal fun XenditTheme(style: XenditAppearance, content: @Composable () -> Uni
       colorScheme = colorScheme,
       typography = typography,
       shapes = shapes,
-      content = content
-    )
+    ) {
+      Box(
+        modifier = Modifier
+          .semantics { testTagsAsResourceId = true }
+      ) {
+        content()
+      }
+    }
   }
 }
 
