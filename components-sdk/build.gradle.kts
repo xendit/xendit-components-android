@@ -22,6 +22,12 @@ android {
     consumerProguardFiles("consumer-rules.pro")
   }
 
+  testOptions {
+    unitTests {
+      isReturnDefaultValues = true
+    }
+  }
+
   buildFeatures {
     compose = true
     buildConfig = true
@@ -84,6 +90,7 @@ dependencies {
   // Standard Test Dependencies
   testImplementation(libs.junit)
   testImplementation(libs.mockk)
+  testImplementation(libs.kotlinx.coroutines.test)
   androidTestImplementation(libs.androidx.junit)
   androidTestImplementation(libs.androidx.espresso.core)
   androidTestImplementation(libs.androidx.compose.ui.test.junit4)

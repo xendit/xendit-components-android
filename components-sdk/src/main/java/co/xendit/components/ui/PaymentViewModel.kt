@@ -1,5 +1,6 @@
 package co.xendit.components.ui
 
+import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import co.xendit.components.XenditComponentsPaymentType
@@ -437,10 +438,11 @@ internal class PaymentViewModel(
     paymentDataJson: String,
     paymentMethodType: String?
   ) {
-    val channelResolution = resolveGooglePayChannelCodeOrError(paymentMethodType)
+    val googlePay = _state.value.sessionResponse?.digitalWallets?.googlePay
+    val channelResolution = resolveGooglePayChannelCodeOrError(googlePay, paymentMethodType)
     val channelCode = when (channelResolution) {
-      is Resolved.Ok -> channelResolution.code
-      is Resolved.Err -> {
+      is ResolvedGooglePayChannel.Ok -> channelResolution.code
+      is ResolvedGooglePayChannel.Err -> {
         val userMessage = channelResolution.userMessage
         globalErrorHandler.postError(errorMessage = UiText.DynamicString(userMessage))
         _state.update {
@@ -452,46 +454,17 @@ internal class PaymentViewModel(
         return
       }
     }
-    return submitPaymentInternal(errorPrefix = "Google Pay Payment") { authKey, _key, _paySid ->
-      PaymentRequest(
-        sessionId = authKey,
-        channelCode = channelCode,
-        channelProperties = buildGooglePayChannelProperties(paymentDataJson, channelCode)
-      )
-    }
-  }
-
-  private sealed interface Resolved {
-    data class Ok(val code: String) : Resolved
-    data class Err(val userMessage: String) : Resolved
-  }
-
-  private fun resolveGooglePayChannelCodeOrError(paymentMethodType: String?): Resolved {
-    val googlePay = _state.value.sessionResponse?.digitalWallets?.googlePay
-    if (googlePay == null) {
-      return Resolved.Err("Google Pay configuration is missing from the session response.")
-    }
-    val firstAllowed = googlePay.allowedPaymentMethods.firstOrNull()
-      ?: return Resolved.Err("Google Pay configuration is empty (no allowed payment methods).")
-    if (paymentMethodType.isNullOrBlank()) {
-      return Resolved.Err("No Payment Method Selected")
-    }
-    val match = googlePay.allowedPaymentMethods.firstOrNull { allowed ->
-      allowed.paymentMethodSpecification
-        ?.get("type")
-        ?.asString
-        ?.equals(paymentMethodType, ignoreCase = true) == true
-    }
-    return if (match != null) {
-      Resolved.Ok(match.channelCode)
+    val channelProperties = buildGooglePayChannelProperties(paymentDataJson, channelCode)
+    if (channelProperties.isEmpty()) {
+      onChallengeCompletedInternal(true)
     } else {
-      val availableTypes = googlePay.allowedPaymentMethods.mapNotNull {
-        it.paymentMethodSpecification?.get("type")?.asString
+      return submitPaymentInternal(errorPrefix = "Google Pay Payment") { authKey, _key, _paySid ->
+        PaymentRequest(
+          sessionId = authKey,
+          channelCode = channelCode,
+          channelProperties = buildGooglePayChannelProperties(paymentDataJson, channelCode)
+        )
       }
-      Resolved.Err(
-        "Google Pay payment method not supported: $paymentMethodType. " +
-          "Configured methods: ${availableTypes.ifEmpty { "(none)" }}"
-      )
     }
   }
 
@@ -652,17 +625,6 @@ internal class PaymentViewModel(
     }
   }
 
-  private fun buildGooglePayChannelProperties(
-    paymentDataJson: String,
-    channelCode: String
-  ): Map<String, Any> {
-    return if (channelCode == "CARDS") {
-      mapOf("google_pay" to paymentDataJson)
-    } else {
-      emptyMap()
-    }
-  }
-
   private fun onChallengeCompletedInternal(forceStart: Boolean = false) {
     val authKey = sessionAuthKey ?: return
     val tokenReqId = lastSessionTokenRequestId
@@ -750,6 +712,28 @@ internal class PaymentViewModel(
     lastSelectedChannelCodeByUiGroup.clear()
 
     _state.value = PaymentState()
+  }
+
+  @VisibleForTesting
+  internal fun injectSessionState(
+    sessionResponse: SessionResponse,
+    sessionType: BffSessionType,
+    paymentSessionId: String,
+    sessionAuthKey: String? = null,
+    publicKey: String? = null,
+    lastSessionTokenRequestId: String? = null
+  ) {
+    this.paymentSessionId = paymentSessionId
+    if (sessionAuthKey != null) this.sessionAuthKey = sessionAuthKey
+    if (publicKey != null) this.publicKey = publicKey
+    if (lastSessionTokenRequestId != null) this.lastSessionTokenRequestId = lastSessionTokenRequestId
+    _state.update {
+      it.copy(
+        sessionResponse = sessionResponse,
+        sessionType = sessionType,
+        paymentSessionId = paymentSessionId
+      )
+    }
   }
 
   fun onAppBackgrounded() {

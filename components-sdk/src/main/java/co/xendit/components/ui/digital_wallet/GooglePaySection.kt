@@ -58,7 +58,7 @@ private tailrec fun Context.findActivity(): Activity? {
   }
 }
 
-private fun extractPaymentMethodType(paymentDataJson: String): String? {
+internal fun extractPaymentMethodType(paymentDataJson: String): String? {
   return runCatching {
     JsonParser.parseString(paymentDataJson)
       ?.asJsonObject
@@ -74,7 +74,7 @@ internal data class GooglePayPaymentError(
   val message: String
 )
 
-private fun mapGooglePayStatusToError(statusCodeRaw: Int?): GooglePayPaymentError? {
+internal fun mapGooglePayStatusToError(statusCodeRaw: Int?): GooglePayPaymentError? {
   val statusCode = statusCodeRaw ?: -1
   val (code, title, message) = when (statusCode) {
     CommonStatusCodes.CANCELED -> {
@@ -106,7 +106,7 @@ private fun mapGooglePayStatusToError(statusCodeRaw: Int?): GooglePayPaymentErro
   return if (code == "GOOGLE_PAY_CANCELED") null else GooglePayPaymentError(code, title, message)
 }
 
-private fun extractStatusCode(exception: Exception?): Int? = runCatching {
+internal fun extractStatusCode(exception: Exception?): Int? = runCatching {
   when (exception) {
     is ApiException -> exception.statusCode
     is ResolvableApiException -> exception.statusCode
