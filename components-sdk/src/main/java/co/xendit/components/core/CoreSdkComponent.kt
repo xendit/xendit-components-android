@@ -1,7 +1,6 @@
 package co.xendit.components.core
 
 import android.content.Context
-import co.xendit.components.BuildConfig
 import co.xendit.components.core.model.EnumWithFallbackValueTypeAdapterFactory
 import co.xendit.components.core.model.GlobalErrorHandler
 import co.xendit.components.core.model.GlobalLoadingHandler
@@ -20,8 +19,6 @@ import com.google.gson.JsonDeserializationContext
 import com.google.gson.JsonDeserializer
 import com.google.gson.JsonElement
 import com.google.gson.Strictness
-import io.nerdythings.okhttp.modifier.interceptor.OkHttpRequestModifierInterceptor
-import io.nerdythings.okhttp.profiler.OkHttpProfilerInterceptor
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
@@ -83,10 +80,6 @@ internal object CoreSdkComponent {
         addInterceptor(baseUrlInterceptor)
         addInterceptor(headerInterceptor)
         addInterceptor(errorInterceptor)
-        if (BuildConfig.DEBUG) {
-          addInterceptor(OkHttpProfilerInterceptor())
-          addInterceptor(OkHttpRequestModifierInterceptor(appContext))
-        }
       }
       .build()
   }
