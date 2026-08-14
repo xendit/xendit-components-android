@@ -96,7 +96,6 @@ internal enum class PaymentContainerPresentation {
 }
 
 internal object PaymentContainerHostSignals {
-  var onAppBackgroundedStatic: (() -> Unit)? = null
   var onWipeTriggerStatic: (() -> Unit)? = null
   var onDismissRequestedStatic: (() -> Unit)? = null
 }
@@ -158,10 +157,6 @@ internal fun PaymentContainerHost(
   }
 
   DisposableEffect(viewModel, cardViewModel) {
-    PaymentContainerHostSignals.onAppBackgroundedStatic = {
-      viewModel.onAppBackgrounded()
-      cardViewModel.onAppBackgrounded()
-    }
     PaymentContainerHostSignals.onWipeTriggerStatic = {
       scope.launch {
         performHardWipeAndThen { }
@@ -169,7 +164,6 @@ internal fun PaymentContainerHost(
     }
     PaymentContainerHostSignals.onDismissRequestedStatic = ::cancelAndDismiss
     onDispose {
-      PaymentContainerHostSignals.onAppBackgroundedStatic = null
       PaymentContainerHostSignals.onWipeTriggerStatic = null
       PaymentContainerHostSignals.onDismissRequestedStatic = null
     }

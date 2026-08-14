@@ -736,11 +736,6 @@ internal class PaymentViewModel(
     }
   }
 
-  fun onAppBackgrounded() {
-    cancelChallenge()
-    challengePollingJob = null
-  }
-
   fun showLoadingWithAction() {
     _state.update {
       it.copy(
