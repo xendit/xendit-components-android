@@ -38,6 +38,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -48,6 +49,7 @@ import co.xendit.components.data.model.BffSession
 import co.xendit.components.data.model.ChannelFormField
 import co.xendit.components.data.model.amountAvailabilityStatus
 import co.xendit.components.data.model.isAvailableForAmount
+import co.xendit.components.ui.XenditTestTags
 import co.xendit.components.ui.components.molecule.ChannelLogo
 import co.xendit.components.ui.components.molecule.CheckboxWithText
 import co.xendit.components.ui.components.molecule.DashedDivider
@@ -137,7 +139,9 @@ internal fun PaymentChannelSelectionUI(
     ExposedDropdownMenuBox(
       expanded = expanded,
       onExpandedChange = { if (channels.size > 1 && hasAvailableChannel) expanded = !expanded },
-      modifier = Modifier.fillMaxWidth()
+      modifier = Modifier
+        .fillMaxWidth()
+        .testTag(XenditTestTags.XENDIT_DROPDOWN_TRIGGER)
     ) {
       XenditDropdownHeaderField(
         value = selectedChannel?.brandName ?: "",
@@ -177,7 +181,8 @@ internal fun PaymentChannelSelectionUI(
       if (channels.size > 1) {
         ExposedDropdownMenu(
           expanded = expanded,
-          onDismissRequest = { expanded = false }
+          onDismissRequest = { expanded = false },
+          modifier = Modifier.testTag(XenditTestTags.XENDIT_DROPDOWN_MENU)
         ) {
           channels.forEach { channel ->
             val isAvailable = channel.isAvailableForAmount(sessionAmount, sessionType)
@@ -231,7 +236,8 @@ internal fun PaymentChannelSelectionUI(
                   onSelectChannel(channel.channelCode)
                   expanded = false
                 }
-              }
+              },
+              modifier = Modifier.testTag(XenditTestTags.XENDIT_DROPDOWN_MENU_ITEM + channel.channelCode)
             )
           }
         }

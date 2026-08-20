@@ -11,9 +11,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
+import co.xendit.components.ui.XenditTestTags
 import co.xendit.components.ui.style.xenditAppearance
 
 @Composable
@@ -25,6 +27,7 @@ internal fun CheckboxWithText(
   enabled: Boolean = true,
   textStyle: TextStyle = MaterialTheme.typography.bodyMedium,
   textColor: Color = xenditAppearance.colorText,
+  testTag: String = XenditTestTags.SAVE_CARD_CHECKBOX,
 ) {
   Row(
     verticalAlignment = Alignment.CenterVertically,
@@ -36,6 +39,7 @@ internal fun CheckboxWithText(
         role = Role.Checkbox,
         onValueChange = onCheckedChange
       )
+      .then(if (testTag.isNotBlank()) Modifier.testTag(testTag) else Modifier)
   ) {
     Checkbox(
       checked = checked,

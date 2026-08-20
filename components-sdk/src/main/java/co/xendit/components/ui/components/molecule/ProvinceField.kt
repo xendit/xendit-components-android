@@ -40,11 +40,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
 import co.xendit.components.R
 import androidx.compose.ui.unit.dp
 import co.xendit.components.data.model.ProvinceOption
 import co.xendit.components.data.model.Provinces
+import co.xendit.components.ui.XenditTestTags
 import co.xendit.components.ui.style.xenditAppearance
 import kotlinx.coroutines.launch
 
@@ -61,6 +63,7 @@ internal fun ProvinceField(
   errorMessage: String? = null,
   shape: Shape? = null,
   noBorder: Boolean = false,
+  testTag: String = "",
 ) {
   val appearance = xenditAppearance
   val options = remember(countryCode) { Provinces.forCountry(countryCode) }
@@ -86,7 +89,8 @@ internal fun ProvinceField(
       errorMessage = errorMessage,
       singleLine = true,
       shape = shape,
-      noBorder = noBorder
+      noBorder = noBorder,
+      testTag = testTag
     )
     return
   }
@@ -99,6 +103,7 @@ internal fun ProvinceField(
       modifier
         .fillMaxWidth()
         .clickable { showSheet = true }
+        .then(if (testTag.isNotBlank()) Modifier.testTag(XenditTestTags.FORM_DROPDOWN_PREFIX + testTag) else Modifier)
   ) {
     XenditTextField(
       value = selectedTitle,
@@ -142,7 +147,6 @@ internal fun ProvinceField(
       }
     )
   }
-
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -182,7 +186,8 @@ private fun ProvincePickerSheet(
           .background(Color(0xFFD0D0D0))
       )
     },
-    containerColor = appearance.colorBackground
+    containerColor = appearance.colorBackground,
+    modifier = Modifier.testTag(XenditTestTags.PROVINCE_PICKER_SHEET)
   ) {
     Surface(
       modifier = Modifier.fillMaxWidth(),
@@ -196,10 +201,12 @@ private fun ProvincePickerSheet(
             .padding(vertical = 12.dp),
         ) {
           Icon(
-            modifier = Modifier.clickable {
-              onDismiss()
-              searchQuery = ""
-            },
+            modifier = Modifier
+              .clickable {
+                onDismiss()
+                searchQuery = ""
+              }
+              .testTag(XenditTestTags.PROVINCE_PICKER_SHEET_CLOSE),
             imageVector = Icons.Default.Close,
             contentDescription = null,
             tint = appearance.colorTextSecondary
@@ -215,7 +222,9 @@ private fun ProvincePickerSheet(
         OutlinedTextField(
           value = searchQuery,
           onValueChange = { searchQuery = it },
-          modifier = Modifier.fillMaxWidth(),
+          modifier = Modifier
+            .fillMaxWidth()
+            .testTag(XenditTestTags.PROVINCE_PICKER_SEARCH),
           placeholder = {
             Text(
               "Search",
@@ -266,6 +275,7 @@ private fun ProvincePickerSheet(
                 modifier = Modifier
                   .fillMaxWidth()
                   .clickable { onSelected(option) }
+                  .testTag(XenditTestTags.OPTION_PREFIX + option.value)
                   .padding(vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp)

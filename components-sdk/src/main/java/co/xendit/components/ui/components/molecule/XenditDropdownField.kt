@@ -26,9 +26,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import co.xendit.components.data.model.DropdownOption
+import co.xendit.components.ui.XenditTestTags
 import co.xendit.components.ui.style.xenditAppearance
 
 @Composable
@@ -81,19 +83,23 @@ internal fun XenditDropdownHeaderField(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun XenditDropdownField(
-  dropdownOptions: List<DropdownOption>, // Replace with your actual Channel data class type
+  dropdownOptions: List<DropdownOption>,
   selectedOption: DropdownOption?,
   onChannelSelected: (DropdownOption) -> Unit,
   placeholderText: String,
   modifier: Modifier = Modifier,
   noBorder: Boolean = false,
+  testTagAnchor: String = XenditTestTags.XENDIT_DROPDOWN_TRIGGER,
+  testTagItemPrefix: String = XenditTestTags.XENDIT_DROPDOWN_MENU_ITEM,
 ) {
   // Internal state managed inside the custom composable
   var expanded by remember { mutableStateOf(false) }
   ExposedDropdownMenuBox(
     expanded = expanded,
     onExpandedChange = { if (dropdownOptions.size > 1) expanded = !expanded },
-    modifier = modifier.fillMaxWidth()
+    modifier = modifier
+      .fillMaxWidth()
+      .then(if (testTagAnchor.isNotBlank()) Modifier.testTag(testTagAnchor) else Modifier)
   ) {
     XenditDropdownHeaderField(
       value = selectedOption?.label ?: "",
@@ -111,7 +117,8 @@ internal fun XenditDropdownField(
     if (dropdownOptions.size > 1) {
       ExposedDropdownMenu(
         expanded = expanded,
-        onDismissRequest = { expanded = false }
+        onDismissRequest = { expanded = false },
+        modifier = if (testTagItemPrefix.isNotBlank()) Modifier.testTag(XenditTestTags.XENDIT_DROPDOWN_MENU) else Modifier
       ) {
         dropdownOptions.forEach { option ->
           DropdownMenuItem(
@@ -123,7 +130,8 @@ internal fun XenditDropdownField(
             onClick = {
               onChannelSelected(option)
               expanded = false
-            }
+            },
+            modifier = if (testTagItemPrefix.isNotBlank()) Modifier.testTag(testTagItemPrefix + option.value) else Modifier
           )
         }
       }

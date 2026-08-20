@@ -44,11 +44,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import co.xendit.components.R
 import co.xendit.components.data.model.Country
+import co.xendit.components.ui.XenditTestTags
 import co.xendit.components.ui.style.xenditAppearance
 import coil.compose.AsyncImage
 import coil.decode.SvgDecoder
@@ -91,9 +93,13 @@ internal fun CountryPicker(
     }
   }
 
-  Box(modifier = Modifier.clickable {
-    onExpandedChange(true)
-  }) {
+  Box(
+    modifier = Modifier
+      .clickable {
+        onExpandedChange(true)
+      }
+      .testTag(XenditTestTags.COUNTRY_PICKER_TRIGGER)
+  ) {
     Row(
       modifier = modifier,
       verticalAlignment = Alignment.CenterVertically,
@@ -142,7 +148,8 @@ internal fun CountryPicker(
               .background(Color(0xFFD0D0D0))
           )
         },
-        containerColor = appearance.colorBackground
+        containerColor = appearance.colorBackground,
+        modifier = Modifier.testTag(XenditTestTags.COUNTRY_PICKER_SHEET)
       ) {
         Surface(
           modifier = Modifier
@@ -157,10 +164,12 @@ internal fun CountryPicker(
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             ) {
               Icon(
-                modifier = Modifier.clickable {
-                  onExpandedChange(false)
-                  searchQuery = ""
-                },
+                modifier = Modifier
+                  .clickable {
+                    onExpandedChange(false)
+                    searchQuery = ""
+                  }
+                  .testTag(XenditTestTags.COUNTRY_PICKER_SHEET_CLOSE),
                 imageVector = Icons.Default.Close,
                 contentDescription = null,
                 tint = appearance.colorTextSecondary
@@ -185,7 +194,8 @@ internal fun CountryPicker(
               },
               modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp),
+                .padding(horizontal = 16.dp)
+                .testTag(XenditTestTags.COUNTRY_PICKER_SEARCH),
               leadingIcon = {
                 Icon(
                   Icons.Default.Search,
@@ -245,6 +255,7 @@ internal fun CountryPicker(
                           onExpandedChange(false)
                           searchQuery = ""
                         }
+                        .testTag(XenditTestTags.OPTION_PREFIX + country.code)
                         .padding(horizontal = 16.dp, vertical = 14.dp),
                       verticalAlignment = Alignment.CenterVertically,
                       horizontalArrangement = Arrangement.spacedBy(12.dp)

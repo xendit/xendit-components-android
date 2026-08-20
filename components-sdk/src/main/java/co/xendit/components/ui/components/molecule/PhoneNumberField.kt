@@ -23,11 +23,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import co.xendit.components.data.model.Country
 import co.xendit.components.data.model.findCountryByCode
+import co.xendit.components.ui.XenditTestTags
 import co.xendit.components.ui.style.xenditAppearance
 import com.google.i18n.phonenumbers.PhoneNumberUtil
 
@@ -44,6 +46,7 @@ internal fun PhoneNumberField(
   errorMessage: String? = null,
   shape: Shape? = null,
   noBorder: Boolean = false,
+  testTag: String = "",
 ) {
   val appearance = xenditAppearance
   val phoneUtil = remember { PhoneNumberUtil.getInstance() }
@@ -91,19 +94,21 @@ internal fun PhoneNumberField(
 
       selectedCountry?.let { country ->
         Box(
-          modifier = Modifier.border(
-            width = 1.dp,
-            color = if (noBorder) {
-              Color.Transparent
-            } else {
-              if (isError) {
-                appearance.colorDanger
+          modifier = Modifier
+            .border(
+              width = 1.dp,
+              color = if (noBorder) {
+                Color.Transparent
               } else {
-                appearance.colorBorder
-              }
-            },
-            shape = RoundedCornerShape(xenditAppearance.borderRadius)
-          )
+                if (isError) {
+                  appearance.colorDanger
+                } else {
+                  appearance.colorBorder
+                }
+              },
+              shape = RoundedCornerShape(xenditAppearance.borderRadius)
+            )
+            .testTag(XenditTestTags.PHONE_COUNTRY_CODE_TRIGGER)
         ) {
           CountryPicker(
             selectedCountry = country,
@@ -134,7 +139,8 @@ internal fun PhoneNumberField(
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
         singleLine = true,
         shape = shape,
-        noBorder = noBorder
+        noBorder = noBorder,
+        testTag = testTag
       )
     }
     errorMessage?.let {

@@ -1,5 +1,6 @@
 package co.xendit.components.ui
 
+import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import co.xendit.components.XenditComponentsPaymentType
@@ -162,6 +163,31 @@ internal sealed class ActionIntent {
   ) : ActionIntent()
 
   /**
+   * Submits a Google Pay payment using the signed payment data JSON from Google.
+   *
+   * [paymentMethodType] is the raw `paymentMethodData.type` extracted from Google's JSON
+   * (e.g. "CARD", "PAYPAL"). It is resolved against `digitalWallets.google_pay.allowed_payment_methods[i].payment_method_specification.type`
+   * inside this ViewModel — resolution errors are propagated to `_state.errorMessage` and
+   * `globalErrorHandler` instead of crashing.
+   */
+  data class SubmitGooglePay(
+    val paymentDataJson: String,
+    val paymentMethodType: String? = null
+  ) : ActionIntent()
+
+  /**
+   * Raises a Google Pay UI error to the MVI state without a payment submission attempt.
+   * This is triggered by SDK-level failures such as canceled resolutions, buyer account
+   * errors, developer configuration errors, temporary internal errors, or unknown
+   * failures from loadPaymentData / its resolution activity result.
+   */
+  data class GooglePayPaymentFailed(
+    val code: String,
+    val title: String,
+    val message: String
+  ) : ActionIntent()
+
+  /**
    * Calls the simulate endpoint to advance the payment state before polling for the result.
    * This is typically used for non-production and QR-based payment flows.
    */
@@ -225,6 +251,17 @@ internal class PaymentViewModel(
           intent.fields,
           intent.savePaymentMethod,
           intent.installmentPlans
+        )
+      is ActionIntent.SubmitGooglePay ->
+        submitGooglePayInternal(
+          paymentDataJson = intent.paymentDataJson,
+          paymentMethodType = intent.paymentMethodType
+        )
+      is ActionIntent.GooglePayPaymentFailed ->
+        onGooglePayPaymentFailedInternal(
+          code = intent.code,
+          title = intent.title,
+          message = intent.message
         )
 
       is ActionIntent.UpdatePaymentDraft -> onUpdatePaymentDraft(intent.paymentDraft)
@@ -373,6 +410,93 @@ internal class PaymentViewModel(
     fields: List<ChannelFormField>,
     savePaymentMethod: Boolean,
     installmentPlans: List<InstallmentPlan>?
+  ) = submitPaymentInternal(errorPrefix = "Payment") { authKey, key, paySid ->
+    val variantsForDisplay = _state.value.channelVariantsByDisplayCode[channelCode]
+    val effectiveChannel =
+      variantsForDisplay?.let { variants ->
+        when {
+          savePaymentMethod && variants.saveChannel != null -> variants.saveChannel
+          !savePaymentMethod && variants.nonSaveChannel != null -> variants.nonSaveChannel
+          else -> null
+        }
+      }
+    val effectiveChannelCode = effectiveChannel?.channelCode ?: channelCode
+    buildPaymentRequest(
+      sessionAuthKey = authKey,
+      publicKey = key,
+      paymentSessionId = paySid,
+      effectiveChannelCode = effectiveChannelCode,
+      formValues = formValues,
+      fields = fields,
+      savePaymentMethod = savePaymentMethod,
+      installmentPlans = installmentPlans,
+      effectiveChannelForm = effectiveChannel?.form
+    )
+  }
+
+  private fun submitGooglePayInternal(
+    paymentDataJson: String,
+    paymentMethodType: String?
+  ) {
+    val googlePay = _state.value.sessionResponse?.digitalWallets?.googlePay
+    val channelResolution = resolveGooglePayChannelCodeOrError(googlePay, paymentMethodType)
+    val channelCode = when (channelResolution) {
+      is ResolvedGooglePayChannel.Ok -> channelResolution.code
+      is ResolvedGooglePayChannel.Err -> {
+        val userMessage = channelResolution.userMessage
+        globalErrorHandler.postError(errorMessage = UiText.DynamicString(userMessage))
+        _state.update {
+          it.copy(
+            isLoading = false,
+            errorMessage = userMessage
+          )
+        }
+        return
+      }
+    }
+    val channelProperties = buildGooglePayChannelProperties(paymentDataJson, channelCode)
+    if (channelProperties.isEmpty()) {
+      onChallengeCompletedInternal(true)
+    } else {
+      return submitPaymentInternal(errorPrefix = "Google Pay Payment") { authKey, _key, _paySid ->
+        PaymentRequest(
+          sessionId = authKey,
+          channelCode = channelCode,
+          channelProperties = channelProperties
+        )
+      }
+    }
+  }
+
+  private fun onGooglePayPaymentFailedInternal(
+    code: String,
+    title: String,
+    message: String
+  ) {
+    val userMessage = if (title.isNotBlank() && message.isNotBlank()) {
+      "$title. $message"
+    } else if (title.isNotBlank()) {
+      title
+    } else {
+      message.ifBlank { code }
+    }
+    XLogger.d("Google Pay failed with code=$code title=$title message=$message")
+    globalErrorHandler.postError(errorMessage = UiText.DynamicString(userMessage))
+    _state.update {
+      it.copy(
+        isLoading = false,
+        errorMessage = userMessage
+      )
+    }
+  }
+
+  private inline fun submitPaymentInternal(
+    errorPrefix: String,
+    crossinline buildRequest: suspend (
+      sessionAuthKey: String,
+      publicKey: String,
+      paymentSessionId: String
+    ) -> PaymentRequest
   ) {
     viewModelScope.launch {
       _state.update {
@@ -390,28 +514,8 @@ internal class PaymentViewModel(
         val key = publicKey ?: throw IllegalStateException("Public Key not set")
         val authKey = sessionAuthKey ?: throw IllegalStateException("Session ID not set")
         val paySid = paymentSessionId ?: throw IllegalStateException("Payment Session ID not set")
-        val variantsForDisplay = _state.value.channelVariantsByDisplayCode[channelCode]
-        val effectiveChannel =
-          variantsForDisplay?.let { variants ->
-            when {
-              savePaymentMethod && variants.saveChannel != null -> variants.saveChannel
-              !savePaymentMethod && variants.nonSaveChannel != null -> variants.nonSaveChannel
-              else -> null
-            }
-          }
-        val effectiveChannelCode = effectiveChannel?.channelCode ?: channelCode
-        val request =
-          buildPaymentRequest(
-            sessionAuthKey = authKey,
-            publicKey = key,
-            paymentSessionId = paySid,
-            effectiveChannelCode = effectiveChannelCode,
-            formValues = formValues,
-            fields = fields,
-            savePaymentMethod = savePaymentMethod,
-            installmentPlans = installmentPlans,
-            effectiveChannelForm = effectiveChannel?.form
-          )
+
+        val request = buildRequest(authKey, key, paySid)
 
         val response =
           if (_state.value.sessionType.usesPaymentTokenSubmission()) {
@@ -495,10 +599,10 @@ internal class PaymentViewModel(
               )
             }
           }
-          onChallengeCompletedInternal() // start pooling here
+          onChallengeCompletedInternal()
         } else {
           val error = response.errorBody()?.asApiError()
-          val errorMessage = error?.errorContent?.message1 ?: error?.message ?: "Payment Failed"
+          val errorMessage = error?.errorContent?.message1 ?: error?.message ?: "$errorPrefix Failed"
           _state.update {
             it.copy(
               isLoading = false,
@@ -508,7 +612,7 @@ internal class PaymentViewModel(
           }
         }
       } catch (e: Exception) {
-        val errorMessage = e.message ?: "Payment Error"
+        val errorMessage = e.message ?: "$errorPrefix Error"
         globalErrorHandler.postError(errorMessage = UiText.DynamicString(errorMessage))
         _state.update {
           it.copy(
@@ -610,9 +714,26 @@ internal class PaymentViewModel(
     _state.value = PaymentState()
   }
 
-  fun onAppBackgrounded() {
-    cancelChallenge()
-    challengePollingJob = null
+  @VisibleForTesting
+  internal fun injectSessionState(
+    sessionResponse: SessionResponse,
+    sessionType: BffSessionType,
+    paymentSessionId: String,
+    sessionAuthKey: String? = null,
+    publicKey: String? = null,
+    lastSessionTokenRequestId: String? = null
+  ) {
+    this.paymentSessionId = paymentSessionId
+    if (sessionAuthKey != null) this.sessionAuthKey = sessionAuthKey
+    if (publicKey != null) this.publicKey = publicKey
+    if (lastSessionTokenRequestId != null) this.lastSessionTokenRequestId = lastSessionTokenRequestId
+    _state.update {
+      it.copy(
+        sessionResponse = sessionResponse,
+        sessionType = sessionType,
+        paymentSessionId = paymentSessionId
+      )
+    }
   }
 
   fun showLoadingWithAction() {

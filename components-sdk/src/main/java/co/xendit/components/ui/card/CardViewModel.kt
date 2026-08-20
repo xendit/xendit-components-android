@@ -74,11 +74,6 @@ internal class CardViewModel(
     _state.value = CardState()
   }
 
-  fun onAppBackgrounded() {
-    cardInfoJob?.cancel()
-    cardInfoJob = null
-  }
-
   private fun onCardNumberChangedInternal(cardNumber: String) {
     cardInfoJob?.cancel()
 

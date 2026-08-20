@@ -206,8 +206,6 @@ object XenditComponents {
           // On any of these, do a full wipe (including form values):
           if (level >= android.content.ComponentCallbacks2.TRIM_MEMORY_BACKGROUND) {
             PaymentContainerHostSignals.onWipeTriggerStatic?.invoke()
-          } else {
-            PaymentContainerHostSignals.onAppBackgroundedStatic?.invoke()
           }
         }
 
@@ -222,10 +220,6 @@ object XenditComponents {
     lifecycleOwner = activity
     lifecycleObserver =
       object : DefaultLifecycleObserver {
-        override fun onStop(owner: LifecycleOwner) {
-          PaymentContainerHostSignals.onAppBackgroundedStatic?.invoke()
-        }
-
         override fun onDestroy(owner: LifecycleOwner) {
           cleanup()
         }
@@ -316,7 +310,6 @@ object XenditComponents {
   }
 
   private fun cleanup() {
-    PaymentContainerHostSignals.onAppBackgroundedStatic = null
     PaymentContainerHostSignals.onWipeTriggerStatic = null
     PaymentContainerHostSignals.onDismissRequestedStatic = null
 

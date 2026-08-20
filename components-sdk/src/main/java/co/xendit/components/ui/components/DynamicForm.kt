@@ -38,6 +38,7 @@ import co.xendit.components.data.model.FieldType
 import co.xendit.components.data.model.InstallmentPlan
 import co.xendit.components.data.model.isPaySession
 import co.xendit.components.data.model.primaryChannelPropertyKey
+import co.xendit.components.ui.XenditTestTags
 import co.xendit.components.ui.components.molecule.CVCField
 import co.xendit.components.ui.components.molecule.CardNumberField
 import co.xendit.components.ui.components.molecule.CountryField
@@ -582,7 +583,8 @@ private fun FormFieldItem(
         cardSchemes = cardDetails?.schemes,
         bffCardInfo = bffCardInfo,
         shape = shape,
-        noBorder = noBorder
+        noBorder = noBorder,
+        testTag = propertyKey
       )
     }
 
@@ -596,7 +598,8 @@ private fun FormFieldItem(
         errorMessage = errorMessage,
         modifier = Modifier.fillMaxWidth(),
         shape = shape,
-        noBorder = noBorder
+        noBorder = noBorder,
+        testTag = propertyKey
       )
     }
 
@@ -609,7 +612,8 @@ private fun FormFieldItem(
         errorMessage = errorMessage,
         modifier = Modifier.fillMaxWidth(),
         shape = shape,
-        noBorder = noBorder
+        noBorder = noBorder,
+        testTag = propertyKey
       )
     }
 
@@ -627,7 +631,8 @@ private fun FormFieldItem(
         errorMessage = errorMessage,
         modifier = Modifier.fillMaxWidth(),
         shape = shape,
-        noBorder = noBorder
+        noBorder = noBorder,
+        testTag = propertyKey
       )
     }
 
@@ -640,7 +645,8 @@ private fun FormFieldItem(
         isError = isError,
         errorMessage = errorMessage,
         modifier = Modifier.fillMaxWidth(),
-        noBorder = noBorder
+        noBorder = noBorder,
+        testTag = propertyKey
       )
     }
 
@@ -661,7 +667,8 @@ private fun FormFieldItem(
         errorMessage = errorMessage,
         modifier = Modifier.fillMaxWidth(),
         shape = shape,
-        noBorder = noBorder
+        noBorder = noBorder,
+        testTag = propertyKey
       )
     }
 
@@ -679,7 +686,8 @@ private fun FormFieldItem(
         isError = isError,
         errorMessage = errorMessage,
         shape = shape,
-        noBorder = noBorder
+        noBorder = noBorder,
+        testTag = propertyKey
       )
     }
 
@@ -693,7 +701,9 @@ private fun FormFieldItem(
         },
         placeholderText = field.placeholder ?: "",
         modifier = Modifier.fillMaxWidth(),
-        noBorder = noBorder
+        noBorder = noBorder,
+        testTagAnchor = if (propertyKey.isNotBlank()) XenditTestTags.FORM_DROPDOWN_PREFIX + propertyKey else "",
+        testTagItemPrefix = XenditTestTags.XENDIT_DROPDOWN_MENU_ITEM
       )
     }
 
@@ -725,7 +735,8 @@ private fun FormFieldItem(
         maxLength = if (field.type is FieldType.Text) field.type.maxLength
           ?: Int.MAX_VALUE else Int.MAX_VALUE,
         shape = shape,
-        noBorder = noBorder
+        noBorder = noBorder,
+        testTag = if (propertyKey.isNotBlank()) XenditTestTags.FORM_FIELD_PREFIX + propertyKey else ""
       )
     }
   }

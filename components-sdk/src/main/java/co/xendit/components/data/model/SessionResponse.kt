@@ -3,6 +3,7 @@ package co.xendit.components.data.model
 import androidx.annotation.Keep
 import co.xendit.components.XenditComponentsPaymentType
 import co.xendit.components.core.model.FallbackValue
+import com.google.gson.JsonObject
 import com.google.gson.annotations.SerializedName
 import java.math.BigDecimal
 
@@ -12,7 +13,8 @@ internal data class SessionResponse(
   @SerializedName("business") val business: BffBusiness? = null,
   @SerializedName("channels") val paymentChannels: List<BffChannel>?,
   @SerializedName("channel_ui_groups") val channelUiGroups: List<BffChannelUiGroup>? = null,
-  @SerializedName("succeeded_channel") val succeededChannel: SucceededChannel?
+  @SerializedName("succeeded_channel") val succeededChannel: SucceededChannel?,
+  @SerializedName("digital_wallets") val digitalWallets: BffDigitalWallets? = null
 )
 
 @Keep
@@ -43,6 +45,32 @@ internal data class BffChannelUiGroup(
   @SerializedName("label") val label: String,
   @SerializedName("icon_url") val iconUrl: String? = null
 )
+
+@Keep
+internal data class BffDigitalWallets(
+  @SerializedName("google_pay") val googlePay: BffGooglePay? = null,
+  @SerializedName("apple_pay") val applePay: BffApplePay? = null
+)
+
+@Keep
+internal data class BffGooglePay(
+  @SerializedName("merchant_id") val merchantId: String,
+  @SerializedName("allowed_payment_methods") val allowedPaymentMethods: List<BffGooglePayAllowedMethod>
+)
+
+@Keep
+internal data class BffGooglePayAllowedMethod(
+  @SerializedName("channel_code") val channelCode: String,
+  @SerializedName("payment_request_id") val paymentRequestId: String? = null,
+  @SerializedName("payment_method_specification") val paymentMethodSpecification: JsonObject? = null
+)
+
+@Keep
+internal data class BffApplePay(
+  @SerializedName("merchant_id") val merchantId: String? = null,
+  @SerializedName("apple_pay_payment_request") val applePayPaymentRequest: JsonObject? = null
+)
+
 
 @Keep
 internal enum class PaymentSessionStatus {

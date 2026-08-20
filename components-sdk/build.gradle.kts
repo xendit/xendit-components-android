@@ -22,6 +22,12 @@ android {
     consumerProguardFiles("consumer-rules.pro")
   }
 
+  testOptions {
+    unitTests {
+      isReturnDefaultValues = true
+    }
+  }
+
   buildFeatures {
     compose = true
     buildConfig = true
@@ -60,6 +66,7 @@ dependencies {
   implementation(libs.androidx.core.ktx)
   implementation(libs.androidx.lifecycle.runtime.ktx)
   implementation(libs.androidx.lifecycle.viewmodel.compose)
+  implementation(libs.androidx.activity.compose)
   implementation(libs.material)
   implementation(libs.okhttp.logging.interceptor)
   implementation(libs.okhttp)
@@ -70,6 +77,7 @@ dependencies {
   implementation(libs.coil.svg)
   implementation(libs.coil)
   implementation(libs.google.libphonenumber)
+  implementation(libs.google.play.services.wallet)
   implementation(libs.zxing.core)
   implementation(libs.kotlin.stdlib)
   implementation(libs.kotlin.reflect)
@@ -82,6 +90,7 @@ dependencies {
   // Standard Test Dependencies
   testImplementation(libs.junit)
   testImplementation(libs.mockk)
+  testImplementation(libs.kotlinx.coroutines.test)
   androidTestImplementation(libs.androidx.junit)
   androidTestImplementation(libs.androidx.espresso.core)
   androidTestImplementation(libs.androidx.compose.ui.test.junit4)

@@ -45,7 +45,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInteropFilter
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -54,6 +57,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import co.xendit.components.BuildConfig
 import co.xendit.components.R
 import co.xendit.components.XenditComponentsPaymentType
+import co.xendit.components.core.CoreSdkComponent
 import co.xendit.components.core.CoreSdkComponent.globalErrorHandler
 import co.xendit.components.data.model.BffSessionType
 import co.xendit.components.data.model.ChannelFormField
@@ -74,6 +78,7 @@ import co.xendit.components.ui.card.CardIntent
 import co.xendit.components.ui.card.CardViewModel
 import co.xendit.components.ui.components.molecule.AwaitingPaymentDialog
 import co.xendit.components.ui.components.molecule.GenericHeader
+import co.xendit.components.ui.digital_wallet.GooglePaySection
 import co.xendit.components.ui.helper.FailureCodeMessageUtil
 import co.xendit.components.ui.helper.FormChecker.validateAllField
 import co.xendit.components.ui.method.PaymentMethodsUI
@@ -91,7 +96,6 @@ internal enum class PaymentContainerPresentation {
 }
 
 internal object PaymentContainerHostSignals {
-  var onAppBackgroundedStatic: (() -> Unit)? = null
   var onWipeTriggerStatic: (() -> Unit)? = null
   var onDismissRequestedStatic: (() -> Unit)? = null
 }
@@ -127,13 +131,12 @@ internal fun PaymentContainerHost(
     }
 
   suspend fun performHardWipeAndThen(onWipeFlushed: suspend () -> Unit) {
-    viewModel.wipeAllSensitiveData()
-    cardViewModel.wipeAllSensitiveData()
-    yield()
     delay(15.milliseconds)
     yield()
     viewModel.runFormWipeNonce()
     yield()
+    viewModel.wipeAllSensitiveData()
+    cardViewModel.wipeAllSensitiveData()
     onWipeFlushed()
   }
 
@@ -154,10 +157,6 @@ internal fun PaymentContainerHost(
   }
 
   DisposableEffect(viewModel, cardViewModel) {
-    PaymentContainerHostSignals.onAppBackgroundedStatic = {
-      viewModel.onAppBackgrounded()
-      cardViewModel.onAppBackgrounded()
-    }
     PaymentContainerHostSignals.onWipeTriggerStatic = {
       scope.launch {
         performHardWipeAndThen { }
@@ -165,7 +164,6 @@ internal fun PaymentContainerHost(
     }
     PaymentContainerHostSignals.onDismissRequestedStatic = ::cancelAndDismiss
     onDispose {
-      PaymentContainerHostSignals.onAppBackgroundedStatic = null
       PaymentContainerHostSignals.onWipeTriggerStatic = null
       PaymentContainerHostSignals.onDismissRequestedStatic = null
     }
@@ -313,7 +311,14 @@ internal fun PaymentContainerHost(
               usePlatformDefaultWidth = false
             )
         ) {
-          content()
+          Box(
+            modifier = Modifier
+              .fillMaxSize()
+              .semantics { testTagsAsResourceId = true }
+              .testTag(XenditTestTags.PAYMENT_DIALOG)
+          ) {
+            content()
+          }
         }
       }
 
@@ -321,12 +326,14 @@ internal fun PaymentContainerHost(
         ModalBottomSheet(
           onDismissRequest = dismiss,
           sheetState = sheetState!!,
-          containerColor = style.colorBackground
+          containerColor = style.colorBackground,
+          modifier = Modifier.testTag(XenditTestTags.PAYMENT_SHEET)
         ) {
           Box(
             modifier = Modifier
               .fillMaxWidth()
               .fillMaxHeight(0.8f)
+              .semantics { testTagsAsResourceId = true }
           ) {
             content()
           }
@@ -546,6 +553,34 @@ internal fun PaymentContainerHost(
                           )
                         }
                       }
+                    GooglePaySection(
+                      googlePay = mviState.sessionResponse?.digitalWallets?.googlePay,
+                      businessName = mviState.sessionResponse?.business?.name.orEmpty(),
+                      paymentSessionId = mviState.sessionResponse?.session?.paymentSessionId,
+                      amount = mviState.sessionResponse?.session?.amount,
+                      currency = mviState.sessionResponse?.session?.currency,
+                      isTest = !CoreSdkComponent.isProdLive(),
+                      isLoading = mviState.isLoading,
+                      onPaymentDataReceived = { json, paymentMethodType ->
+                        viewModel.dispatch(
+                          ActionIntent.SubmitGooglePay(
+                            paymentDataJson = json,
+                            paymentMethodType = paymentMethodType
+                          )
+                        )
+                      },
+                      onPaymentFailed = { err ->
+                        viewModel.dispatch(
+                          ActionIntent.GooglePayPaymentFailed(
+                            code = err.code,
+                            title = err.title,
+                            message = err.message
+                          )
+                        )
+                      },
+                      modifier = Modifier.padding(top = 8.dp)
+                    )
+
                     PaymentMethodsUI(
                       session = mviState.sessionResponse?.session,
                       bffBusiness = mviState.sessionResponse?.business,
@@ -620,7 +655,9 @@ internal fun PaymentContainerHost(
                           )
                         )
                       },
-                      modifier = Modifier.fillMaxWidth(),
+                      modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag(XenditTestTags.DIALOG_SUBMIT_BUTTON),
                       shape = RoundedCornerShape(appearance.borderRadius),
                       colors = ButtonDefaults.buttonColors(
                         containerColor = style.colorPrimary,
@@ -656,7 +693,10 @@ internal fun PaymentContainerHost(
               title = { Text(stringResource(id = R.string.sessiondefault_error_title)) },
               text = { Text(mviState.errorMessage ?: "") },
               confirmButton = {
-                Button(onClick = { onCleanup() }) {
+                Button(
+                  onClick = { onCleanup() },
+                  modifier = Modifier.testTag(XenditTestTags.DIALOG_ERROR_CLOSE_BUTTON)
+                ) {
                   Text(stringResource(R.string.sessiondialog_close))
                 }
               }
