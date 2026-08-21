@@ -291,21 +291,16 @@ internal class PaymentViewModel(
       is ActionIntent.SimulatePayment -> onSimulatePayment()
       is ActionIntent.ChallengeCompleted -> onChallengeCompletedInternal(intent.forceStart)
       is ActionIntent.CloseWebPayment -> {
-        _state.update {
-          it.copy(
-            paymentActionRedirect = null,
-            presentToCustomerPaymentAction = null,
-            paymentResponse = null,
-            pollResponse = null,
-            isLoading = false,
-            awaitingPaymentAction = null
-          )
-        }
-        telemetry.append(TelemetryEvents.ActionClose(true))
-        telemetry.popScope(actionTelemetryScope)
-        actionTelemetryScope = null
+        // Delegate state reset + CHECKOUT_ACTION_CLOSE + action scope pop to markClosed(), which is now
+        // the single source of truth for any action-screen closure (VA, QR, Barcode, Webview, Deeplink).
         telemetry.expectingRedirectAway = false
         markClosed()
+        _state.update {
+          it.copy(
+            paymentResponse = null,
+            pollResponse = null,
+          )
+        }
       }
 
       is ActionIntent.ClearPaymentActionRedirect -> {
@@ -436,6 +431,12 @@ internal class PaymentViewModel(
   }
 
   private fun applySelectedChannelTelemetry(channelCode: String) {
+    // If user is currently viewing an action screen (VA number, QR, barcode) and switches channel,
+    // the previous action screen must be closed first so CHECKOUT_ACTION_CLOSE is emitted before
+    // we push the new CHECKOUT_CHANNEL scope.
+    if (actionTelemetryScope != null || state.value.presentToCustomerPaymentAction != null) {
+      markClosed()
+    }
     telemetry.popScope(currentChannelTelemetryScope)
     currentChannelTelemetryScope = telemetry.appendAndPushScope(TelemetryEvents.Channel(true, channelCode))
   }
@@ -487,6 +488,23 @@ internal class PaymentViewModel(
     )
   }
 
+  /**
+   * Single helper to close the digital-wallet telemetry scope if it's still alive.
+   * Encapsulates all 3 repeated lines (append Close + popScope + null ref) so every exit point
+   * (resolution error, google pay failure, redirect, PTC, terminal success, empty channel props)
+   * behaves identically. Cases that need a failure error_code (RESOLUTION / PAYMENT_FAILED) pass
+   * it in; success paths leave it null.
+   */
+  private fun closeDigitalWalletTelemetry(success: Boolean, errorCode: String? = null) {
+    digitalWalletScope?.let { scope ->
+      runCatching {
+        telemetry.append(TelemetryEvents.DigitalWalletClose(success = success, errorCode = errorCode))
+        telemetry.popScope(scope)
+      }
+    }
+    digitalWalletScope = null
+  }
+
   private fun submitGooglePayInternal(
     paymentDataJson: String,
     paymentMethodType: String?
@@ -499,9 +517,7 @@ internal class PaymentViewModel(
       is ResolvedGooglePayChannel.Err -> {
         val userMessage = channelResolution.userMessage
         globalErrorHandler.postError(errorMessage = UiText.DynamicString(userMessage))
-        telemetry.append(TelemetryEvents.DigitalWalletClose(false, errorCode = "GOOGLE_PAY_RESOLUTION"))
-        telemetry.popScope(digitalWalletScope)
-        digitalWalletScope = null
+        closeDigitalWalletTelemetry(success = false, errorCode = "GOOGLE_PAY_RESOLUTION")
 
         _state.update {
           it.copy(
@@ -514,9 +530,7 @@ internal class PaymentViewModel(
     }
     val channelProperties = buildGooglePayChannelProperties(paymentDataJson, channelCode)
     if (channelProperties.isEmpty()) {
-      telemetry.append(TelemetryEvents.DigitalWalletClose(true))
-      telemetry.popScope(digitalWalletScope)
-      digitalWalletScope = null
+      closeDigitalWalletTelemetry(success = true)
       onChallengeCompletedInternal(true)
     } else {
       return submitPaymentInternal(errorPrefix = "Google Pay Payment") { authKey, _key, _paySid ->
@@ -542,9 +556,7 @@ internal class PaymentViewModel(
       message.ifBlank { code }
     }
     XLogger.d("Google Pay failed with code=$code title=$title message=$message")
-    telemetry.append(TelemetryEvents.DigitalWalletClose(false, errorCode = code))
-    telemetry.popScope(digitalWalletScope)
-    digitalWalletScope = null
+    closeDigitalWalletTelemetry(success = false, errorCode = code)
 
     globalErrorHandler.postError(errorMessage = UiText.DynamicString(userMessage))
     _state.update {
@@ -630,11 +642,7 @@ internal class PaymentViewModel(
               redirect?.value != null -> {
                 // S9 - Action begin; S14 - Digital wallet close success if Google Pay.
                 actionTelemetryScope = telemetry.appendAndPushScope(TelemetryEvents.ActionBegin(true))
-                if (digitalWalletScope != null) {
-                  telemetry.append(TelemetryEvents.DigitalWalletClose(true))
-                  telemetry.popScope(digitalWalletScope)
-                  digitalWalletScope = null
-                }
+                closeDigitalWalletTelemetry(success = true)
                 telemetry.expectingRedirectAway = true
 
                 _state.update {
@@ -651,11 +659,7 @@ internal class PaymentViewModel(
               presentToCustomer != null -> {
                 actionTelemetryScope = telemetry.appendAndPushScope(TelemetryEvents.ActionBegin(true))
                 telemetry.append(TelemetryEvents.Pending(true))
-                if (digitalWalletScope != null) {
-                  telemetry.append(TelemetryEvents.DigitalWalletClose(true))
-                  telemetry.popScope(digitalWalletScope)
-                  digitalWalletScope = null
-                }
+                closeDigitalWalletTelemetry(success = true)
 
                 _state.update {
                   it.copy(
@@ -818,9 +822,11 @@ internal class PaymentViewModel(
     if (submissionTelemetryScope != null && !endEmitted) {
       telemetry.append(TelemetryEvents.AttemptDiscard(false, failureCode = "WIPE_SENSITIVE_DATA"))
     }
+    // Close any active action screen FIRST (VA/QR/Barcode/Web) so CHECKOUT_ACTION_CLOSE is emitted
+    // while actionTelemetryScope is still alive — popAllTelemetryScopes() below will null it.
+    markClosed()
     popAllTelemetryScopes()
 
-    markClosed()
     cancelChallenge()
     challengePollingJob = null
 
@@ -882,6 +888,15 @@ internal class PaymentViewModel(
   }
 
   fun markClosed() {
+    // CHECKOUT_ACTION_CLOSE: fires for every action screen close (VA, QR, Barcode, OTC, Webview, Deeplink return).
+    // Scope doc: "Until action screen closed". Emits once, then pops the scope pushed by ActionBegin.
+    actionTelemetryScope?.let { scope ->
+      runCatching {
+        telemetry.append(TelemetryEvents.ActionClose(true))
+        telemetry.popScope(scope)
+      }
+      actionTelemetryScope = null
+    }
     _state.update {
       it.copy(
         presentToCustomerPaymentAction = null,
@@ -923,8 +938,8 @@ internal class PaymentViewModel(
     }
     endEmitted = true
     telemetry.append(TelemetryEvents.End(success = success, status = status))
-    if (success && digitalWalletScope != null) {
-      telemetry.append(TelemetryEvents.DigitalWalletClose(true))
+    if (success) {
+      closeDigitalWalletTelemetry(success = true)
     }
     telemetry.flush()
   }
