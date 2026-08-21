@@ -14,6 +14,7 @@ import co.xendit.components.data.model.PaymentSessionStatus
 import co.xendit.components.data.model.PollResponse
 import co.xendit.components.data.model.SessionResponse
 import co.xendit.components.data.network.repo.session.XenditRepository
+import co.xendit.components.telemetry.SessionTelemetry
 import co.xendit.components.ui.components.molecule.UiText
 import com.google.gson.JsonObject
 import io.mockk.coEvery
@@ -46,6 +47,7 @@ class PaymentViewModelGooglePayTest {
   private lateinit var repository: XenditRepository
   private lateinit var context: Context
   private lateinit var errorHandler: GlobalErrorHandler
+  private lateinit var telemetry: SessionTelemetry
   private lateinit var viewModel: PaymentViewModel
   private val testDispatcher = StandardTestDispatcher()
 
@@ -55,9 +57,11 @@ class PaymentViewModelGooglePayTest {
     repository = mockk(relaxed = true)
     context = mockk(relaxed = true)
     errorHandler = spyk(GlobalErrorHandler(context = context))
+    telemetry = mockk(relaxed = true)
     viewModel = PaymentViewModel(
       xenditRepository = repository,
-      globalErrorHandler = errorHandler
+      globalErrorHandler = errorHandler,
+      telemetry = telemetry
     )
   }
 
