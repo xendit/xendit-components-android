@@ -246,6 +246,7 @@ internal class PaymentViewModel(
   private val lastSelectedChannelCodeByUiGroup: MutableMap<String, String> = mutableMapOf()
 
   // Telemetry scope handles — mirrors Web this.currentChannelTelemetryScope / this.telemetryScope.
+  private var currentGroupTelemetryScope: SessionTelemetryScope? = null
   private var currentChannelTelemetryScope: SessionTelemetryScope? = null
   private var loadedTelemetryScope: SessionTelemetryScope? = null
   private var submissionTelemetryScope: SessionTelemetryScope? = null
@@ -375,11 +376,30 @@ internal class PaymentViewModel(
   }
 
   private fun toggleUiGroupInternal(uiGroup: String) {
-    telemetry.append(TelemetryEvents.ChannelGroup(true, uiGroup))
     val channels = _state.value.channels
     val groups = channels.groupBy { it.uiGroup }
-    val newExpandedUiGroup = if (_state.value.expandedUiGroup == uiGroup) null else uiGroup
+    val currentExpanded = _state.value.expandedUiGroup
+    val newExpandedUiGroup = if (currentExpanded == uiGroup) null else uiGroup
     val currentSelected = _state.value.selectedChannel
+
+    // ---- TELEMETRY: ChannelGroup scope lifecycle (spec: Until group collapse) ----
+    when {
+      // Case 1: COLLAPSING the same group → pop scope.
+      newExpandedUiGroup == null && currentGroupTelemetryScope != null -> {
+        telemetry.popScope(currentGroupTelemetryScope)
+        currentGroupTelemetryScope = null
+      }
+      // Case 2: SWITCHING groups or EXPANDING first group → pop old scope (if any),
+      //         then push scope for the newly expanded group. Also emit ChannelGroup event.
+      newExpandedUiGroup != null -> {
+        if (currentGroupTelemetryScope != null && currentExpanded != null) {
+          telemetry.popScope(currentGroupTelemetryScope)
+        }
+        currentGroupTelemetryScope =
+          telemetry.appendAndPushScope(TelemetryEvents.ChannelGroup(true, uiGroup))
+      }
+    }
+
     val nextSelected =
       if (newExpandedUiGroup == null) {
         currentSelected
@@ -464,7 +484,11 @@ internal class PaymentViewModel(
     fields: List<ChannelFormField>,
     savePaymentMethod: Boolean,
     installmentPlans: List<InstallmentPlan>?
-  ) = submitPaymentInternal(errorPrefix = "Payment") { authKey, key, paySid ->
+  ) = submitPaymentInternal(
+    errorPrefix = "Payment",
+    formValues = formValues,
+    fields = fields
+  ) { authKey, key, paySid ->
     val variantsForDisplay = _state.value.channelVariantsByDisplayCode[channelCode]
     val effectiveChannel =
       variantsForDisplay?.let { variants ->
@@ -533,7 +557,11 @@ internal class PaymentViewModel(
       closeDigitalWalletTelemetry(success = true)
       onChallengeCompletedInternal(true)
     } else {
-      return submitPaymentInternal(errorPrefix = "Google Pay Payment") { authKey, _key, _paySid ->
+      return submitPaymentInternal(
+        errorPrefix = "Google Pay Payment",
+        formValues = emptyMap(),
+        fields = emptyList()
+      ) { authKey, _key, _paySid ->
         PaymentRequest(
           sessionId = authKey,
           channelCode = channelCode,
@@ -569,6 +597,8 @@ internal class PaymentViewModel(
 
   private inline fun submitPaymentInternal(
     errorPrefix: String,
+    formValues: Map<String, String> = emptyMap(),
+    fields: List<ChannelFormField> = emptyList(),
     crossinline buildRequest: suspend (
       sessionAuthKey: String,
       publicKey: String,
@@ -576,6 +606,43 @@ internal class PaymentViewModel(
     ) -> PaymentRequest
   ) {
     viewModelScope.launch {
+      // ---- Spec "CHECKOUT_ATTEMPT_BEGIN - Fail If: Validation error" -----------------------
+      // Before anything (loading state update / attempt scope push), scan all ChannelFormFields
+      // where required=true. If any required key is blank, emit AttemptBegin(false) with
+      // metadata.validation_error = "<KEY>_REQUIRED", show the user error in UI, and return
+      // WITHOUT calling the API.
+      val requiredValidationError: String? = run validation@{
+        fields
+          .filter { it.required }
+          .forEach { field ->
+            val key = field.primaryChannelPropertyKey()
+            val value = formValues[key]?.takeIf { it.isNotBlank() }
+            if (value == null) {
+              return@validation "${key.uppercase()}_REQUIRED"
+            }
+          }
+        null
+      }
+      if (requiredValidationError != null) {
+        telemetry.append(
+          TelemetryEvents.AttemptBegin(
+            success = false,
+            validationError = requiredValidationError
+          )
+        )
+        val userMessage = "Missing required field: $requiredValidationError"
+        XLogger.d("submitPaymentInternal validation failed: $userMessage")
+        globalErrorHandler.postError(errorMessage = UiText.DynamicString(userMessage))
+        _state.update {
+          it.copy(
+            isLoading = false,
+            awaitingPaymentAction = null,
+            errorMessage = userMessage
+          )
+        }
+        return@launch
+      }
+
       _state.update {
         it.copy(
           isLoading = true,
@@ -592,8 +659,13 @@ internal class PaymentViewModel(
       submissionTelemetryScope = null
       attemptPushedScopes.reversed().forEach { telemetry.popScope(it) }
       attemptPushedScopes.clear()
-      // S5 - AttemptBegin
-      submissionTelemetryScope = telemetry.appendAndPushScope(TelemetryEvents.AttemptBegin(true, validationError = null))
+      // S5 - AttemptBegin (validation passed → success=true)
+      submissionTelemetryScope = telemetry.appendAndPushScope(
+        TelemetryEvents.AttemptBegin(
+          success = true,
+          validationError = null
+        )
+      )
 
       try {
         val key = publicKey ?: throw IllegalStateException("Public Key not set")
@@ -754,10 +826,13 @@ internal class PaymentViewModel(
               val poll = res.body()
               if (poll != null) {
                 val pollStatus = poll.session?.status.toString()
+                val prStatus = poll.paymentRequest?.status.toString()
                 if (pollStatus.isTerminalStatus()) {
                   emitTerminalEndIfNeeded(pollStatus)
                 }
-
+                if (prStatus.isTerminalStatus()) {
+                  emitTerminalEndIfNeeded(prStatus)
+                }
                 _state.update {
                   it.copy(
                     pollResponse = poll,
@@ -914,6 +989,7 @@ internal class PaymentViewModel(
 
   private fun popAllTelemetryScopes() {
     listOfNotNull(
+      currentGroupTelemetryScope,
       currentChannelTelemetryScope,
       loadedTelemetryScope,
       submissionTelemetryScope,
@@ -921,6 +997,7 @@ internal class PaymentViewModel(
       digitalWalletScope,
     ).plus(attemptPushedScopes.reversed()).forEach { telemetry.popScope(it) }
     attemptPushedScopes.clear()
+    currentGroupTelemetryScope = null
     currentChannelTelemetryScope = null
     loadedTelemetryScope = null
     submissionTelemetryScope = null
