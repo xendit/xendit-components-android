@@ -298,6 +298,57 @@ XenditComponents.dismiss()
 
 Calling `dismiss()` triggers the `onPaymentResult` callback with `XenditPaymentResult.Canceled` and removes the payment UI from the activity.
 
+## Performance & Reliability Telemetry
+
+To ensure the payment UI is reliable and to identify regressions, fraud patterns, and performance issues quickly, the SDK sends a small, best-effort stream of in-session lifecycle events to Xendit's telemetry endpoint. This telemetry is **session-scoped and non-transactional** — losing events on process death is acceptable, and no data is persisted to disk on the device.
+
+### What is collected (and what is NOT)
+
+**Collected:**
+- Session identifiers issued by Xendit: `payment_session_id` and `session_auth_id` (not user emails, names, or phone numbers)
+- UI lifecycle event types: `CHECKOUT_LOADED`, `CHECKOUT_CHANNEL`, `CHECKOUT_CHANNEL_FORM_INPUT`, `CHECKOUT_ATTEMPT_BEGIN`, `CHECKOUT_ATTEMPT`, `CHECKOUT_ACTION_BEGIN`, `CHECKOUT_ACTION_CLOSE`, `CHECKOUT_DIGITAL_WALLET_BEGIN/CLOSE`, `CHECKOUT_ACTION_COPY_TEXT`, `CHECKOUT_END`, `CHECKOUT_PENDING`, `CHECKOUT_ABANDON`
+- Static, non-PII diagnostic context: Xendit payment channel codes (e.g. `BCA`, `SHOPEEPAY`), payment-method group names (`cards`, `ewallet`, `qr_code`), **static field labels** (`card_number`, `expiry`, `cvv`, `phone`, `name` — never the typed value), error codes, validation keys, and status keys
+- Event ordering metadata (`event_id`, `parent_event_id`) and wall-clock timestamps
+- Xendit Payment Request ID and Payment Token ID once set
+
+**Never collected in telemetry:**
+- ❌ Card PAN (full or masked), CVV/CVC, or expiry digits typed by the user
+- ❌ Any value the user types into a form field — only the static `field_name` label is tracked
+- ❌ Billing name, email, phone number, or address text
+- ❌ Android Advertising ID (AAID/GAID), precise location, or device fingerprint
+- ❌ Any cross-app or cross-site tracking identifiers
+
+### Delivery behaviour
+
+| Trigger | When |
+|---------|------|
+| Time-based flush | Every 5 seconds if there are pending events |
+| Batch-based flush | When the in-memory queue reaches 25 events |
+| Background / screen exit | Activity `onStop` / `onDestroy` and `ProcessLifecycleOwner` `onStop` |
+| Memory pressure | `TRIM_MEMORY_BACKGROUND` discards the queue (no on-disk persistence) |
+
+### Debug vs release
+
+| | Debug Build | Release Build |
+|-|-------------|---------------|
+| **Logcat prints of telemetry payloads** | ✅ Enabled by default (via `BuildConfig.DEBUG`) | ❌ Completely silenced |
+| **OkHttp Profiler interceptor** | ✅ Attached for Android Studio Profiler visibility | ❌ Not attached |
+| **Network transmission (actual flush)** | ✅ Sends data (test environment) | ✅ Sends data (production telemetry — required for reliability) |
+
+### Merchant debugging APIs
+
+The following public APIs do **not** disable transmission — they only control whether payload contents are printed to logcat during your merchant-integration debugging session:
+
+```kotlin
+// Toggle logcat printing (defaults to BuildConfig.DEBUG — silent in release)
+XenditComponents.setTelemetryLoggingEnabled(true)
+
+// Print a snapshot of the current buffered (not-yet-flushed) events
+XenditComponents.logTelemetryQueueSnapshot("before-submit")
+```
+
+> **Privacy & compliance note.** Full Play-Data-Safety-ready disclosure, exact field-by-field schema, and source-code cross-references for every telemetry value are documented in [PRIVACY.md — Performance Telemetry](PRIVACY.md#performance-telemetry--what-exactly-is-sent). Use that section together with your legal counsel to complete your Google Play Data Safety form and your app's privacy policy.
+
 ## Installation
 
 ### Gradle (Kotlin DSL)
