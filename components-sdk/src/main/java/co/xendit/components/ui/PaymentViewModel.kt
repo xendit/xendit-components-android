@@ -254,7 +254,6 @@ internal class PaymentViewModel(
   private var digitalWalletScope: SessionTelemetryScope? = null
   private val formInputSentKeys: MutableSet<String> = mutableSetOf()
   private val attemptPushedScopes: MutableList<SessionTelemetryScope> = mutableListOf()
-  private var endEmitted: Boolean = false
 
   fun dispatch(intent: ActionIntent) {
     when (intent) {
@@ -892,7 +891,7 @@ internal class PaymentViewModel(
   internal fun wipeAllSensitiveData() {
     // If wipe was called while a submit attempt was in-flight (e.g. cancel/close before result),
     // emit AttemptDiscard to mirror Web discard-attempt behavior.
-    if (submissionTelemetryScope != null && !endEmitted) {
+    if (submissionTelemetryScope != null) {
       telemetry.append(TelemetryEvents.AttemptDiscard(false, failureCode = "WIPE_SENSITIVE_DATA"))
     }
     // Close any active action screen FIRST (VA/QR/Barcode/Web) so CHECKOUT_ACTION_CLOSE is emitted
@@ -1008,14 +1007,12 @@ internal class PaymentViewModel(
   }
 
   private fun emitTerminalEndIfNeeded(statusValue: String?) {
-    if (endEmitted) return
     val status = (statusValue ?: return).uppercase()
     val success = when (status) {
       "SUCCEEDED", "CAPTURED", "SUCCESS", "PAID" -> true
       "FAILED", "DECLINED", "REJECTED", "CANCELLED", "CANCELED", "EXPIRED" -> false
       else -> return
     }
-    endEmitted = true
     telemetry.append(TelemetryEvents.End(success = success, status = status))
     if (success) {
       closeDigitalWalletTelemetry(success = true)
