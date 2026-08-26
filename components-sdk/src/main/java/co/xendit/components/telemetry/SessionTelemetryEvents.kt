@@ -2,7 +2,7 @@ package co.xendit.components.telemetry
 
 import com.google.gson.annotations.SerializedName
 
-enum class TelemetryStage(val value: String) {
+internal enum class TelemetryStage(val value: String) {
   @SerializedName("CHECKOUT_LOADED") CHECKOUT_LOADED("CHECKOUT_LOADED"),
   @SerializedName("CHECKOUT_CHANNEL_GROUP") CHECKOUT_CHANNEL_GROUP("CHECKOUT_CHANNEL_GROUP"),
   @SerializedName("CHECKOUT_CHANNEL") CHECKOUT_CHANNEL("CHECKOUT_CHANNEL"),
@@ -20,7 +20,7 @@ enum class TelemetryStage(val value: String) {
   @SerializedName("CHECKOUT_ABANDON") CHECKOUT_ABANDON("CHECKOUT_ABANDON"),
 }
 
-interface SessionTelemetryEvent {
+internal interface SessionTelemetryEvent {
   val stage: TelemetryStage
   val success: Boolean
   val paymentChannel: String? get() = null
@@ -29,7 +29,7 @@ interface SessionTelemetryEvent {
   val metadata: Map<String, Any>? get() = null
 }
 
-object TelemetryEvents {
+internal object TelemetryEvents {
   fun Loaded(success: Boolean) = object : SessionTelemetryEvent {
     override val stage = TelemetryStage.CHECKOUT_LOADED
     override val success = success
