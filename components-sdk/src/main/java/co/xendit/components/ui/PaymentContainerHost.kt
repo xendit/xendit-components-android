@@ -561,6 +561,9 @@ internal fun PaymentContainerHost(
                       currency = mviState.sessionResponse?.session?.currency,
                       isTest = !CoreSdkComponent.isProdLive(),
                       isLoading = mviState.isLoading,
+                      onTrackClick = {
+                        viewModel.trackDigitalWallet()
+                      },
                       onPaymentDataReceived = { json, paymentMethodType ->
                         viewModel.dispatch(
                           ActionIntent.SubmitGooglePay(

@@ -315,6 +315,7 @@ internal class PaymentViewModel(
   private fun fetchSessionInternal(sessionAuthKey: String) {
     viewModelScope.launch {
       _state.update { it.copy(isLoading = true, errorMessage = null) }
+      telemetry.append(TelemetryEvents.Pending(true))
       try {
         val response = xenditRepository.getSession(sessionAuthKey)
         if (response.isSuccessful) {
@@ -533,7 +534,6 @@ internal class PaymentViewModel(
     paymentDataJson: String,
     paymentMethodType: String?
   ) {
-    digitalWalletScope = telemetry.appendAndPushScope(TelemetryEvents.DigitalWalletBegin(true, "GOOGLE_PAY"))
     val googlePay = _state.value.sessionResponse?.digitalWallets?.googlePay
     val channelResolution = resolveGooglePayChannelCodeOrError(googlePay, paymentMethodType)
     val channelCode = when (channelResolution) {
@@ -730,7 +730,6 @@ internal class PaymentViewModel(
 
               presentToCustomer != null -> {
                 actionTelemetryScope = telemetry.appendAndPushScope(TelemetryEvents.ActionBegin(true))
-                telemetry.append(TelemetryEvents.Pending(true))
                 closeDigitalWalletTelemetry(success = true)
 
                 _state.update {
@@ -745,7 +744,6 @@ internal class PaymentViewModel(
               }
 
               actions.isEmpty() -> {
-                telemetry.append(TelemetryEvents.Pending(true))
                 _state.update {
                   it.copy(
                     isLoading = false,
@@ -883,15 +881,15 @@ internal class PaymentViewModel(
     }
   }
 
-  fun runFormWipeNonce() {
+  internal fun runFormWipeNonce() {
     _state.update { it.copy(formWipeNonce = it.formWipeNonce + 1) }
   }
 
-  fun notifyCopyText(fieldName: String) {
+  internal fun notifyCopyText(fieldName: String) {
     telemetry.append(TelemetryEvents.ActionCopyText(true, fieldName))
   }
 
-  fun wipeAllSensitiveData() {
+  internal fun wipeAllSensitiveData() {
     // If wipe was called while a submit attempt was in-flight (e.g. cancel/close before result),
     // emit AttemptDiscard to mirror Web discard-attempt behavior.
     if (submissionTelemetryScope != null && !endEmitted) {
@@ -914,6 +912,10 @@ internal class PaymentViewModel(
     lastSelectedChannelCodeByUiGroup.clear()
     formInputSentKeys.clear()
     _state.value = PaymentState()
+  }
+
+  internal fun trackDigitalWallet() {
+    digitalWalletScope = telemetry.appendAndPushScope(TelemetryEvents.DigitalWalletBegin(true, "GOOGLE_PAY"))
   }
 
   @VisibleForTesting
