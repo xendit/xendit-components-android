@@ -658,7 +658,7 @@ internal class PaymentViewModel(
       submissionTelemetryScope = null
       attemptPushedScopes.reversed().forEach { telemetry.popScope(it) }
       attemptPushedScopes.clear()
-      // S5 - AttemptBegin (validation passed → success=true)
+      // AttemptBegin (validation passed → success=true)
       submissionTelemetryScope = telemetry.appendAndPushScope(
         TelemetryEvents.AttemptBegin(
           success = true,
@@ -683,7 +683,7 @@ internal class PaymentViewModel(
           val body = response.body()!!
           lastPaymentRequestId = body.id
           lastSessionTokenRequestId = body.sessionTokenRequestId
-          // S6 - Attempt scope for PR/PT id (1:1 Web order)
+          // Attempt scope for PR/PT id (1:1 Web order)
           val attemptScope = when {
             body.id != null -> telemetry.appendAndPushScope(TelemetryEvents.Attempt_PR(true, body.id!!))
             body.sessionTokenRequestId != null -> telemetry.appendAndPushScope(
@@ -711,7 +711,7 @@ internal class PaymentViewModel(
               } ?: actions.firstOrNull { it.type == "PRESENT_TO_CUSTOMER" && it.value != null }
             when {
               redirect?.value != null -> {
-                // S9 - Action begin; S14 - Digital wallet close success if Google Pay.
+                // Action begin ; Digital wallet close success if Google Pay.
                 actionTelemetryScope = telemetry.appendAndPushScope(TelemetryEvents.ActionBegin(true))
                 closeDigitalWalletTelemetry(success = true)
                 telemetry.expectingRedirectAway = true
