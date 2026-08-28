@@ -275,11 +275,13 @@ internal class PaymentViewModel(
           intent.savePaymentMethod,
           intent.installmentPlans
         )
+
       is ActionIntent.SubmitGooglePay ->
         submitGooglePayInternal(
           paymentDataJson = intent.paymentDataJson,
           paymentMethodType = intent.paymentMethodType
         )
+
       is ActionIntent.GooglePayPaymentFailed ->
         onGooglePayPaymentFailedInternal(
           code = intent.code,
@@ -330,7 +332,11 @@ internal class PaymentViewModel(
           val allowSavePaymentMethod = body?.session?.allowSavePaymentMethod
 
           // ===== Telemetry: bind payment_session_id now that FetchSession returned it.
-          telemetry.bindSession(host = null, sessionId = this@PaymentViewModel.paymentSessionId, authId = null)
+          telemetry.bindSession(
+            host = null,
+            sessionId = this@PaymentViewModel.paymentSessionId,
+            authId = null
+          )
           loadedTelemetryScope = telemetry.appendAndPushScope(TelemetryEvents.Loaded(true))
           // ===== end telemetry
 
@@ -458,12 +464,15 @@ internal class PaymentViewModel(
       markClosed()
     }
     telemetry.popScope(currentChannelTelemetryScope)
-    currentChannelTelemetryScope = telemetry.appendAndPushScope(TelemetryEvents.Channel(true, channelCode))
+    currentChannelTelemetryScope =
+      telemetry.appendAndPushScope(TelemetryEvents.Channel(true, channelCode))
   }
 
   private fun onUpdatePaymentDraft(paymentDraft: PaymentDraft) {
     val channelCode = paymentDraft.channelCode ?: return
-    val nowKeys = paymentDraft.formValues.keys.filter { paymentDraft.formValues[it].isNullOrBlank().not() }.toSet()
+    val nowKeys =
+      paymentDraft.formValues.keys.filter { paymentDraft.formValues[it].isNullOrBlank().not() }
+        .toSet()
     val newKeys = nowKeys subtract formInputSentKeys
     newKeys.forEach { key ->
       formInputSentKeys.add(key)
@@ -522,7 +531,12 @@ internal class PaymentViewModel(
   private fun closeDigitalWalletTelemetry(success: Boolean, errorCode: String? = null) {
     digitalWalletScope?.let { scope ->
       runCatching {
-        telemetry.append(TelemetryEvents.DigitalWalletClose(success = success, errorCode = errorCode))
+        telemetry.append(
+          TelemetryEvents.DigitalWalletClose(
+            success = success,
+            errorCode = errorCode
+          )
+        )
         telemetry.popScope(scope)
       }
     }
@@ -536,7 +550,11 @@ internal class PaymentViewModel(
     val googlePay = _state.value.sessionResponse?.digitalWallets?.googlePay
     val channelResolution = resolveGooglePayChannelCodeOrError(googlePay, paymentMethodType)
     val channelCode = when (channelResolution) {
-      is ResolvedGooglePayChannel.Ok -> channelResolution.code
+      is ResolvedGooglePayChannel.Ok -> {
+        closeDigitalWalletTelemetry(success = true)
+        channelResolution.code
+      }
+
       is ResolvedGooglePayChannel.Err -> {
         val userMessage = channelResolution.userMessage
         globalErrorHandler.postError(errorMessage = UiText.DynamicString(userMessage))
@@ -553,7 +571,6 @@ internal class PaymentViewModel(
     }
     val channelProperties = buildGooglePayChannelProperties(paymentDataJson, channelCode)
     if (channelProperties.isEmpty()) {
-      closeDigitalWalletTelemetry(success = true)
       onChallengeCompletedInternal(true)
     } else {
       return submitPaymentInternal(
@@ -685,10 +702,17 @@ internal class PaymentViewModel(
           lastSessionTokenRequestId = body.sessionTokenRequestId
           // Attempt scope for PR/PT id (1:1 Web order)
           val attemptScope = when {
-            body.id != null -> telemetry.appendAndPushScope(TelemetryEvents.Attempt_PR(true, body.id!!))
+            body.id != null -> telemetry.appendAndPushScope(
+              TelemetryEvents.Attempt_PR(
+                true,
+                body.id!!
+              )
+            )
+
             body.sessionTokenRequestId != null -> telemetry.appendAndPushScope(
               TelemetryEvents.Attempt_PT(true, body.sessionTokenRequestId!!)
             )
+
             else -> null
           }
           attemptScope?.let { attemptPushedScopes.add(it) }
@@ -712,7 +736,8 @@ internal class PaymentViewModel(
             when {
               redirect?.value != null -> {
                 // Action begin ; Digital wallet close success if Google Pay.
-                actionTelemetryScope = telemetry.appendAndPushScope(TelemetryEvents.ActionBegin(true))
+                actionTelemetryScope =
+                  telemetry.appendAndPushScope(TelemetryEvents.ActionBegin(true))
                 closeDigitalWalletTelemetry(success = true)
                 telemetry.expectingRedirectAway = true
 
@@ -728,7 +753,8 @@ internal class PaymentViewModel(
               }
 
               presentToCustomer != null -> {
-                actionTelemetryScope = telemetry.appendAndPushScope(TelemetryEvents.ActionBegin(true))
+                actionTelemetryScope =
+                  telemetry.appendAndPushScope(TelemetryEvents.ActionBegin(true))
                 closeDigitalWalletTelemetry(success = true)
 
                 _state.update {
@@ -779,7 +805,8 @@ internal class PaymentViewModel(
           val error = response.errorBody()?.asApiError()
           val errorCode = error?.errorCode ?: "-1"
           telemetry.append(TelemetryEvents.Attempt_Error(false, errorCode = errorCode))
-          val errorMessage = error?.errorContent?.message1 ?: error?.message ?: "$errorPrefix Failed"
+          val errorMessage =
+            error?.errorContent?.message1 ?: error?.message ?: "$errorPrefix Failed"
           _state.update {
             it.copy(
               isLoading = false,
@@ -914,7 +941,8 @@ internal class PaymentViewModel(
   }
 
   internal fun trackDigitalWallet() {
-    digitalWalletScope = telemetry.appendAndPushScope(TelemetryEvents.DigitalWalletBegin(true, "GOOGLE_PAY"))
+    digitalWalletScope =
+      telemetry.appendAndPushScope(TelemetryEvents.DigitalWalletBegin(true, "GOOGLE_PAY"))
   }
 
   @VisibleForTesting
@@ -929,7 +957,8 @@ internal class PaymentViewModel(
     this.paymentSessionId = paymentSessionId
     if (sessionAuthKey != null) this.sessionAuthKey = sessionAuthKey
     if (publicKey != null) this.publicKey = publicKey
-    if (lastSessionTokenRequestId != null) this.lastSessionTokenRequestId = lastSessionTokenRequestId
+    if (lastSessionTokenRequestId != null) this.lastSessionTokenRequestId =
+      lastSessionTokenRequestId
     _state.update {
       it.copy(
         sessionResponse = sessionResponse,
@@ -1009,8 +1038,8 @@ internal class PaymentViewModel(
   private fun emitTerminalEndIfNeeded(statusValue: String?) {
     val status = (statusValue ?: return).uppercase()
     val success = when (status) {
-      "SUCCEEDED", "CAPTURED", "SUCCESS", "PAID" -> true
-      "FAILED", "DECLINED", "REJECTED", "CANCELLED", "CANCELED", "EXPIRED" -> false
+      "COMPLETED", "SUCCEEDED" -> true
+      "CANCELED", "EXPIRED", "FAILED" -> false
       else -> return
     }
     telemetry.append(TelemetryEvents.End(success = success, status = status))
@@ -1023,11 +1052,9 @@ internal class PaymentViewModel(
   private fun String?.isTerminalStatus(): Boolean {
     val v = (this ?: return false).uppercase()
     return v in setOf(
-      "SUCCEEDED", "CAPTURED", "SUCCESS", "PAID",
-      "FAILED", "DECLINED", "REJECTED", "CANCELLED", "CANCELED", "EXPIRED"
+      "COMPLETED", "EXPIRED", "CANCELED", "SUCCEEDED", "FAILED"
     )
   }
-
 
 }
 
