@@ -553,33 +553,45 @@ internal fun PaymentContainerHost(
                           )
                         }
                       }
-                    GooglePaySection(
-                      googlePay = mviState.sessionResponse?.digitalWallets?.googlePay,
-                      businessName = mviState.sessionResponse?.business?.name.orEmpty(),
-                      paymentSessionId = mviState.sessionResponse?.session?.paymentSessionId,
-                      amount = mviState.sessionResponse?.session?.amount,
-                      currency = mviState.sessionResponse?.session?.currency,
-                      isTest = !CoreSdkComponent.isProdLive(),
-                      isLoading = mviState.isLoading,
-                      onPaymentDataReceived = { json, paymentMethodType ->
-                        viewModel.dispatch(
-                          ActionIntent.SubmitGooglePay(
-                            paymentDataJson = json,
-                            paymentMethodType = paymentMethodType
+                    val preferredList =
+                      remember(merchantPreferredPaymentMethod) {
+                        merchantPreferredPaymentMethod
+                          ?.filter { it in XenditComponentsPaymentType.SUPPORTED }
+                          ?: emptyList()
+                      }
+                    val shouldShowGooglePay =
+                      XenditComponentsPaymentType.GOOGLE_PAY in XenditComponentsPaymentType.SUPPORTED &&
+                        (preferredList.isEmpty() ||
+                          XenditComponentsPaymentType.GOOGLE_PAY in preferredList)
+                    if (shouldShowGooglePay) {
+                      GooglePaySection(
+                        googlePay = mviState.sessionResponse?.digitalWallets?.googlePay,
+                        businessName = mviState.sessionResponse?.business?.name.orEmpty(),
+                        paymentSessionId = mviState.sessionResponse?.session?.paymentSessionId,
+                        amount = mviState.sessionResponse?.session?.amount,
+                        currency = mviState.sessionResponse?.session?.currency,
+                        isTest = !CoreSdkComponent.isProdLive(),
+                        isLoading = mviState.isLoading,
+                        onPaymentDataReceived = { json, paymentMethodType ->
+                          viewModel.dispatch(
+                            ActionIntent.SubmitGooglePay(
+                              paymentDataJson = json,
+                              paymentMethodType = paymentMethodType
+                            )
                           )
-                        )
-                      },
-                      onPaymentFailed = { err ->
-                        viewModel.dispatch(
-                          ActionIntent.GooglePayPaymentFailed(
-                            code = err.code,
-                            title = err.title,
-                            message = err.message
+                        },
+                        onPaymentFailed = { err ->
+                          viewModel.dispatch(
+                            ActionIntent.GooglePayPaymentFailed(
+                              code = err.code,
+                              title = err.title,
+                              message = err.message
+                            )
                           )
-                        )
-                      },
-                      modifier = Modifier.padding(top = 8.dp)
-                    )
+                        },
+                        modifier = Modifier.padding(top = 8.dp)
+                      )
+                    }
 
                     PaymentMethodsUI(
                       session = mviState.sessionResponse?.session,
