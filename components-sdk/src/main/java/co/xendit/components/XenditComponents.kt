@@ -314,24 +314,6 @@ object XenditComponents {
     runCatching { safeSessionTelemetry()?.discardAll() }
   }
 
-  /**
-   * Runtime toggle for telemetry logging visibility in logcat.
-   * Defaults to [BuildConfig.DEBUG] so release builds never print the payload.
-   */
-  @Keep
-  fun setTelemetryLoggingEnabled(enabled: Boolean) {
-    runCatching { safeSessionTelemetry()?.logTelemetryEvents = enabled }
-  }
-
-  /**
-   * Convenience helper: snapshots and logs the current telemetry queue via XLogger without
-   * draining it. Useful during merchant-app debugging sessions.
-   */
-  @Keep
-  fun logTelemetryQueueSnapshot(label: String = "SNAPSHOT") {
-    runCatching { safeSessionTelemetry()?.logQueueSnapshot(label) }
-  }
-
 
   /**
    * Runs an ART garbage-collection pass from the **merchant app layer** to collect any

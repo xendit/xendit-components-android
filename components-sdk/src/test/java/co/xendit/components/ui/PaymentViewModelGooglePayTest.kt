@@ -133,27 +133,29 @@ class PaymentViewModelGooglePayTest {
 
   // ── ActionIntent.GooglePayPaymentFailed ────────────────────────────────────────────
 
-  @Test fun `GooglePayPaymentFailed sets concatenated title+message to state errorMessage and posts to handler`() = runTest {
-    viewModel.dispatch(
-      ActionIntent.GooglePayPaymentFailed(
-        code = "GOOGLE_PAY_DEVELOPER_ERROR",
-        title = "Google Pay Error",
-        message = "Something went wrong with Google Pay. Please try again or use a different payment method."
+  @Test
+  fun `GooglePayPaymentFailed sets concatenated title+message to state errorMessage and posts to handler`() =
+    runTest {
+      viewModel.dispatch(
+        ActionIntent.GooglePayPaymentFailed(
+          code = "GOOGLE_PAY_DEVELOPER_ERROR",
+          title = "Google Pay Error",
+          message = "Something went wrong with Google Pay. Please try again or use a different payment method."
+        )
       )
-    )
-    advanceUntilIdle()
+      advanceUntilIdle()
 
-    val err = viewModel.state.value.errorMessage
-    assertNotNull(err)
-    assertEquals(
-      "Google Pay Error. Something went wrong with Google Pay. Please try again or use a different payment method.",
-      err
-    )
-    assertFalse(viewModel.state.value.isLoading)
-    verify(exactly = 1) {
-      errorHandler.postError(errorMessage = any<UiText.DynamicString>())
+      val err = viewModel.state.value.errorMessage
+      assertNotNull(err)
+      assertEquals(
+        "Google Pay Error. Something went wrong with Google Pay. Please try again or use a different payment method.",
+        err
+      )
+      assertFalse(viewModel.state.value.isLoading)
+      verify(exactly = 1) {
+        errorHandler.postError(errorMessage = any<UiText.DynamicString>())
+      }
     }
-  }
 
   @Test fun `GooglePayPaymentFailed when title blank falls back to message only`() = runTest {
     viewModel.dispatch(
@@ -193,185 +195,203 @@ class PaymentViewModelGooglePayTest {
 
   // ── ActionIntent.SubmitGooglePay: configuration errors (synchronous, before network) ──
 
-  @Test fun `SubmitGooglePay with missing googlePay config posts error WITHOUT touching repository`() = runTest {
-    val signed = """{"paymentMethodData":{"type":"CARD"}}"""
-    viewModel.dispatch(
-      ActionIntent.SubmitGooglePay(paymentDataJson = signed, paymentMethodType = "CARD")
-    )
-    advanceUntilIdle()
-
-    val err = viewModel.state.value.errorMessage
-    assertNotNull(err)
-    assertTrue(err!!.contains("missing from the session response"))
-    assertFalse(viewModel.state.value.isLoading)
-    verify(exactly = 1) { errorHandler.postError(errorMessage = any<UiText>()) }
-  }
-
-  @Test fun `SubmitGooglePay with empty allowedPaymentMethods posts empty configuration error`() = runTest {
-    stubSessionResponseWithGooglePay(allowedMethods = emptyList())
-
-    viewModel.dispatch(
-      ActionIntent.SubmitGooglePay(
-        paymentDataJson = "{\"paymentMethodData\":{\"type\":\"CARD\"}}",
-        paymentMethodType = "CARD"
+  @Test
+  fun `SubmitGooglePay with missing googlePay config posts error WITHOUT touching repository`() =
+    runTest {
+      val signed = """{"paymentMethodData":{"type":"CARD"}}"""
+      viewModel.dispatch(
+        ActionIntent.SubmitGooglePay(paymentDataJson = signed, paymentMethodType = "CARD")
       )
-    )
-    advanceUntilIdle()
+      advanceUntilIdle()
 
-    val msg = viewModel.state.value.errorMessage
-    assertNotNull("Expected error when allowedPaymentMethods is empty", msg)
-    assertTrue("Expected empty configuration message, got: $msg", msg!!.contains("empty"))
-    assertFalse("Loading flag must be reset after error", viewModel.state.value.isLoading)
-  }
+      val err = viewModel.state.value.errorMessage
+      assertNotNull(err)
+      assertTrue(err!!.contains("missing from the session response"))
+      assertFalse(viewModel.state.value.isLoading)
+      verify(exactly = 1) { errorHandler.postError(errorMessage = any<UiText>()) }
+    }
 
-  @Test fun `SubmitGooglePay when paymentMethodType not in allowed list posts unsupported-type error`() = runTest {
-    stubSessionResponseWithGooglePay(
-      allowedMethods = listOf(allowMethod("CARDS", "CARD"), allowMethod("PAYPAL", "PAYPAL"))
-    )
+  @Test fun `SubmitGooglePay with empty allowedPaymentMethods posts empty configuration error`() =
+    runTest {
+      stubSessionResponseWithGooglePay(allowedMethods = emptyList())
 
-    viewModel.dispatch(
-      ActionIntent.SubmitGooglePay(
-        paymentDataJson = "{\"paymentMethodData\":{\"type\":\"SHOPEEPAY\"}}",
-        paymentMethodType = "SHOPEEPAY"
+      viewModel.dispatch(
+        ActionIntent.SubmitGooglePay(
+          paymentDataJson = "{\"paymentMethodData\":{\"type\":\"CARD\"}}",
+          paymentMethodType = "CARD"
+        )
       )
-    )
-    advanceUntilIdle()
+      advanceUntilIdle()
 
-    val msg = viewModel.state.value.errorMessage
-    assertNotNull(msg)
-    assertTrue(
-      "Expected SHOPEEPAY to appear in error message, got: $msg",
-      msg!!.contains("SHOPEEPAY")
-    )
-    assertTrue(
-      "Expected allowed methods list [CARD, PAYPAL] in error, got: $msg",
-      msg.contains("CARD") && msg.contains("PAYPAL")
-    )
-    assertFalse(viewModel.state.value.isLoading)
-    verify(exactly = 1) { errorHandler.postError(errorMessage = any<UiText>()) }
-  }
+      val msg = viewModel.state.value.errorMessage
+      assertNotNull("Expected error when allowedPaymentMethods is empty", msg)
+      assertTrue("Expected empty configuration message, got: $msg", msg!!.contains("empty"))
+      assertFalse("Loading flag must be reset after error", viewModel.state.value.isLoading)
+    }
 
-  @Test fun `SubmitGooglePay with null paymentMethodType AND SINGLE allowed method → ERR (Web SDK parity, no size-1 fallback)`() = runTest {
-    stubSessionResponseWithGooglePay(
-      allowedMethods = listOf(allowMethod("CARDS", "CARD"))
-    )
-    viewModel.dispatch(
-      ActionIntent.SubmitGooglePay(
-        paymentDataJson = "{\"paymentMethodData\":{}}",
-        paymentMethodType = null
+  @Test
+  fun `SubmitGooglePay when paymentMethodType not in allowed list posts unsupported-type error`() =
+    runTest {
+      stubSessionResponseWithGooglePay(
+        allowedMethods = listOf(allowMethod("CARDS", "CARD"), allowMethod("PAYPAL", "PAYPAL"))
       )
-    )
-    advanceUntilIdle()
 
-    val err = viewModel.state.value.errorMessage
-    assertNotNull("Expected missing-type resolution error, got null", err)
-    assertTrue(
-      "Expected 'missing' keyword in error message, got: $err",
-      err!!.contains("missing")
-    )
-    assertTrue(
-      "Expected count of configured methods (1) in error message, got: $err",
-      err.contains("1")
-    )
-    assertTrue(
-      "Expected configured methods listed (CARD) in error, got: $err",
-      err.contains("CARD")
-    )
-    assertFalse(viewModel.state.value.isLoading)
-    verify(exactly = 1) { errorHandler.postError(errorMessage = any<UiText>()) }
-  }
-
-  @Test fun `SubmitGooglePay with null paymentMethodType AND MULTIPLE allowed methods → ERR (Web SDK strict-match parity)`() = runTest {
-    stubSessionResponseWithGooglePay(
-      allowedMethods = listOf(allowMethod("CARDS", "CARD"), allowMethod("PAYPAL", "PAYPAL"))
-    )
-    viewModel.dispatch(
-      ActionIntent.SubmitGooglePay(
-        paymentDataJson = "{\"paymentMethodData\":{}}",
-        paymentMethodType = null
+      viewModel.dispatch(
+        ActionIntent.SubmitGooglePay(
+          paymentDataJson = "{\"paymentMethodData\":{\"type\":\"SHOPEEPAY\"}}",
+          paymentMethodType = "SHOPEEPAY"
+        )
       )
-    )
-    advanceUntilIdle()
+      advanceUntilIdle()
 
-    val err = viewModel.state.value.errorMessage
-    assertNotNull("Expected missing-type resolution error, got null", err)
-    assertTrue(
-      "Expected message to mention 'missing' type, got: $err",
-      err!!.contains("missing")
-    )
-    assertTrue(
-      "Expected message to reference configured method count 2, got: $err",
-      err.contains("2")
-    )
-    assertTrue(
-      "Expected message to list configured methods CARD and PAYPAL, got: $err",
-      err.contains("CARD") && err.contains("PAYPAL")
-    )
-    assertFalse(viewModel.state.value.isLoading)
-    verify(exactly = 1) { errorHandler.postError(errorMessage = any<UiText>()) }
-  }
+      val msg = viewModel.state.value.errorMessage
+      assertNotNull(msg)
+      assertTrue(
+        "Expected SHOPEEPAY to appear in error message, got: $msg",
+        msg!!.contains("SHOPEEPAY")
+      )
+      assertTrue(
+        "Expected allowed methods list [CARD, PAYPAL] in error, got: $msg",
+        msg.contains("CARD") && msg.contains("PAYPAL")
+      )
+      assertFalse(viewModel.state.value.isLoading)
+      verify(exactly = 1) { errorHandler.postError(errorMessage = any<UiText>()) }
+    }
 
-  @Test fun `SubmitGooglePay with blank or whitespace paymentMethodType AND MULTIPLE allowed → ERR (same missing-type path as null, Web SDK parity)`() = runTest {
-    stubSessionResponseWithGooglePay(
-      allowedMethods = listOf(allowMethod("CARDS", "CARD"), allowMethod("PAYPAL", "PAYPAL"))
-    )
-    listOf("", "   ", "\t\n").forEach { blank ->
+  @Test
+  fun `SubmitGooglePay with null paymentMethodType AND SINGLE allowed method → ERR (Web SDK parity, no size-1 fallback)`() =
+    runTest {
+      stubSessionResponseWithGooglePay(
+        allowedMethods = listOf(allowMethod("CARDS", "CARD"))
+      )
       viewModel.dispatch(
         ActionIntent.SubmitGooglePay(
           paymentDataJson = "{\"paymentMethodData\":{}}",
-          paymentMethodType = blank
+          paymentMethodType = null
         )
       )
       advanceUntilIdle()
 
       val err = viewModel.state.value.errorMessage
-      assertNotNull("Expected missing-type error for blank='$blank', got null", err)
+      assertNotNull("Expected missing-type resolution error, got null", err)
       assertTrue(
-        "blank='$blank' should contain 'missing' keyword, got: $err",
+        "Expected 'missing' keyword in error message, got: $err",
         err!!.contains("missing")
       )
       assertTrue(
-        "blank='$blank' should reference method count 2, got: $err",
-        err.contains("2")
+        "Expected count of configured methods (1) in error message, got: $err",
+        err.contains("1")
+      )
+      assertTrue(
+        "Expected configured methods listed (CARD) in error, got: $err",
+        err.contains("CARD")
       )
       assertFalse(viewModel.state.value.isLoading)
+      verify(exactly = 1) { errorHandler.postError(errorMessage = any<UiText>()) }
     }
-  }
+
+  @Test
+  fun `SubmitGooglePay with null paymentMethodType AND MULTIPLE allowed methods → ERR (Web SDK strict-match parity)`() =
+    runTest {
+      stubSessionResponseWithGooglePay(
+        allowedMethods = listOf(allowMethod("CARDS", "CARD"), allowMethod("PAYPAL", "PAYPAL"))
+      )
+      viewModel.dispatch(
+        ActionIntent.SubmitGooglePay(
+          paymentDataJson = "{\"paymentMethodData\":{}}",
+          paymentMethodType = null
+        )
+      )
+      advanceUntilIdle()
+
+      val err = viewModel.state.value.errorMessage
+      assertNotNull("Expected missing-type resolution error, got null", err)
+      assertTrue(
+        "Expected message to mention 'missing' type, got: $err",
+        err!!.contains("missing")
+      )
+      assertTrue(
+        "Expected message to reference configured method count 2, got: $err",
+        err.contains("2")
+      )
+      assertTrue(
+        "Expected message to list configured methods CARD and PAYPAL, got: $err",
+        err.contains("CARD") && err.contains("PAYPAL")
+      )
+      assertFalse(viewModel.state.value.isLoading)
+      verify(exactly = 1) { errorHandler.postError(errorMessage = any<UiText>()) }
+    }
+
+  @Test
+  fun `SubmitGooglePay with blank or whitespace paymentMethodType AND MULTIPLE allowed → ERR (same missing-type path as null, Web SDK parity)`() =
+    runTest {
+      stubSessionResponseWithGooglePay(
+        allowedMethods = listOf(allowMethod("CARDS", "CARD"), allowMethod("PAYPAL", "PAYPAL"))
+      )
+      listOf("", "   ", "\t\n").forEach { blank ->
+        viewModel.dispatch(
+          ActionIntent.SubmitGooglePay(
+            paymentDataJson = "{\"paymentMethodData\":{}}",
+            paymentMethodType = blank
+          )
+        )
+        advanceUntilIdle()
+
+        val err = viewModel.state.value.errorMessage
+        assertNotNull("Expected missing-type error for blank='$blank', got null", err)
+        assertTrue(
+          "blank='$blank' should contain 'missing' keyword, got: $err",
+          err!!.contains("missing")
+        )
+        assertTrue(
+          "blank='$blank' should reference method count 2, got: $err",
+          err.contains("2")
+        )
+        assertFalse(viewModel.state.value.isLoading)
+      }
+    }
 
   // ── SubmitGooglePay: non-CARDS wallet (PAYPAL) enters polling WITHOUT submitPaymentInternal ──
 
-  @Test fun `SubmitGooglePay with PAYPAL (non-CARDS) returns empty channelProperties → skips submitPaymentInternal, starts polling`() = runTest {
-    coEvery {
-      repository.pollSession(sessionId = "auth-key-123", tokenRequestId = any(), any())
-    } returns Response.success(
-      PollResponse(session = null, paymentRequest = null, paymentToken = null, succeededChannel = null)
-    )
-
-    stubSessionResponseWithGooglePay(
-      allowedMethods = listOf(allowMethod("CARDS", "CARD"), allowMethod("PAYPAL", "PAYPAL")),
-      sessionAuthKey = "auth-key-123",
-      publicKey = "pk-123"
-    )
-
-    viewModel.dispatch(
-      ActionIntent.SubmitGooglePay(
-        paymentDataJson = """{"paymentMethodData":{"type":"PAYPAL"}}""",
-        paymentMethodType = "PAYPAL"
+  @Test
+  fun `SubmitGooglePay with PAYPAL (non-CARDS) returns empty channelProperties → skips submitPaymentInternal, starts polling`() =
+    runTest {
+      coEvery {
+        repository.pollSession(sessionId = "auth-key-123", tokenRequestId = any(), any())
+      } returns Response.success(
+        PollResponse(
+          session = null,
+          paymentRequest = null,
+          paymentToken = null,
+          succeededChannel = null
+        )
       )
-    )
 
-    runCurrent()
+      stubSessionResponseWithGooglePay(
+        allowedMethods = listOf(allowMethod("CARDS", "CARD"), allowMethod("PAYPAL", "PAYPAL")),
+        sessionAuthKey = "auth-key-123",
+        publicKey = "pk-123"
+      )
 
-    coVerify(exactly = 1) {
-      repository.pollSession(sessionId = "auth-key-123", tokenRequestId = null, any())
+      viewModel.dispatch(
+        ActionIntent.SubmitGooglePay(
+          paymentDataJson = """{"paymentMethodData":{"type":"PAYPAL"}}""",
+          paymentMethodType = "PAYPAL"
+        )
+      )
+
+      runCurrent()
+
+      coVerify(exactly = 1) {
+        repository.pollSession(sessionId = "auth-key-123", tokenRequestId = null, any())
+      }
+      coVerify(exactly = 0) { repository.createPaymentRequest(any(), any()) }
+      coVerify(exactly = 0) { repository.createPaymentToken(any(), any()) }
+
+      assertNull(viewModel.state.value.errorMessage)
+      assertFalse(viewModel.state.value.isLoading)
+
+      viewModel.wipeAllSensitiveData()
+      runCurrent()
     }
-    coVerify(exactly = 0) { repository.createPaymentRequest(any(), any()) }
-    coVerify(exactly = 0) { repository.createPaymentToken(any(), any()) }
-
-    assertNull(viewModel.state.value.errorMessage)
-    assertFalse(viewModel.state.value.isLoading)
-
-    viewModel.wipeAllSensitiveData()
-    runCurrent()
-  }
 }

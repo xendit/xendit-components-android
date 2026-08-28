@@ -16,7 +16,7 @@ class SessionTelemetryTest {
   private lateinit var telemetry: SessionTelemetry
 
   @Before fun setUp() {
-    telemetry = SessionTelemetry(OkHttpClient(), Gson(), logTelemetryEvents = false)
+    telemetry = SessionTelemetry(OkHttpClient(), Gson())
   }
 
   @Test fun `append stamps scope-inherited props and popScope clears them`() = runTest(StandardTestDispatcher()) {

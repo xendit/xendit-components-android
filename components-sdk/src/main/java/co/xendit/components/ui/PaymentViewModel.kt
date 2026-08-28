@@ -21,9 +21,9 @@ import co.xendit.components.data.model.PaymentDraft
 import co.xendit.components.data.model.PaymentRequest
 import co.xendit.components.data.model.PaymentRequestStatus
 import co.xendit.components.data.model.PaymentResponse
+import co.xendit.components.data.model.PaymentSessionStatus
 import co.xendit.components.data.model.PollResponse
 import co.xendit.components.data.model.SessionResponse
-import co.xendit.components.data.model.PaymentSessionStatus
 import co.xendit.components.data.model.SimulatePaymentRequest
 import co.xendit.components.data.model.isPaySession
 import co.xendit.components.data.model.primaryChannelPropertyKey
@@ -299,7 +299,6 @@ internal class PaymentViewModel(
       is ActionIntent.ChallengeCompleted -> onChallengeCompletedInternal(intent.forceStart)
       is ActionIntent.CloseWebPayment -> {
         // Delegate state reset + CHECKOUT_ACTION_CLOSE + action scope pop to markClosed(), which is now
-        // the single source of truth for any action-screen closure (VA, QR, Barcode, Webview, Deeplink).
         telemetry.expectingRedirectAway = false
         markClosed()
         _state.update {
@@ -345,16 +344,25 @@ internal class PaymentViewModel(
             sessionId = this@PaymentViewModel.paymentSessionId,
             authId = null
           )
-          // ===== end telemetry
 
           // If getSession returns the session already terminal (expired, canceled, completed),
-          // emit End immediately (matches Web: world mutated, next BT tick fires terminal behavior).
-          session?.status?.name?.let { statusName ->
-            if (statusName.isTerminalStatus()) emitTerminalEndIfNeeded(statusName)
+          // emit End immediately
+          val sessionStatus = session?.status
+          if (sessionStatus.isTerminalSessionStatus() && sessionStatus != null) {
+            when (sessionStatus) {
+              PaymentSessionStatus.CANCELED,
+              PaymentSessionStatus.EXPIRED -> {
+                discardAttemptIfInFlight(
+                  success = false,
+                  failureCode = sessionStatus.name
+                )
+              }
+
+              else -> Unit
+            }
+            emitTerminalEndIfNeeded(sessionStatus)
           }
-          // If getSession returns the session already PENDING (not ACTIVE) — fire the session-level
-          // CHECKOUT_PENDING once here too (equivalent to Web SessionPendingBehavior.enter() right
-          // after initializeAsync sets world state to a PENDING session).
+
           if (session?.status == PaymentSessionStatus.PENDING) {
             emitSessionPendingOnce()
           }
@@ -484,6 +492,7 @@ internal class PaymentViewModel(
     if (actionTelemetryScope != null || state.value.presentToCustomerPaymentAction != null) {
       markClosed()
     }
+
     telemetry.popScope(currentChannelTelemetryScope)
     currentChannelTelemetryScope =
       telemetry.appendAndPushScope(TelemetryEvents.Channel(true, channelCode))
@@ -691,11 +700,6 @@ internal class PaymentViewModel(
           pollResponse = null
         )
       }
-      // Pop any previous submission scope if user retries.
-      submissionTelemetryScope?.let { telemetry.popScope(it) }
-      submissionTelemetryScope = null
-      attemptPushedScopes.reversed().forEach { telemetry.popScope(it) }
-      attemptPushedScopes.clear()
       // AttemptBegin (validation passed → success=true)
       submissionTelemetryScope = telemetry.appendAndPushScope(
         TelemetryEvents.AttemptBegin(
@@ -802,7 +806,23 @@ internal class PaymentViewModel(
               }
 
               else -> {
-                emitTerminalEndIfNeeded(body.status?.name)
+                // body.status != REQUIRES_ACTION + no action presented.
+                // If the entity itself ended in FAILED/CANCELED/EXPIRED (payment failure screen
+                // case A in spec), emit AttemptDiscard with the entity status as failure_code.
+                // This mirrors Web SubmissionBehavior.exit() + discardPaymentEntity() for
+                // entities that fail before reaching REQUIRES_ACTION or any action screen.
+                when (body.status) {
+                  PaymentRequestStatus.FAILED,
+                  PaymentRequestStatus.CANCELED,
+                  PaymentRequestStatus.EXPIRED -> {
+                    discardAttemptIfInFlight(
+                      success = false,
+                      failureCode = body.status.name
+                    )
+                  }
+
+                  else -> Unit
+                }
                 _state.update {
                   it.copy(
                     isLoading = false,
@@ -870,24 +890,55 @@ internal class PaymentViewModel(
             if (res.isSuccessful && res.body() != null) {
               val poll = res.body()
               if (poll != null) {
-                val pollStatus = poll.session?.status.toString()
-                val prStatus = poll.paymentRequest?.status.toString()
                 // Session-level CHECKOUT_PENDING (per spec: "On session pending, NOT PR/PT pending") —
-                // PENDING while waiting for terminal, we don't spam.
+                // fire exactly once, like Web SessionPendingBehavior.enter().
                 if (poll.session?.status == PaymentSessionStatus.PENDING) {
                   emitSessionPendingOnce()
                 }
-                // SessionCompletedBehavior / SessionFailedBehavior enter().
-                if ((pollStatus.isTerminalStatus() || prStatus.isTerminalStatus()) &&
-                  actionTelemetryScope != null
-                ) {
+
+                val eitherTerminal =
+                  poll.session?.status.isTerminalSessionStatus() ||
+                      poll.paymentRequest?.status.isTerminalPaymentEntityStatus()
+                if (eitherTerminal && actionTelemetryScope != null) {
                   markClosed()
                 }
-                if (pollStatus.isTerminalStatus()) {
-                  emitTerminalEndIfNeeded(pollStatus)
+                val pollSessionStatus = poll.session?.status
+                if (pollSessionStatus.isTerminalSessionStatus() && pollSessionStatus != null) {
+                  // If session ended in CANCELED/EXPIRED while a submission entity/scope is still
+                  // alive, discard the attempt first. Web does this via SubmissionBehavior.exit()
+                  // and SessionPendingBehavior.exit() — both call discardPaymentEntity() whenever
+                  // session.status != COMPLETED/PENDING + entity exists.
+                  when (pollSessionStatus) {
+                    PaymentSessionStatus.CANCELED,
+                    PaymentSessionStatus.EXPIRED -> {
+                      discardAttemptIfInFlight(
+                        success = false,
+                        failureCode = pollSessionStatus.name
+                      )
+                    }
+
+                    else -> Unit
+                  }
+                  emitTerminalEndIfNeeded(pollSessionStatus)
                 }
-                if (prStatus.isTerminalStatus()) {
-                  emitTerminalEndIfNeeded(prStatus)
+
+                val prStatus = poll.paymentRequest?.status
+                val sessionNotTerminal = poll.session?.status.isTerminalSessionStatus().not()
+                if (prStatus != null && sessionNotTerminal && submissionTelemetryScope != null) {
+                  when (prStatus) {
+                    PaymentRequestStatus.FAILED,
+                    PaymentRequestStatus.CANCELED,
+                    PaymentRequestStatus.EXPIRED -> {
+                      telemetry.append(
+                        TelemetryEvents.AttemptDiscard(
+                          success = false,
+                          failureCode = prStatus.name
+                        )
+                      )
+                    }
+                    // PENDING / AUTHORIZED / REQUIRES_ACTION / ACCEPTING_PAYMENTS → ignore.
+                    else -> Unit
+                  }
                 }
                 _state.update {
                   it.copy(
@@ -947,19 +998,26 @@ internal class PaymentViewModel(
     telemetry.append(TelemetryEvents.ActionCopyText(true, fieldName))
   }
 
+  private fun discardAttemptIfInFlight(success: Boolean, failureCode: String? = null) {
+    val hasScope = submissionTelemetryScope != null || attemptPushedScopes.isNotEmpty()
+    if (!hasScope) return
+    attemptPushedScopes.reversed().forEach { telemetry.popScope(it) }
+    attemptPushedScopes.clear()
+    submissionTelemetryScope?.let { telemetry.popScope(it) }
+    submissionTelemetryScope = null
+    telemetry.append(
+      TelemetryEvents.AttemptDiscard(
+        success = success,
+        failureCode = failureCode
+      )
+    )
+  }
+
   internal fun wipeAllSensitiveData() {
-    // Reset telemetry once-latches so a fresh Initialize → new session can fire
-    // Loaded, Pending, End telemetry all over again.
     endTelemetryEmitted = false
     sessionPendingTelemetryEmitted = false
     loadedOrResumeTelemetryPushed = false
-    // If wipe was called while a submit attempt was in-flight (e.g. cancel/close before result),
-    // emit AttemptDiscard to mirror Web discard-attempt behavior.
-    if (submissionTelemetryScope != null) {
-      telemetry.append(TelemetryEvents.AttemptDiscard(false, failureCode = "WIPE_SENSITIVE_DATA"))
-    }
-    // Close any active action screen FIRST (VA/QR/Barcode/Web) so CHECKOUT_ACTION_CLOSE is emitted
-    // while actionTelemetryScope is still alive — popAllTelemetryScopes() below will null it.
+
     markClosed()
     popAllTelemetryScopes()
 
@@ -1031,7 +1089,6 @@ internal class PaymentViewModel(
 
   fun markClosed() {
     // CHECKOUT_ACTION_CLOSE: fires for every action screen close (VA, QR, Barcode, OTC, Webview, Deeplink return).
-    // Scope doc: "Until action screen closed". Emits once, then pops the scope pushed by ActionBegin.
     actionTelemetryScope?.let { scope ->
       runCatching {
         telemetry.append(TelemetryEvents.ActionClose(true))
@@ -1072,41 +1129,60 @@ internal class PaymentViewModel(
     digitalWalletScope = null
   }
 
-  private fun emitTerminalEndIfNeeded(statusValue: String?) {
-    val status = (statusValue ?: return).uppercase()
-    val success = when (status) {
-      "COMPLETED", "SUCCEEDED" -> true
-      "CANCELED", "EXPIRED", "FAILED" -> false
-      else -> return
-    }
-    if (endTelemetryEmitted) return
-    endTelemetryEmitted = true
-    telemetry.append(TelemetryEvents.End(success = success, status = status))
-    if (success) {
-      closeDigitalWalletTelemetry(success = true)
-    }
-    telemetry.flush()
-  }
-
-  /**
-   * Session-level CHECKOUT_PENDING (Web SessionPendingBehavior.enter()):
-   * Emits exactly ONE Pending event per PaymentViewModel lifecycle, and only when
-   * the session.status itself transitions to PENDING (NOT PR/PT pending).
-   * Because Loaded/Resume scope is always pushed before getSession runs, the scope
-   * inheritance already stamps parent_event_id = Loaded's id automatically, exactly
-   * like Web's `append(TelemetryEvents.Pending(true))` under the Loaded scope.
-   */
   private fun emitSessionPendingOnce() {
     if (sessionPendingTelemetryEmitted) return
     sessionPendingTelemetryEmitted = true
     telemetry.append(TelemetryEvents.Pending(true))
   }
 
-  private fun String?.isTerminalStatus(): Boolean {
-    val v = (this ?: return false).uppercase()
-    return v in setOf(
-      "COMPLETED", "EXPIRED", "CANCELED", "SUCCEEDED", "FAILED"
+  private fun PaymentSessionStatus?.isTerminalSessionStatus(): Boolean {
+    return when (this) {
+      PaymentSessionStatus.COMPLETED,
+      PaymentSessionStatus.EXPIRED,
+      PaymentSessionStatus.CANCELED -> true
+
+      PaymentSessionStatus.ACTIVE,
+      PaymentSessionStatus.PENDING,
+      null -> false
+    }
+  }
+
+  private fun PaymentRequestStatus?.isTerminalPaymentEntityStatus(): Boolean {
+    return when (this) {
+      PaymentRequestStatus.SUCCEEDED,
+      PaymentRequestStatus.FAILED,
+      PaymentRequestStatus.CANCELED,
+      PaymentRequestStatus.EXPIRED -> true
+
+      PaymentRequestStatus.ACCEPTING_PAYMENTS,
+      PaymentRequestStatus.REQUIRES_ACTION,
+      PaymentRequestStatus.PENDING,
+      PaymentRequestStatus.AUTHORIZED,
+      null -> false
+    }
+  }
+
+  private fun emitTerminalEndIfNeeded(status: PaymentSessionStatus) {
+    val success = when (status) {
+      PaymentSessionStatus.COMPLETED -> true
+      PaymentSessionStatus.EXPIRED,
+      PaymentSessionStatus.CANCELED -> false
+
+      PaymentSessionStatus.ACTIVE,
+      PaymentSessionStatus.PENDING -> return
+    }
+    if (endTelemetryEmitted) return
+    endTelemetryEmitted = true
+    telemetry.append(
+      TelemetryEvents.End(
+        success = success,
+        status = status.name
+      )
     )
+    if (success) {
+      closeDigitalWalletTelemetry(success = true)
+    }
+    telemetry.flush()
   }
 
 }

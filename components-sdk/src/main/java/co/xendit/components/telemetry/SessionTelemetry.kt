@@ -58,17 +58,9 @@ private data class PerformancePayload(
 internal class SessionTelemetry(
   private val okHttpClient: OkHttpClient,
   private val gson: Gson,
-  logTelemetryEvents: Boolean = BuildConfig.DEBUG,
 ) {
   @Volatile
   var expectingRedirectAway: Boolean = false
-
-  @Volatile
-  var logTelemetryEvents: Boolean = logTelemetryEvents
-    set(value) {
-      field = value
-      if (value) XLogger.d("[telemetry] logging enabled")
-    }
 
   private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
   private val queue = ConcurrentLinkedQueue<SessionTelemetryEventWithExtras>()
@@ -97,19 +89,6 @@ internal class SessionTelemetry(
     if (!authId.isNullOrBlank()) {
       this.sessionAuthId = authId
     }
-    if (logTelemetryEvents) {
-      XLogger.d(
-        "[telemetry] bindSession",
-        """
-          host(stored):      ${this.telemetryHost}
-          host(passed):      $host
-          sessionId(stored): ${this.paymentSessionId}
-          sessionId(passed): ${if (sessionId.isNullOrBlank()) "unchanged" else sessionId}
-          authId(stored):    ${this.sessionAuthId}
-          authId(passed):    ${if (authId.isNullOrBlank()) "unchanged" else "•" + authId.takeLast(4)}
-        """.trimIndent()
-      )
-    }
   }
 
   fun appendAndPushScope(event: SessionTelemetryEvent): SessionTelemetryScope {
@@ -127,20 +106,6 @@ internal class SessionTelemetry(
       )
     )
     currentScope.set(newScope)
-    if (logTelemetryEvents) {
-      XLogger.d(
-        "[telemetry] PUSH SCOPE",
-        """
-          fromEvent:  ${newScope.fromEvent}
-          scopeId:    ${newScope.id}
-          inherit →
-            parent_event_id:  ${newScope.inheritedProperties.parentEventId}
-            payment_channel:  ${newScope.inheritedProperties.paymentChannel}
-            payment_request:  ${newScope.inheritedProperties.paymentRequestId}
-            payment_token:    ${newScope.inheritedProperties.paymentTokenId}
-        """.trimIndent()
-      )
-    }
     return newScope
   }
 
@@ -158,22 +123,6 @@ internal class SessionTelemetry(
       payment_token_id = event.paymentTokenId ?: scope.inheritedProperties.paymentTokenId,
       metadata = event.metadata,
     )
-    if (logTelemetryEvents) {
-      XLogger.d(
-        "[telemetry] APPEND stage=${stamped.stage}",
-        """
-          event_id:          ${stamped.event_id}
-          parent_event_id:   ${stamped.parent_event_id}
-          payment_channel:   ${stamped.payment_channel}
-          payment_request:   ${stamped.payment_request_id}
-          payment_token:     ${stamped.payment_token_id}
-          metadata:          ${stamped.metadata}
-          scope.fromEvent:   ${scope.fromEvent}
-          scope.id:          ${scope.id}
-          pretty-json:       ${gson.prettyPrint(stamped)}
-        """.trimIndent()
-      )
-    }
     queue.offer(stamped)
     scheduleFlush()
     if (queue.size >= TELEMETRY_BATCH_SIZE_LIMIT) flush()
@@ -205,20 +154,6 @@ internal class SessionTelemetry(
           )
           val jsonBody = gson.toJson(payload)
 
-          if (logTelemetryEvents) {
-            XLogger.d(
-              "[telemetry] FLUSH POST → ${host}$TELEMETRY_PATH",
-              """
-                events count:        ${current.size}
-                payment_session_id:  $sessionId
-                session_auth_id:     $authId
-                body bytes:          ${jsonBody.toByteArray(Charsets.UTF_8).size}
-                BODY (pretty):
-                ${gson.prettyPrint(payload)}
-              """.trimIndent()
-            )
-          }
-
           val body = jsonBody.toRequestBody("text/plain;charset=UTF-8".toMediaType())
           val request = Request.Builder()
             .url("$host$TELEMETRY_PATH")
@@ -226,28 +161,10 @@ internal class SessionTelemetry(
             .build()
 
           okHttpClient.newCall(request).execute().use { resp ->
-            if (logTelemetryEvents) {
-              val respBody = runCatching { resp.body?.string() ?: "<empty>" }.getOrDefault("<unreadable>")
-              XLogger.d(
-                "[telemetry] FLUSH RESPONSE ${resp.code}",
-                """
-                  success:         ${resp.isSuccessful}
-                  headers:         ${resp.headers}
-                  response body:   $respBody
-                """.trimIndent()
-              )
-            }
           }
         }.onFailure { t ->
           XLogger.e("[telemetry] FLUSH FAILED", t)
         }
-      }
-    } else {
-      if (logTelemetryEvents) {
-        XLogger.d(
-          "[telemetry] FLUSH SKIPPED",
-          "host=$host sessionId=$sessionId authIdSet=${!authId.isNullOrBlank()} events=${current.size}"
-        )
       }
     }
   }
@@ -262,19 +179,6 @@ internal class SessionTelemetry(
     expectingRedirectAway = false
   }
 
-  fun logQueueSnapshot(label: String = "SNAPSHOT") {
-    if (!logTelemetryEvents) return
-    val eventsSnapshot = queue.toList()
-    XLogger.d(
-      "[telemetry] QUEUE $label (count=${eventsSnapshot.size})",
-      buildString {
-        eventsSnapshot.forEachIndexed { i, e ->
-          appendLine("#$i: ${gson.prettyPrint(e)}")
-        }
-      }
-    )
-  }
-
   fun popScope(scope: SessionTelemetryScope?) {
     scope ?: return
     val parent = scope.parentScope ?: return
@@ -283,7 +187,6 @@ internal class SessionTelemetry(
       if (walker === scope) break
       walker = walker.parentScope ?: return
     }
-    if (logTelemetryEvents) XLogger.d("[telemetry] POP SCOPE fromEvent=${scope.fromEvent}")
     currentScope.set(parent)
   }
 

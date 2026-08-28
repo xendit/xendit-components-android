@@ -8,7 +8,6 @@ internal object TelemetrySdkComponent {
     SessionTelemetry(
       okHttpClient = CoreSdkComponent.okHttpTelemetry,
       gson = CoreSdkComponent.gson,
-      logTelemetryEvents = BuildConfig.DEBUG,
     )
   }
 }
