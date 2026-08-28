@@ -23,6 +23,7 @@ import co.xendit.components.data.model.PaymentRequestStatus
 import co.xendit.components.data.model.PaymentResponse
 import co.xendit.components.data.model.PollResponse
 import co.xendit.components.data.model.SessionResponse
+import co.xendit.components.data.model.PaymentSessionStatus
 import co.xendit.components.data.model.SimulatePaymentRequest
 import co.xendit.components.data.model.isPaySession
 import co.xendit.components.data.model.primaryChannelPropertyKey
@@ -245,6 +246,10 @@ internal class PaymentViewModel(
   private var challengePollingJob: Job? = null
   private val lastSelectedChannelCodeByUiGroup: MutableMap<String, String> = mutableMapOf()
 
+  private var endTelemetryEmitted: Boolean = false
+  private var sessionPendingTelemetryEmitted: Boolean = false
+  private var loadedOrResumeTelemetryPushed: Boolean = false
+
   // Telemetry scope handles — mirrors Web this.currentChannelTelemetryScope / this.telemetryScope.
   private var currentGroupTelemetryScope: SessionTelemetryScope? = null
   private var currentChannelTelemetryScope: SessionTelemetryScope? = null
@@ -316,8 +321,11 @@ internal class PaymentViewModel(
   private fun fetchSessionInternal(sessionAuthKey: String) {
     viewModelScope.launch {
       _state.update { it.copy(isLoading = true, errorMessage = null) }
-      telemetry.append(TelemetryEvents.Pending(true))
       try {
+        if (!loadedOrResumeTelemetryPushed) {
+          loadedTelemetryScope = telemetry.appendAndPushScope(TelemetryEvents.Loaded(true))
+          loadedOrResumeTelemetryPushed = true
+        }
         val response = xenditRepository.getSession(sessionAuthKey)
         if (response.isSuccessful) {
           val body = response.body()
@@ -331,14 +339,25 @@ internal class PaymentViewModel(
           val sessionType = body?.session?.sessionType
           val allowSavePaymentMethod = body?.session?.allowSavePaymentMethod
 
-          // ===== Telemetry: bind payment_session_id now that FetchSession returned it.
+          // ===== Telemetry: bind payment_session_id + authId now that FetchSession returned them.
           telemetry.bindSession(
             host = null,
             sessionId = this@PaymentViewModel.paymentSessionId,
             authId = null
           )
-          loadedTelemetryScope = telemetry.appendAndPushScope(TelemetryEvents.Loaded(true))
           // ===== end telemetry
+
+          // If getSession returns the session already terminal (expired, canceled, completed),
+          // emit End immediately (matches Web: world mutated, next BT tick fires terminal behavior).
+          session?.status?.name?.let { statusName ->
+            if (statusName.isTerminalStatus()) emitTerminalEndIfNeeded(statusName)
+          }
+          // If getSession returns the session already PENDING (not ACTIVE) — fire the session-level
+          // CHECKOUT_PENDING once here too (equivalent to Web SessionPendingBehavior.enter() right
+          // after initializeAsync sets world state to a PENDING session).
+          if (session?.status == PaymentSessionStatus.PENDING) {
+            emitSessionPendingOnce()
+          }
 
           if (channels.isNotEmpty()) {
             _state.update {
@@ -354,14 +373,14 @@ internal class PaymentViewModel(
               )
             }
           } else {
-            _state.update {
-              it.copy(isLoading = false, sessionResponse = body)
-            }
+            _state.update { it.copy(isLoading = false, sessionResponse = body) }
           }
         } else {
           val error = response.errorBody()?.asApiError()
           val errorMessage = error?.message ?: "Failed to fetch session"
           val errorCode = error?.errorCode
+          // getSession failed: append Loaded(false). Loaded scope from above already active (id present) so
+          // Loaded(false) is a 2nd sibling leaf under root, matching Web's fatal-error paths.
           telemetry.append(TelemetryEvents.Loaded(false))
           _state.update {
             it.copy(
@@ -371,6 +390,8 @@ internal class PaymentViewModel(
           }
         }
       } catch (e: Exception) {
+        // Exception during fetchSession: append Loaded(false) under root.
+        telemetry.append(TelemetryEvents.Loaded(false))
         globalErrorHandler.postError(
           errorMessage = UiText.DynamicString(e.message ?: "Failed to fetch session")
         )
@@ -851,6 +872,17 @@ internal class PaymentViewModel(
               if (poll != null) {
                 val pollStatus = poll.session?.status.toString()
                 val prStatus = poll.paymentRequest?.status.toString()
+                // Session-level CHECKOUT_PENDING (per spec: "On session pending, NOT PR/PT pending") —
+                // PENDING while waiting for terminal, we don't spam.
+                if (poll.session?.status == PaymentSessionStatus.PENDING) {
+                  emitSessionPendingOnce()
+                }
+                // SessionCompletedBehavior / SessionFailedBehavior enter().
+                if ((pollStatus.isTerminalStatus() || prStatus.isTerminalStatus()) &&
+                  actionTelemetryScope != null
+                ) {
+                  markClosed()
+                }
                 if (pollStatus.isTerminalStatus()) {
                   emitTerminalEndIfNeeded(pollStatus)
                 }
@@ -916,6 +948,11 @@ internal class PaymentViewModel(
   }
 
   internal fun wipeAllSensitiveData() {
+    // Reset telemetry once-latches so a fresh Initialize → new session can fire
+    // Loaded, Pending, End telemetry all over again.
+    endTelemetryEmitted = false
+    sessionPendingTelemetryEmitted = false
+    loadedOrResumeTelemetryPushed = false
     // If wipe was called while a submit attempt was in-flight (e.g. cancel/close before result),
     // emit AttemptDiscard to mirror Web discard-attempt behavior.
     if (submissionTelemetryScope != null) {
@@ -1042,11 +1079,27 @@ internal class PaymentViewModel(
       "CANCELED", "EXPIRED", "FAILED" -> false
       else -> return
     }
+    if (endTelemetryEmitted) return
+    endTelemetryEmitted = true
     telemetry.append(TelemetryEvents.End(success = success, status = status))
     if (success) {
       closeDigitalWalletTelemetry(success = true)
     }
     telemetry.flush()
+  }
+
+  /**
+   * Session-level CHECKOUT_PENDING (Web SessionPendingBehavior.enter()):
+   * Emits exactly ONE Pending event per PaymentViewModel lifecycle, and only when
+   * the session.status itself transitions to PENDING (NOT PR/PT pending).
+   * Because Loaded/Resume scope is always pushed before getSession runs, the scope
+   * inheritance already stamps parent_event_id = Loaded's id automatically, exactly
+   * like Web's `append(TelemetryEvents.Pending(true))` under the Loaded scope.
+   */
+  private fun emitSessionPendingOnce() {
+    if (sessionPendingTelemetryEmitted) return
+    sessionPendingTelemetryEmitted = true
+    telemetry.append(TelemetryEvents.Pending(true))
   }
 
   private fun String?.isTerminalStatus(): Boolean {
