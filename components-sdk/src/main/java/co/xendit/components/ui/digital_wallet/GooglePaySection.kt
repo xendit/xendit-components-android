@@ -48,7 +48,6 @@ import co.xendit.components.ui.style.xenditAppearance
 import com.google.android.gms.common.api.ApiException
 import com.google.android.gms.common.api.CommonStatusCodes
 import com.google.android.gms.common.api.ResolvableApiException
-import com.google.android.gms.wallet.AutoResolveHelper
 import com.google.android.gms.wallet.PaymentData
 import com.google.gson.JsonParser
 import java.math.BigDecimal
@@ -169,23 +168,23 @@ internal fun GooglePaySection(
     onDispose { /* no-op */ }
   }
 
-  val paymentDataRequest = remember(googlePay, businessName, paymentSessionId, amount, currency, country) {
-    runCatching {
-      GooglePayHelper.createPaymentDataRequest(
-        googlePay = googlePay,
-        businessName = businessName,
-        paymentSessionId = paymentSessionId,
-        amount = amount,
-        currency = currency,
-        country = country
-      )
-    }.getOrNull()
-  }
+  val paymentDataRequest =
+    remember(googlePay, businessName, paymentSessionId, amount, currency, country) {
+      runCatching {
+        GooglePayHelper.createPaymentDataRequest(
+          googlePay = googlePay,
+          businessName = businessName,
+          paymentSessionId = paymentSessionId,
+          amount = amount,
+          currency = currency,
+          country = country
+        )
+      }.getOrNull()
+    }
 
   val activityResultLauncher = rememberLauncherForActivityResult(
     contract = ActivityResultContracts.StartIntentSenderForResult()
   ) { result: ActivityResult ->
-    val resolve = AutoResolveHelper.getStatusFromIntent(result.data)
     when (result.resultCode) {
       Activity.RESULT_OK -> {
         val data: Intent? = result.data
