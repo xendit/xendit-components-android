@@ -570,6 +570,7 @@ internal fun PaymentContainerHost(
                         paymentSessionId = mviState.sessionResponse?.session?.paymentSessionId,
                         amount = mviState.sessionResponse?.session?.amount,
                         currency = mviState.sessionResponse?.session?.currency,
+                        country = mviState.sessionResponse?.session?.country,
                         isTest = !CoreSdkComponent.isProdLive(),
                         isLoading = mviState.isLoading,
                         onPaymentDataReceived = { json, paymentMethodType ->

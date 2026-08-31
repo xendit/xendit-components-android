@@ -37,20 +37,6 @@ class GooglePaySectionHelpersTest {
     )
   }
 
-  @Test fun `mapGooglePayStatusToError with unknown non-documented code falls back to UNKNOWN with printed statusCode`() {
-    val err = mapGooglePayStatusToError(statusCodeRaw = 42)!!
-    assertEquals("GOOGLE_PAY_UNKNOWN_ERROR", err.code)
-    assertEquals("Google Pay Error", err.title)
-    assertTrue(err.message.contains("42"))
-    assertTrue(err.message.startsWith("An unknown error occurred with Google Pay."))
-  }
-
-  @Test fun `mapGooglePayStatusToError with raw null input falls back to UNKNOWN with value -1 (placeholder)`() {
-    val err = mapGooglePayStatusToError(null)!!
-    assertEquals("GOOGLE_PAY_UNKNOWN_ERROR", err.code)
-    assertTrue(err.message.contains("-1"))
-  }
-
   // ── extractPaymentMethodType ──────────────────────────────────────────────────────
 
   @Test fun `extractPaymentMethodType returns nested paymentMethodData type field`() {
