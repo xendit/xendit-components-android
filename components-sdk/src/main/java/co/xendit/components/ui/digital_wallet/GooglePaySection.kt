@@ -102,7 +102,7 @@ internal fun mapGooglePayStatusToError(statusCodeRaw: Int?): GooglePayPaymentErr
       Triple(
         "GOOGLE_PAY_UNKNOWN_ERROR",
         "Google Pay Error",
-        "An unknown error occurred with Google Pay. The error code is $statusCode."
+        "An unknown error occurred with Google Pay"
       )
   }
   return if (code == "GOOGLE_PAY_CANCELED") null else GooglePayPaymentError(code, title, message)
@@ -133,6 +133,7 @@ internal fun GooglePaySection(
   paymentSessionId: String?,
   amount: BigDecimal?,
   currency: String?,
+  country: String?,
   isTest: Boolean,
   isLoading: Boolean,
   onPaymentDataReceived: (paymentDataJson: String, paymentMethodType: String?) -> Unit,
@@ -142,7 +143,8 @@ internal fun GooglePaySection(
   if (googlePay == null ||
     paymentSessionId == null ||
     amount == null ||
-    currency.isNullOrBlank()
+    currency.isNullOrBlank() ||
+    country.isNullOrBlank()
   ) return
 
   val context = LocalContext.current
@@ -166,17 +168,19 @@ internal fun GooglePaySection(
     onDispose { /* no-op */ }
   }
 
-  val paymentDataRequest = remember(googlePay, businessName, paymentSessionId, amount, currency) {
-    runCatching {
-      GooglePayHelper.createPaymentDataRequest(
-        googlePay = googlePay,
-        businessName = businessName,
-        paymentSessionId = paymentSessionId,
-        amount = amount,
-        currency = currency
-      )
-    }.getOrNull()
-  }
+  val paymentDataRequest =
+    remember(googlePay, businessName, paymentSessionId, amount, currency, country) {
+      runCatching {
+        GooglePayHelper.createPaymentDataRequest(
+          googlePay = googlePay,
+          businessName = businessName,
+          paymentSessionId = paymentSessionId,
+          amount = amount,
+          currency = currency,
+          country = country
+        )
+      }.getOrNull()
+    }
 
   val activityResultLauncher = rememberLauncherForActivityResult(
     contract = ActivityResultContracts.StartIntentSenderForResult()
@@ -193,6 +197,7 @@ internal fun GooglePaySection(
       }
 
       else -> {
+
         val statusExtra = runCatching {
           result.data
             ?.getIntExtra("com.google.android.gms.common.api.AutoResolveHelper.status", -1)
@@ -227,7 +232,6 @@ internal fun GooglePaySection(
           } else {
             val exceptionAsStatus = extractStatusCode(exception as? Exception)
             val mappedError = mapGooglePayStatusToError(exceptionAsStatus)
-              ?: mapGooglePayStatusToError(null)
             mappedError?.let(onPaymentFailed)
           }
         }

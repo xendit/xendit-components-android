@@ -193,7 +193,8 @@ fun PaymentDemo(fontFamily: FontFamily, modifier: Modifier = Modifier) {
             XenditComponentsPaymentType.VIRTUAL_ACCOUNT,
             XenditComponentsPaymentType.CARDS,
             XenditComponentsPaymentType.EWALLET,
-            XenditComponentsPaymentType.OVER_THE_COUNTER
+            XenditComponentsPaymentType.OVER_THE_COUNTER,
+            XenditComponentsPaymentType.GOOGLE_PAY
           )
       ) { result ->
         paymentResultText = result.toString()

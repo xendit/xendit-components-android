@@ -49,7 +49,8 @@ internal object GooglePayHelper {
     businessName: String,
     paymentSessionId: String,
     amount: BigDecimal,
-    currency: String
+    currency: String,
+    country: String
   ): PaymentDataRequest {
     val json = JSONObject()
       .put("apiVersion", 2)
@@ -69,6 +70,7 @@ internal object GooglePayHelper {
           .put("totalPriceStatus", "FINAL")
           .put("totalPrice", amount.toPlainString())
           .put("currencyCode", currency)
+          .put("countryCode", country)
       )
 
     return requireNotNull(PaymentDataRequest.fromJson(json.toString()))
