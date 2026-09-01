@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -41,9 +42,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
 import co.xendit.components.R
 import androidx.compose.ui.unit.dp
+import co.xendit.components.data.model.AutofillHintConstants
 import co.xendit.components.data.model.ProvinceOption
 import co.xendit.components.data.model.Provinces
 import co.xendit.components.ui.XenditTestTags
@@ -121,6 +125,12 @@ internal fun ProvinceField(
       },
       isError = isError,
       errorMessage = errorMessage,
+      keyboardOptions = KeyboardOptions(
+        capitalization = KeyboardCapitalization.Words,
+        autoCorrectEnabled = false,
+        imeAction = ImeAction.Next
+      ),
+      autofillHints = listOf(AutofillHintConstants.ADDRESS_REGION),
       shape = shape,
       noBorder = noBorder,
       disabledTextColor = appearance.colorText

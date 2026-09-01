@@ -13,20 +13,67 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.autofill.ContentType
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentType
+import androidx.compose.ui.semantics.onFillData
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import co.xendit.components.data.model.AutofillHintConstants
 import co.xendit.components.ui.style.xenditAppearance
 
 enum class XenditTextFieldLabelPlacement {
   Above,
   Floating
 }
+
+private fun resolveSemanticsContentTypes(hints: List<String>): ContentType? {
+  if (hints.isEmpty()) return null
+  var result: ContentType? = null
+  for (hint in hints) {
+    val type = when (hint) {
+      AutofillHintConstants.EMAIL_ADDRESS -> ContentType.EmailAddress
+      AutofillHintConstants.PHONE_NUMBER -> ContentType.PhoneNumber
+      AutofillHintConstants.POSTAL_CODE -> ContentType.PostalCode
+      AutofillHintConstants.COUNTRY_NAME -> ContentType.AddressCountry
+      AutofillHintConstants.ADDRESS_REGION -> ContentType.AddressRegion
+      AutofillHintConstants.ADDRESS_LOCALITY -> ContentType.AddressLocality
+      AutofillHintConstants.ADDRESS_STREET -> ContentType.AddressStreet
+      AutofillHintConstants.CREDIT_CARD_NUMBER -> ContentType.CreditCardNumber
+      AutofillHintConstants.CREDIT_CARD_EXPIRATION_DATE -> ContentType.CreditCardExpirationDate
+      AutofillHintConstants.CREDIT_CARD_SECURITY_CODE -> ContentType.CreditCardSecurityCode
+      AutofillHintConstants.PERSON_NAME_GIVEN -> ContentType.PersonFirstName
+      AutofillHintConstants.PERSON_NAME_FAMILY -> ContentType.PersonLastName
+      else -> null
+    }
+    result = if (result == null) type else type?.let { result + it } ?: result
+  }
+  return result
+}
+
+private fun Modifier.thenAutofillSemantics(
+  contentType: ContentType?,
+  onFill: (String) -> Unit,
+): Modifier {
+  if (contentType == null) return this
+  return this.semantics {
+    this.contentType = contentType
+    onFillData { fillableData ->
+      val text = fillableData.textValue?.toString()
+      if (text != null) {
+        onFill(text)
+        true
+      } else false
+    }
+  }
+}
+
 
 @Composable
 internal fun XenditTextField(
@@ -50,11 +97,16 @@ internal fun XenditTextField(
   leadingIcon: (@Composable (() -> Unit))? = null,
   trailingIcon: (@Composable (() -> Unit))? = null,
   disabledTextColor: Color? = null,
+  autofillHints: List<String> = emptyList(),
   testTag: String = "",
 ) {
   val appearance = xenditAppearance
   val interactionSource = remember { MutableInteractionSource() }
   val showErrorText = isError && !errorMessage.isNullOrBlank()
+  val semanticsContentType = remember(autofillHints) { resolveSemanticsContentTypes(autofillHints) }
+  val onFillValue: (String) -> Unit = remember(maxLength, onValueChange) {
+    { newValue -> if (newValue.length <= maxLength) onValueChange(newValue) }
+  }
 
   Column(
     modifier = Modifier
@@ -72,10 +124,16 @@ internal fun XenditTextField(
       onValueChange = { if (it.length <= maxLength) onValueChange(it) },
       modifier = Modifier
         .fillMaxWidth()
-        .then(if (testTag.isNotBlank()) Modifier.testTag(testTag) else Modifier),
+        .then(if (testTag.isNotBlank()) Modifier.testTag(testTag) else Modifier)
+        .thenAutofillSemantics(
+          contentType = semanticsContentType,
+          onFill = onFillValue
+        ),
       enabled = enabled,
       readOnly = readOnly,
-      textStyle = textStyle.copy(color = appearance.colorText),
+      textStyle = textStyle.copy(
+        color = if (!enabled && disabledTextColor != null) disabledTextColor else appearance.colorText
+      ),
       cursorBrush = SolidColor(appearance.colorPrimary),
       interactionSource = interactionSource,
       keyboardOptions = keyboardOptions,

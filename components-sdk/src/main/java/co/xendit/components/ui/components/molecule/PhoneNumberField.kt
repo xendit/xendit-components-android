@@ -24,9 +24,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import co.xendit.components.data.model.AutofillHintConstants
 import co.xendit.components.data.model.Country
 import co.xendit.components.data.model.findCountryByCode
 import co.xendit.components.ui.XenditTestTags
@@ -136,7 +138,12 @@ internal fun PhoneNumberField(
         modifier = Modifier.fillMaxWidth(),
         isError = isError,
         errorMessage = null,
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+        keyboardOptions = KeyboardOptions(
+          keyboardType = KeyboardType.Phone,
+          autoCorrectEnabled = true,
+          imeAction = ImeAction.Next
+        ),
+        autofillHints = listOf(AutofillHintConstants.PHONE_NUMBER),
         singleLine = true,
         shape = shape,
         noBorder = noBorder,

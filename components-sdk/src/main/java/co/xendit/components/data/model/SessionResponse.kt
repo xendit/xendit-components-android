@@ -71,17 +71,20 @@ internal data class BffApplePay(
   @SerializedName("apple_pay_payment_request") val applePayPaymentRequest: JsonObject? = null
 )
 
-
 @Keep
 internal enum class PaymentSessionStatus {
   @SerializedName("ACTIVE")
   ACTIVE,
+
   @SerializedName("PENDING")
   PENDING,
+
   @SerializedName("COMPLETED")
   COMPLETED,
+
   @SerializedName("EXPIRED")
   EXPIRED,
+
   @SerializedName("CANCELED")
   CANCELED
 }
@@ -90,10 +93,13 @@ internal enum class PaymentSessionStatus {
 internal enum class BffSessionType {
   @SerializedName("SAVE")
   SAVE,
+
   @SerializedName("PAY")
   PAY,
+
   @SerializedName("AUTHORIZATION")
   AUTHORIZATION,
+
   @SerializedName("SUBSCRIPTION")
   SUBSCRIPTION
 }
@@ -110,8 +116,10 @@ internal fun BffSessionType?.isPaySession(): Boolean {
 internal enum class BffSessionAllowSavePaymentMethod {
   @SerializedName("DISABLED")
   DISABLED,
+
   @SerializedName("FORCED")
   FORCED,
+
   @SerializedName("OPTIONAL")
   OPTIONAL
 }
@@ -126,10 +134,13 @@ internal data class BffSubscription(
 internal enum class BffSubscriptionInterval {
   @SerializedName("DAY")
   DAY,
+
   @SerializedName("WEEK")
   WEEK,
+
   @SerializedName("MONTH")
   MONTH,
+
   @FallbackValue
   @SerializedName("UNKNOWN")
   UNKNOWN
@@ -303,3 +314,6 @@ internal fun ChannelFormField.primaryChannelPropertyKey(): String {
     else -> ""
   }
 }
+
+
+
