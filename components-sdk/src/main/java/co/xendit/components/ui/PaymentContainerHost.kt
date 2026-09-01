@@ -2,6 +2,8 @@ package co.xendit.components.ui
 
 import android.content.Intent
 import android.net.Uri
+import android.view.View
+import android.view.WindowManager
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -45,6 +47,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInteropFilter
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
@@ -52,6 +55,8 @@ import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.window.DialogWindowProvider
+import androidx.core.view.WindowCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import co.xendit.components.BuildConfig
@@ -93,6 +98,33 @@ import kotlin.time.Duration.Companion.milliseconds
 internal enum class PaymentContainerPresentation {
   Dialog,
   BottomSheet
+}
+
+@Composable
+private fun ConfigureKeyboardAwareWindow() {
+  val view = LocalView.current
+  DisposableEffect(view) {
+    // Retrieve the actual Dialog/BottomSheet Window, not the Activity Window
+    val dialogWindow = (view.parent as? DialogWindowProvider)?.window
+      ?: run {
+        var ctx = view.context
+        while (ctx is android.content.ContextWrapper) {
+          if (ctx is android.app.Activity) return@run ctx.window
+          ctx = ctx.baseContext
+        }
+        null
+      }
+
+    dialogWindow?.let { win ->
+      win.setSoftInputMode(
+        WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
+            or WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN
+      )
+      WindowCompat.setDecorFitsSystemWindows(win, false)
+    }
+
+    onDispose { }
+  }
 }
 
 internal object PaymentContainerHostSignals {
@@ -308,9 +340,11 @@ internal fun PaymentContainerHost(
             DialogProperties(
               dismissOnBackPress = true,
               dismissOnClickOutside = false,
-              usePlatformDefaultWidth = false
+              usePlatformDefaultWidth = false,
+              decorFitsSystemWindows = false
             )
         ) {
+          ConfigureKeyboardAwareWindow()
           Box(
             modifier = Modifier
               .fillMaxSize()
@@ -327,8 +361,10 @@ internal fun PaymentContainerHost(
           onDismissRequest = dismiss,
           sheetState = sheetState!!,
           containerColor = style.colorBackground,
+          contentWindowInsets = { androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0) },
           modifier = Modifier.testTag(XenditTestTags.PAYMENT_SHEET)
         ) {
+          ConfigureKeyboardAwareWindow()
           Box(
             modifier = Modifier
               .fillMaxWidth()
@@ -553,36 +589,49 @@ internal fun PaymentContainerHost(
                           )
                         }
                       }
-                    GooglePaySection(
-                      googlePay = mviState.sessionResponse?.digitalWallets?.googlePay,
-                      businessName = mviState.sessionResponse?.business?.name.orEmpty(),
-                      paymentSessionId = mviState.sessionResponse?.session?.paymentSessionId,
-                      amount = mviState.sessionResponse?.session?.amount,
-                      currency = mviState.sessionResponse?.session?.currency,
-                      isTest = !CoreSdkComponent.isProdLive(),
-                      isLoading = mviState.isLoading,
-                      onTrackClick = {
-                        viewModel.trackDigitalWallet()
-                      },
-                      onPaymentDataReceived = { json, paymentMethodType ->
-                        viewModel.dispatch(
-                          ActionIntent.SubmitGooglePay(
-                            paymentDataJson = json,
-                            paymentMethodType = paymentMethodType
+                    val preferredList =
+                      remember(merchantPreferredPaymentMethod) {
+                        merchantPreferredPaymentMethod
+                          ?.filter { it in XenditComponentsPaymentType.SUPPORTED }
+                          ?: emptyList()
+                      }
+                    val shouldShowGooglePay =
+                      XenditComponentsPaymentType.GOOGLE_PAY in XenditComponentsPaymentType.SUPPORTED &&
+                        (preferredList.isEmpty() ||
+                          XenditComponentsPaymentType.GOOGLE_PAY in preferredList)
+                    if (shouldShowGooglePay) {
+                      GooglePaySection(
+                        googlePay = mviState.sessionResponse?.digitalWallets?.googlePay,
+                        businessName = mviState.sessionResponse?.business?.name.orEmpty(),
+                        paymentSessionId = mviState.sessionResponse?.session?.paymentSessionId,
+                        amount = mviState.sessionResponse?.session?.amount,
+                        currency = mviState.sessionResponse?.session?.currency,
+                        country = mviState.sessionResponse?.session?.country,
+                        isTest = !CoreSdkComponent.isProdLive(),
+                        isLoading = mviState.isLoading,
+                        onTrackClick = {
+                          viewModel.trackDigitalWallet()
+                        },
+                        onPaymentDataReceived = { json, paymentMethodType ->
+                          viewModel.dispatch(
+                            ActionIntent.SubmitGooglePay(
+                              paymentDataJson = json,
+                              paymentMethodType = paymentMethodType
+                            )
                           )
-                        )
-                      },
-                      onPaymentFailed = { err ->
-                        viewModel.dispatch(
-                          ActionIntent.GooglePayPaymentFailed(
-                            code = err.code,
-                            title = err.title,
-                            message = err.message
+                        },
+                        onPaymentFailed = { err ->
+                          viewModel.dispatch(
+                            ActionIntent.GooglePayPaymentFailed(
+                              code = err.code,
+                              title = err.title,
+                              message = err.message
+                            )
                           )
-                        )
-                      },
-                      modifier = Modifier.padding(top = 8.dp)
-                    )
+                        },
+                        modifier = Modifier.padding(top = 8.dp)
+                      )
+                    }
 
                     PaymentMethodsUI(
                       session = mviState.sessionResponse?.session,

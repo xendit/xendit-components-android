@@ -54,6 +54,9 @@ enum class XenditComponentsPaymentType(val value: String) {
   @SerializedName("OVER_THE_COUNTER")
   OVER_THE_COUNTER("OVER_THE_COUNTER"),
 
+  @SerializedName("GOOGLE_PAY")
+  GOOGLE_PAY("GOOGLE_PAY"),
+
   @FallbackValue
   @SerializedName("UNKNOWN")
   UNKNOWN("UNKNOWN");
@@ -67,7 +70,8 @@ enum class XenditComponentsPaymentType(val value: String) {
         BANK_TRANSFER,
         DIRECT_DEBIT,
         VIRTUAL_ACCOUNT,
-        OVER_THE_COUNTER
+        OVER_THE_COUNTER,
+        GOOGLE_PAY
       )
     val BLACKLISTED_CHANNEL = listOf(
       "BRI_DIRECT_DEBIT"

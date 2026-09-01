@@ -458,6 +458,7 @@ private fun fallbackDisplayNameIconForUiGroup(uiGroup: String): Pair<String, Int
     XenditComponentsPaymentType.DIRECT_DEBIT.value.lowercase() -> "Online Banking" to R.drawable.ic_bank_va
     XenditComponentsPaymentType.VIRTUAL_ACCOUNT.value.lowercase() -> "Virtual Account" to R.drawable.ic_bank_va
     XenditComponentsPaymentType.OVER_THE_COUNTER.value.lowercase() -> "Over The Counter" to R.drawable.ic_bank_va
+    XenditComponentsPaymentType.GOOGLE_PAY.value.lowercase() -> "Google Pay" to R.drawable.ic_google_pay
     else -> uiGroup.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() } to R.drawable.ic_bank_va // Fallback icon
   }
 }
