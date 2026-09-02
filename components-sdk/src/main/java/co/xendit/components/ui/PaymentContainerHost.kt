@@ -83,7 +83,9 @@ import co.xendit.components.ui.card.CardIntent
 import co.xendit.components.ui.card.CardViewModel
 import co.xendit.components.ui.components.molecule.AwaitingPaymentDialog
 import co.xendit.components.ui.components.molecule.GenericHeader
+import co.xendit.components.data.model.BffGooglePayAllowedMethod
 import co.xendit.components.ui.digital_wallet.GooglePaySection
+import co.xendit.components.ui.filterGooglePayAllowedMethodsByAmount
 import co.xendit.components.ui.helper.FailureCodeMessageUtil
 import co.xendit.components.ui.helper.FormChecker.validateAllField
 import co.xendit.components.ui.method.PaymentMethodsUI
@@ -595,18 +597,35 @@ internal fun PaymentContainerHost(
                           ?.filter { it in XenditComponentsPaymentType.SUPPORTED }
                           ?: emptyList()
                       }
+                    val googlePayConfig = mviState.sessionResponse?.digitalWallets?.googlePay
+                    val filteredGooglePayMethods: List<BffGooglePayAllowedMethod> =
+                      remember(
+                        googlePayConfig,
+                        mviState.channels,
+                        mviState.sessionResponse?.session?.amount,
+                        mviState.sessionType,
+                      ) {
+                        filterGooglePayAllowedMethodsByAmount(
+                          googlePay = googlePayConfig,
+                          channels = mviState.channels,
+                          amount = mviState.sessionResponse?.session?.amount,
+                          sessionType = mviState.sessionType,
+                        )
+                      }
                     val shouldShowGooglePay =
-                      XenditComponentsPaymentType.GOOGLE_PAY in XenditComponentsPaymentType.SUPPORTED &&
-                        (preferredList.isEmpty() ||
-                          XenditComponentsPaymentType.GOOGLE_PAY in preferredList)
+                      shouldRenderGooglePaySection(
+                        sessionResponse = mviState.sessionResponse,
+                        merchantPreferredPaymentMethod = preferredList,
+                      ) && filteredGooglePayMethods.isNotEmpty()
                     if (shouldShowGooglePay) {
                       GooglePaySection(
-                        googlePay = mviState.sessionResponse?.digitalWallets?.googlePay,
+                        googlePay = googlePayConfig,
                         businessName = mviState.sessionResponse?.business?.name.orEmpty(),
                         paymentSessionId = mviState.sessionResponse?.session?.paymentSessionId,
                         amount = mviState.sessionResponse?.session?.amount,
                         currency = mviState.sessionResponse?.session?.currency,
                         country = mviState.sessionResponse?.session?.country,
+                        filteredAllowedMethods = filteredGooglePayMethods,
                         isTest = !CoreSdkComponent.isProdLive(),
                         isLoading = mviState.isLoading,
                         onPaymentDataReceived = { json, paymentMethodType ->

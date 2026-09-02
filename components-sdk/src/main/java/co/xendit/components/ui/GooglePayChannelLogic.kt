@@ -1,12 +1,49 @@
 package co.xendit.components.ui
 
 import co.xendit.components.XenditComponentsPaymentType
+import co.xendit.components.data.model.BffChannel
 import co.xendit.components.data.model.BffGooglePay
 import co.xendit.components.data.model.BffGooglePayAllowedMethod
+import co.xendit.components.data.model.BffSessionType
+import co.xendit.components.data.model.SessionResponse
+import co.xendit.components.data.model.isAvailableForAmount
+import java.math.BigDecimal
 
 internal sealed interface ResolvedGooglePayChannel {
   data class Ok(val code: String) : ResolvedGooglePayChannel
   data class Err(val userMessage: String) : ResolvedGooglePayChannel
+}
+
+internal fun filterGooglePayAllowedMethodsByAmount(
+  googlePay: BffGooglePay?,
+  channels: List<BffChannel>,
+  amount: BigDecimal?,
+  sessionType: BffSessionType?,
+): List<BffGooglePayAllowedMethod> {
+  if (googlePay == null) return emptyList()
+  val channelsByCode = channels.associateBy { it.channelCode }
+  return googlePay.allowedPaymentMethods.filter { method ->
+    val channel = channelsByCode[method.channelCode]
+    channel != null && channel.isAvailableForAmount(amount = amount, sessionType = sessionType)
+  }
+}
+
+internal fun shouldRenderGooglePaySection(
+  sessionResponse: SessionResponse?,
+  merchantPreferredPaymentMethod: List<XenditComponentsPaymentType>?,
+  supportedPaymentTypes: Collection<XenditComponentsPaymentType> = XenditComponentsPaymentType.SUPPORTED,
+): Boolean {
+  if (XenditComponentsPaymentType.GOOGLE_PAY !in supportedPaymentTypes) return false
+  val preferredList = merchantPreferredPaymentMethod
+    ?.filter { it in supportedPaymentTypes }
+    .orEmpty()
+  if (
+    preferredList.isNotEmpty() &&
+    XenditComponentsPaymentType.GOOGLE_PAY !in preferredList
+  ) {
+    return false
+  }
+  return sessionResponse?.digitalWallets?.googlePay != null
 }
 
 internal fun resolveGooglePayChannelCodeOrError(

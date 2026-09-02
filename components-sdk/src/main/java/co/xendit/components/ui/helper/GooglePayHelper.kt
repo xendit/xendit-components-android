@@ -2,6 +2,7 @@ package co.xendit.components.ui.helper
 
 import android.app.Activity
 import co.xendit.components.data.model.BffGooglePay
+import co.xendit.components.data.model.BffGooglePayAllowedMethod
 import com.google.android.gms.wallet.IsReadyToPayRequest
 import com.google.android.gms.wallet.PaymentDataRequest
 import com.google.android.gms.wallet.PaymentsClient
@@ -27,19 +28,24 @@ internal object GooglePayHelper {
     return Wallet.getPaymentsClient(activity, walletOptions)
   }
 
-  private fun allowedPaymentMethodsJsonArray(googlePay: BffGooglePay): JSONArray {
+  private fun allowedPaymentMethodsJsonArray(
+    allowedPaymentMethods: List<BffGooglePayAllowedMethod>
+  ): JSONArray {
     val allowedMethods = JSONArray()
-    googlePay.allowedPaymentMethods.forEach { method ->
+    allowedPaymentMethods.forEach { method ->
       allowedMethods.put(JSONObject(gson.toJson(method.paymentMethodSpecification)))
     }
     return allowedMethods
   }
 
-  fun createIsReadyToPayRequest(googlePay: BffGooglePay): IsReadyToPayRequest {
+  fun createIsReadyToPayRequest(
+    googlePay: BffGooglePay,
+    allowedPaymentMethods: List<BffGooglePayAllowedMethod> = googlePay.allowedPaymentMethods,
+  ): IsReadyToPayRequest {
     val json = JSONObject()
       .put("apiVersion", 2)
       .put("apiVersionMinor", 0)
-      .put("allowedPaymentMethods", allowedPaymentMethodsJsonArray(googlePay))
+      .put("allowedPaymentMethods", allowedPaymentMethodsJsonArray(allowedPaymentMethods))
 
     return requireNotNull(IsReadyToPayRequest.fromJson(json.toString()))
   }
@@ -50,12 +56,13 @@ internal object GooglePayHelper {
     paymentSessionId: String,
     amount: BigDecimal,
     currency: String,
-    country: String
+    country: String,
+    allowedPaymentMethods: List<BffGooglePayAllowedMethod> = googlePay.allowedPaymentMethods,
   ): PaymentDataRequest {
     val json = JSONObject()
       .put("apiVersion", 2)
       .put("apiVersionMinor", 0)
-      .put("allowedPaymentMethods", allowedPaymentMethodsJsonArray(googlePay))
+      .put("allowedPaymentMethods", allowedPaymentMethodsJsonArray(allowedPaymentMethods))
       .put("emailRequired", true)
       .put(
         "merchantInfo",

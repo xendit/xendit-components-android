@@ -1,8 +1,15 @@
 package co.xendit.components.ui
 
+import co.xendit.components.XenditComponentsPaymentType
+import co.xendit.components.data.model.BffChannel
+import co.xendit.components.data.model.BffDigitalWallets
 import co.xendit.components.data.model.BffGooglePay
 import co.xendit.components.data.model.BffGooglePayAllowedMethod
+import co.xendit.components.data.model.BffSession
+import co.xendit.components.data.model.BffSessionType
+import co.xendit.components.data.model.SessionResponse
 import com.google.gson.JsonObject
+import java.math.BigDecimal
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -10,6 +17,15 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class GooglePayChannelLogicTest {
+
+  private fun sessionResponseWithGooglePay(googlePay: BffGooglePay?): SessionResponse {
+    return SessionResponse(
+      session = null,
+      paymentChannels = emptyList(),
+      digitalWallets = BffDigitalWallets(googlePay = googlePay, applePay = null),
+      succeededChannel = null
+    )
+  }
 
   private fun allowedMethod(
     channelCode: String,
@@ -21,6 +37,58 @@ class GooglePayChannelLogicTest {
 
   private fun googlePayWith(vararg methods: BffGooglePayAllowedMethod): BffGooglePay {
     return BffGooglePay(merchantId = "merch-TEST", allowedPaymentMethods = methods.toList())
+  }
+
+  private fun channel(
+    channelCode: String,
+    minAmount: BigDecimal? = null,
+    maxAmount: BigDecimal? = null,
+    pmType: XenditComponentsPaymentType? = null,
+  ): BffChannel {
+    return BffChannel(
+      brandName = channelCode,
+      brandLogoUrl = null,
+      brandColor = "#000000",
+      pmType = pmType,
+      uiGroup = channelCode,
+      channelCode = channelCode,
+      allowPayWithoutSave = true,
+      allowSave = false,
+      minAmount = minAmount,
+      maxAmount = maxAmount,
+      requiresCustomerDetails = null,
+      card = null,
+      form = null,
+      instructions = null,
+    )
+  }
+
+  private fun sessionResponseForGooglePay(
+    googlePay: BffGooglePay?,
+    session: BffSession?,
+    channels: List<BffChannel>,
+  ): SessionResponse {
+    return SessionResponse(
+      session = session,
+      paymentChannels = channels,
+      digitalWallets = BffDigitalWallets(googlePay = googlePay, applePay = null),
+      succeededChannel = null,
+    )
+  }
+
+  private fun paySession(amount: BigDecimal): BffSession {
+    return BffSession(
+      id = "session-id",
+      paymentSessionId = "pay-session-id",
+      status = null,
+      sessionType = BffSessionType.PAY,
+      allowSavePaymentMethod = null,
+      referenceId = null,
+      currency = "IDR",
+      country = "ID",
+      amount = amount,
+      items = emptyList(),
+    )
   }
 
   // ── buildGooglePayChannelProperties ────────────────────────────────────────────────
@@ -219,5 +287,174 @@ class GooglePayChannelLogicTest {
       text.contains("(none)"))
     assertNull(null)
     assertFalse(false)
+  }
+
+  @Test fun `shouldRenderGooglePaySection returns false when session has no google pay config`() {
+    assertFalse(
+      shouldRenderGooglePaySection(
+        sessionResponse = sessionResponseWithGooglePay(googlePay = null),
+        merchantPreferredPaymentMethod = listOf(XenditComponentsPaymentType.GOOGLE_PAY)
+      )
+    )
+  }
+
+  @Test fun `shouldRenderGooglePaySection returns true when config exists and google pay is allowed`() {
+    assertTrue(
+      shouldRenderGooglePaySection(
+        sessionResponse = sessionResponseWithGooglePay(
+          googlePay = googlePayWith(allowedMethod("CARDS", "CARD")),
+        ),
+        merchantPreferredPaymentMethod = emptyList(),
+      )
+    )
+  }
+
+  @Test fun `shouldRenderGooglePaySection returns false when preferred methods exclude google pay`() {
+    assertFalse(
+      shouldRenderGooglePaySection(
+        sessionResponse = sessionResponseWithGooglePay(
+          googlePay = googlePayWith(allowedMethod("CARDS", "CARD")),
+        ),
+        merchantPreferredPaymentMethod = listOf(XenditComponentsPaymentType.CARDS),
+      )
+    )
+  }
+
+  // ── filterGooglePayAllowedMethodsByAmount / min-max gating ────────────────────────
+
+  @Test fun `filterGooglePayAllowedMethodsByAmount keeps allowed methods whose channel satisfies amount range`() {
+    val googlePay = googlePayWith(
+      allowedMethod("CARDS", "CARD"),
+      allowedMethod("PAYPAL", "PAYPAL"),
+    )
+    val channels = listOf(
+      channel("CARDS", minAmount = BigDecimal(5000), maxAmount = BigDecimal(50000)),
+      channel("PAYPAL", minAmount = BigDecimal(100000), maxAmount = BigDecimal(1_000_000)),
+    )
+
+    val result = filterGooglePayAllowedMethodsByAmount(
+      googlePay = googlePay,
+      channels = channels,
+      amount = BigDecimal(20000),
+      sessionType = BffSessionType.PAY,
+    )
+
+    assertEquals(1, result.size)
+    assertEquals("CARDS", result.single().channelCode)
+  }
+
+  @Test fun `filterGooglePayAllowedMethodsByAmount returns empty when amount below min for all allowed methods`() {
+    val googlePay = googlePayWith(
+      allowedMethod("CARDS", "CARD"),
+      allowedMethod("PAYPAL", "PAYPAL"),
+    )
+    val channels = listOf(
+      channel("CARDS", minAmount = BigDecimal(50000)),
+      channel("PAYPAL", minAmount = BigDecimal(100000)),
+    )
+
+    val result = filterGooglePayAllowedMethodsByAmount(
+      googlePay = googlePay,
+      channels = channels,
+      amount = BigDecimal(1000),
+      sessionType = BffSessionType.PAY,
+    )
+
+    assertTrue(result.isEmpty())
+  }
+
+  @Test fun `filterGooglePayAllowedMethodsByAmount returns empty when amount above max for all allowed methods`() {
+    val googlePay = googlePayWith(allowedMethod("CARDS", "CARD"))
+    val channels = listOf(channel("CARDS", maxAmount = BigDecimal(50000)))
+
+    val result = filterGooglePayAllowedMethodsByAmount(
+      googlePay = googlePay,
+      channels = channels,
+      amount = BigDecimal(60000),
+      sessionType = BffSessionType.PAY,
+    )
+
+    assertTrue(result.isEmpty())
+  }
+
+  @Test fun `filterGooglePayAllowedMethodsByAmount ignores amount when sessionType is not PAY`() {
+    val googlePay = googlePayWith(allowedMethod("CARDS", "CARD"))
+    val channels = listOf(channel("CARDS", minAmount = BigDecimal(50000), maxAmount = BigDecimal(100000)))
+
+    val result = filterGooglePayAllowedMethodsByAmount(
+      googlePay = googlePay,
+      channels = channels,
+      amount = BigDecimal(1000),
+      sessionType = BffSessionType.SAVE,
+    )
+
+    assertEquals(1, result.size)
+    assertEquals("CARDS", result.single().channelCode)
+  }
+
+  @Test fun `host show condition returns false when all allowed methods are filtered out by min and max amount`() {
+    val googlePay = googlePayWith(allowedMethod("CARDS", "CARD"))
+    val channels = listOf(
+      channel("CARDS", minAmount = BigDecimal(100000), maxAmount = BigDecimal(500000))
+    )
+    val response = sessionResponseForGooglePay(
+      googlePay = googlePay,
+      session = paySession(amount = BigDecimal(5000)),
+      channels = channels,
+    )
+    val filtered = filterGooglePayAllowedMethodsByAmount(
+      googlePay = googlePay,
+      channels = channels,
+      amount = response.session?.amount,
+      sessionType = response.session?.sessionType,
+    )
+    val shouldShow = shouldRenderGooglePaySection(
+      sessionResponse = response,
+      merchantPreferredPaymentMethod = listOf(XenditComponentsPaymentType.GOOGLE_PAY),
+    ) && filtered.isNotEmpty()
+
+    assertFalse(shouldShow)
+  }
+
+  @Test fun `host show condition returns true when at least one allowed method passes min and max amount filter`() {
+    val googlePay = googlePayWith(
+      allowedMethod("CARDS", "CARD"),
+      allowedMethod("PAYPAL", "PAYPAL"),
+    )
+    val channels = listOf(
+      channel("CARDS", minAmount = BigDecimal(100000)),
+      channel("PAYPAL", minAmount = BigDecimal(10000), maxAmount = BigDecimal(500000)),
+    )
+    val response = sessionResponseForGooglePay(
+      googlePay = googlePay,
+      session = paySession(amount = BigDecimal(20000)),
+      channels = channels,
+    )
+    val filtered = filterGooglePayAllowedMethodsByAmount(
+      googlePay = googlePay,
+      channels = channels,
+      amount = response.session?.amount,
+      sessionType = response.session?.sessionType,
+    )
+    val shouldShow = shouldRenderGooglePaySection(
+      sessionResponse = response,
+      merchantPreferredPaymentMethod = emptyList(),
+    ) && filtered.isNotEmpty()
+
+    assertTrue(shouldShow)
+  }
+
+  @Test fun `filterGooglePayAllowedMethodsByAmount ignores allowed methods whose channelCode is absent from channels list`() {
+    val googlePay = googlePayWith(allowedMethod("CARDS", "CARD"))
+    val channels = emptyList<BffChannel>()
+
+    val result = filterGooglePayAllowedMethodsByAmount(
+      googlePay = googlePay,
+      channels = channels,
+      amount = BigDecimal(20000),
+      sessionType = BffSessionType.PAY,
+    )
+
+    assertTrue(result.isEmpty())
   }
 }
