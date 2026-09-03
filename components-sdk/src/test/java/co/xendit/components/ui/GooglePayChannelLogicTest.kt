@@ -17,16 +17,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class GooglePayChannelLogicTest {
-
-  private fun sessionResponseWithGooglePay(googlePay: BffGooglePay?): SessionResponse {
-    return SessionResponse(
-      session = null,
-      paymentChannels = emptyList(),
-      digitalWallets = BffDigitalWallets(googlePay = googlePay, applePay = null),
-      succeededChannel = null
-    )
-  }
-
   private fun allowedMethod(
     channelCode: String,
     type: String
@@ -64,9 +54,9 @@ class GooglePayChannelLogicTest {
   }
 
   private fun sessionResponseForGooglePay(
-    googlePay: BffGooglePay?,
-    session: BffSession?,
-    channels: List<BffChannel>,
+    googlePay: BffGooglePay? = null,
+    session: BffSession? = null,
+    channels: List<BffChannel> = listOf(),
   ): SessionResponse {
     return SessionResponse(
       session = session,
@@ -292,7 +282,7 @@ class GooglePayChannelLogicTest {
   @Test fun `shouldRenderGooglePaySection returns false when session has no google pay config`() {
     assertFalse(
       shouldRenderGooglePaySection(
-        sessionResponse = sessionResponseWithGooglePay(googlePay = null),
+        googlePay = null,
         merchantPreferredPaymentMethod = listOf(XenditComponentsPaymentType.GOOGLE_PAY)
       )
     )
@@ -301,9 +291,7 @@ class GooglePayChannelLogicTest {
   @Test fun `shouldRenderGooglePaySection returns true when config exists and google pay is allowed`() {
     assertTrue(
       shouldRenderGooglePaySection(
-        sessionResponse = sessionResponseWithGooglePay(
-          googlePay = googlePayWith(allowedMethod("CARDS", "CARD")),
-        ),
+        googlePay = googlePayWith(allowedMethod("CARDS", "CARD")),
         merchantPreferredPaymentMethod = emptyList(),
       )
     )
@@ -312,9 +300,7 @@ class GooglePayChannelLogicTest {
   @Test fun `shouldRenderGooglePaySection returns false when preferred methods exclude google pay`() {
     assertFalse(
       shouldRenderGooglePaySection(
-        sessionResponse = sessionResponseWithGooglePay(
-          googlePay = googlePayWith(allowedMethod("CARDS", "CARD")),
-        ),
+        googlePay = googlePayWith(allowedMethod("CARDS", "CARD")),
         merchantPreferredPaymentMethod = listOf(XenditComponentsPaymentType.CARDS),
       )
     )
@@ -409,7 +395,7 @@ class GooglePayChannelLogicTest {
       sessionType = response.session?.sessionType,
     )
     val shouldShow = shouldRenderGooglePaySection(
-      sessionResponse = response,
+      googlePay = googlePay,
       merchantPreferredPaymentMethod = listOf(XenditComponentsPaymentType.GOOGLE_PAY),
     ) && filtered.isNotEmpty()
 
@@ -437,7 +423,7 @@ class GooglePayChannelLogicTest {
       sessionType = response.session?.sessionType,
     )
     val shouldShow = shouldRenderGooglePaySection(
-      sessionResponse = response,
+      googlePay = googlePay,
       merchantPreferredPaymentMethod = emptyList(),
     ) && filtered.isNotEmpty()
 

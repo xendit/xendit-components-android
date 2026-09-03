@@ -614,7 +614,7 @@ internal fun PaymentContainerHost(
                       }
                     val shouldShowGooglePay =
                       shouldRenderGooglePaySection(
-                        sessionResponse = mviState.sessionResponse,
+                        googlePay = googlePayConfig,
                         merchantPreferredPaymentMethod = preferredList,
                       ) && filteredGooglePayMethods.isNotEmpty()
                     if (shouldShowGooglePay) {

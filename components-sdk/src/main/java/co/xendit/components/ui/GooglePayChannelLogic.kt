@@ -29,7 +29,7 @@ internal fun filterGooglePayAllowedMethodsByAmount(
 }
 
 internal fun shouldRenderGooglePaySection(
-  sessionResponse: SessionResponse?,
+  googlePay: BffGooglePay?,
   merchantPreferredPaymentMethod: List<XenditComponentsPaymentType>?,
   supportedPaymentTypes: Collection<XenditComponentsPaymentType> = XenditComponentsPaymentType.SUPPORTED,
 ): Boolean {
@@ -43,7 +43,7 @@ internal fun shouldRenderGooglePaySection(
   ) {
     return false
   }
-  return sessionResponse?.digitalWallets?.googlePay != null
+  return googlePay != null
 }
 
 internal fun resolveGooglePayChannelCodeOrError(
