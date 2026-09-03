@@ -104,8 +104,8 @@ internal fun XenditTextField(
   val interactionSource = remember { MutableInteractionSource() }
   val showErrorText = isError && !errorMessage.isNullOrBlank()
   val semanticsContentType = remember(autofillHints) { resolveSemanticsContentTypes(autofillHints) }
-  val onFillValue: (String) -> Unit = remember(maxLength, onValueChange) {
-    { newValue -> if (newValue.length <= maxLength) onValueChange(newValue) }
+  val onFillValue: (String) -> Unit = { newValue ->
+    if (newValue.length <= maxLength) onValueChange(newValue)
   }
 
   Column(
@@ -121,7 +121,7 @@ internal fun XenditTextField(
 
     BasicTextField(
       value = value,
-      onValueChange = { if (it.length <= maxLength) onValueChange(it) },
+      onValueChange = onFillValue,
       modifier = Modifier
         .fillMaxWidth()
         .then(if (testTag.isNotBlank()) Modifier.testTag(testTag) else Modifier)

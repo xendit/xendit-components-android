@@ -26,6 +26,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.Dp
@@ -638,7 +639,6 @@ private fun FormFieldItem(
         testTag = propertyKey
       )
     }
-
     is FieldType.Country -> {
       CountryField(
         value = currentValue,
@@ -723,6 +723,13 @@ private fun FormFieldItem(
         autofillHints = field.type.defaultAutofillHints,
         keyboardOptions = if (field.type is FieldType.Text) {
           resolveTextKeyboardOptions(field.type)
+        } else if (field.type is FieldType.Email) {
+          KeyboardOptions(
+            keyboardType = KeyboardType.Email,
+            capitalization = KeyboardCapitalization.None,
+            autoCorrectEnabled = true,
+            imeAction = ImeAction.Next
+          )
         } else {
           KeyboardOptions.Default
         },
