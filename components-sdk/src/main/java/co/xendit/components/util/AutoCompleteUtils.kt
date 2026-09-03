@@ -22,7 +22,7 @@ internal val FieldType.defaultAutofillHints: List<String>
     is FieldType.Text -> resolveTextAutofillHints(this)
   }
 
-private fun resolveTextKeyboardOptions(textType: FieldType.Text): KeyboardOptions {
+internal fun resolveTextKeyboardOptions(textType: FieldType.Text): KeyboardOptions {
   val autocomplete = textType.autocomplete
   val keyboardType = when {
     textType.numeric == true -> KeyboardType.Number
@@ -42,14 +42,10 @@ private fun resolveTextKeyboardOptions(textType: FieldType.Text): KeyboardOption
       else KeyboardCapitalization.Sentences
     }
   }
-  val shouldAutoCorrect = when (autocomplete) {
-    "email", "phone_number", "tel", "off" -> false
-    else -> textType.numeric != true
-  }
   return KeyboardOptions(
     keyboardType = keyboardType,
     capitalization = capitalization,
-    autoCorrectEnabled = shouldAutoCorrect,
+    autoCorrectEnabled = true,
     imeAction = ImeAction.Next
   )
 }

@@ -314,6 +314,3 @@ internal fun ChannelFormField.primaryChannelPropertyKey(): String {
     else -> ""
   }
 }
-
-
-

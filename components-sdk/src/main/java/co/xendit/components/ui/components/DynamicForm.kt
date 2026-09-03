@@ -54,6 +54,7 @@ import co.xendit.components.ui.helper.FormChecker.validateField
 import co.xendit.components.ui.helper.toLabelDisplay
 import co.xendit.components.ui.style.xenditAppearance
 import co.xendit.components.util.defaultAutofillHints
+import co.xendit.components.util.resolveTextKeyboardOptions
 
 @Composable
 internal fun DynamicForm(
@@ -720,23 +721,11 @@ private fun FormFieldItem(
         isError = isError,
         errorMessage = errorMessage,
         autofillHints = field.type.defaultAutofillHints,
-        keyboardOptions = KeyboardOptions(
-          capitalization = KeyboardCapitalization.Words,
-          autoCorrectEnabled = true,
-          keyboardType = when (field.type) {
-            is FieldType.Text -> {
-              if (field.type.numeric == true) {
-                KeyboardType.Number
-              } else {
-                KeyboardType.Unspecified
-              }
-            }
-
-            else -> {
-              KeyboardType.Unspecified
-            }
-          }
-        ),
+        keyboardOptions = if (field.type is FieldType.Text) {
+          resolveTextKeyboardOptions(field.type)
+        } else {
+          KeyboardOptions.Default
+        },
         singleLine = true,
         maxLength = if (field.type is FieldType.Text) field.type.maxLength
           ?: Int.MAX_VALUE else Int.MAX_VALUE,
