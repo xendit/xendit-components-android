@@ -30,7 +30,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import co.xendit.components.R
 import co.xendit.components.ui.XenditTestTags
 import co.xendit.components.ui.helper.SdkImageLoader
 import co.xendit.components.ui.style.XenditAppearance
@@ -108,7 +107,7 @@ internal fun AwaitingPaymentDialog(
         if (channelLogoRes != null) {
           Image(
             painter = painterResource(id = channelLogoRes),
-            contentDescription = "Google Logo",
+            contentDescription = "Logo",
             modifier = Modifier.size(width = 64.dp, height = 40.dp)
           )
         }
