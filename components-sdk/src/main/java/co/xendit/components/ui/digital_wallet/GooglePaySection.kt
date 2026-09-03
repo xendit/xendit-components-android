@@ -42,6 +42,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import co.xendit.components.R
 import co.xendit.components.data.model.BffGooglePay
+import co.xendit.components.data.model.BffGooglePayAllowedMethod
 import co.xendit.components.ui.XenditTestTags
 import co.xendit.components.ui.helper.GooglePayHelper
 import co.xendit.components.ui.style.xenditAppearance
@@ -134,6 +135,7 @@ internal fun GooglePaySection(
   amount: BigDecimal?,
   currency: String?,
   country: String?,
+  filteredAllowedMethods: List<BffGooglePayAllowedMethod>,
   isTest: Boolean,
   isLoading: Boolean,
   onPaymentDataReceived: (paymentDataJson: String, paymentMethodType: String?) -> Unit,
@@ -144,7 +146,8 @@ internal fun GooglePaySection(
     paymentSessionId == null ||
     amount == null ||
     currency.isNullOrBlank() ||
-    country.isNullOrBlank()
+    country.isNullOrBlank() ||
+    filteredAllowedMethods.isEmpty()
   ) return
 
   val context = LocalContext.current
@@ -156,8 +159,11 @@ internal fun GooglePaySection(
 
   var isReady by remember { mutableStateOf(false) }
 
-  DisposableEffect(googlePay) {
-    val readyRequest = GooglePayHelper.createIsReadyToPayRequest(googlePay)
+  DisposableEffect(filteredAllowedMethods, paymentsClient) {
+    val readyRequest = GooglePayHelper.createIsReadyToPayRequest(
+      googlePay = googlePay,
+      allowedPaymentMethods = filteredAllowedMethods,
+    )
     val task = paymentsClient.isReadyToPay(readyRequest)
     task.addOnSuccessListener { result ->
       isReady = result
@@ -169,7 +175,15 @@ internal fun GooglePaySection(
   }
 
   val paymentDataRequest =
-    remember(googlePay, businessName, paymentSessionId, amount, currency, country) {
+    remember(
+      googlePay,
+      businessName,
+      paymentSessionId,
+      amount,
+      currency,
+      country,
+      filteredAllowedMethods,
+    ) {
       runCatching {
         GooglePayHelper.createPaymentDataRequest(
           googlePay = googlePay,
@@ -177,7 +191,8 @@ internal fun GooglePaySection(
           paymentSessionId = paymentSessionId,
           amount = amount,
           currency = currency,
-          country = country
+          country = country,
+          allowedPaymentMethods = filteredAllowedMethods,
         )
       }.getOrNull()
     }
