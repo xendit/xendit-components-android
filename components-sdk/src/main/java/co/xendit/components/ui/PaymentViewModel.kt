@@ -66,6 +66,7 @@ internal data class PaymentState(
 internal sealed interface AwaitingPaymentAction {
   data object Deeplink : AwaitingPaymentAction
   data object EmptyPaymentActions : AwaitingPaymentAction
+  data object GooglePayProcessing : AwaitingPaymentAction
 }
 
 internal data class ChannelVariantChannels(
@@ -458,7 +459,7 @@ internal class PaymentViewModel(
     if (channelProperties.isEmpty()) {
       onChallengeCompletedInternal(true)
     } else {
-      return submitPaymentInternal(errorPrefix = "Google Pay Payment") { authKey, _key, _paySid ->
+      return submitPaymentInternal(isGooglePay = true, errorPrefix = "Google Pay Payment") { authKey, _key, _paySid ->
         PaymentRequest(
           sessionId = authKey,
           channelCode = channelCode,
@@ -491,6 +492,7 @@ internal class PaymentViewModel(
   }
 
   private inline fun submitPaymentInternal(
+    isGooglePay: Boolean = false,
     errorPrefix: String,
     crossinline buildRequest: suspend (
       sessionAuthKey: String,
@@ -501,8 +503,8 @@ internal class PaymentViewModel(
     viewModelScope.launch {
       _state.update {
         it.copy(
-          isLoading = true,
-          awaitingPaymentAction = null,
+          isLoading = if (isGooglePay) false else true,
+          awaitingPaymentAction = if (isGooglePay) AwaitingPaymentAction.GooglePayProcessing else null,
           errorMessage = null,
           paymentResponse = null,
           paymentActionRedirect = null,
