@@ -14,9 +14,11 @@ import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.lifecycle.setViewTreeViewModelStoreOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import co.xendit.components.core.CoreSdkComponent
+import co.xendit.components.core.TelemetrySdkComponent
 import co.xendit.components.core.model.FallbackValue
 import co.xendit.components.data.model.XenditError
 import co.xendit.components.data.model.XenditPaymentResult
+import co.xendit.components.telemetry.TelemetryHostResolver
 import co.xendit.components.ui.PaymentContainerHost
 import co.xendit.components.ui.PaymentContainerHostSignals
 import co.xendit.components.ui.PaymentContainerPresentation
@@ -91,6 +93,7 @@ object XenditComponents {
   private var activeActivity: ComponentActivity? = null
   private var activeMerchantPreferredPm: List<XenditComponentsPaymentType>? = null
   private var componentCallbacks: android.content.ComponentCallbacks2? = null
+  private var processLifecycleObserver: DefaultLifecycleObserver? = null
 
   /**
    * Global configuration for the SDK appearance. This is called before show() to apply custom styles.
@@ -172,6 +175,7 @@ object XenditComponents {
       throw IllegalArgumentException("Context must be an Activity to show the Payment SDK.")
     }
 
+    CoreSdkComponent.init(activity.applicationContext)
     CoreSdkComponent.headerProvider.setMerchantAppId(activity.packageName ?: "")
 
     this.merchantPreferredPaymentMethod = merchantPreferredPaymentMethod
@@ -201,6 +205,17 @@ object XenditComponents {
     activeActivity = activity
     activeMerchantPreferredPm = merchantPreferredPaymentMethod
 
+    // ===== Telemetry: bind host + session auth key early, payment_session_id from FetchSession later.
+    val telemetryHost = TelemetryHostResolver.fromHostId(keys.hostId)
+    runCatching {
+      safeSessionTelemetry()?.let { tm ->
+        tm.discardAll()
+        tm.bindSession(host = telemetryHost, sessionId = null, authId = keys.sessionAuthKey)
+      }
+    }
+    // ===== End telemetry setup
+
+
     // ===== Mitigation 3: Aggressively purge state when Android signals memory pressure =====
     val callbacks =
       object : android.content.ComponentCallbacks2 {
@@ -210,24 +225,41 @@ object XenditComponents {
           // On any of these, do a full wipe (including form values):
           if (level >= android.content.ComponentCallbacks2.TRIM_MEMORY_BACKGROUND) {
             PaymentContainerHostSignals.onWipeTriggerStatic?.invoke()
+            runCatching { safeSessionTelemetry()?.discardAll() }
           }
         }
 
         override fun onConfigurationChanged(newConfig: android.content.res.Configuration) = Unit
         override fun onLowMemory() {
           PaymentContainerHostSignals.onWipeTriggerStatic?.invoke()
+          runCatching { safeSessionTelemetry()?.discardAll() }
         }
       }
     this.componentCallbacks = callbacks
     runCatching { activity.registerComponentCallbacks(callbacks) }
 
     lifecycleOwner = activity
-    lifecycleObserver =
-      object : DefaultLifecycleObserver {
-        override fun onDestroy(owner: LifecycleOwner) {
-          cleanup()
-        }
+
+    // Single onStop flush callback, reused for both lifecycle owners to avoid duplicate code.
+    val sharedFlushObserver = object : DefaultLifecycleObserver {
+      override fun onStop(owner: LifecycleOwner) {
+        runCatching { safeSessionTelemetry()?.flush() }
       }
+    }
+
+    // Process-scoped observer (app-wide background). Mirrors Web visibilitychange→hidden flush.
+    this.processLifecycleObserver = sharedFlushObserver
+    runCatching {
+      androidx.lifecycle.ProcessLifecycleOwner.get().lifecycle.addObserver(sharedFlushObserver)
+    }
+
+    // Activity-scoped observer: extends sharedFlushObserver with onDestroy -> flush + cleanup().
+    lifecycleObserver = object : DefaultLifecycleObserver by sharedFlushObserver {
+      override fun onDestroy(owner: LifecycleOwner) {
+        runCatching { safeSessionTelemetry()?.flush() }
+        cleanup()
+      }
+    }
     activity.lifecycle.addObserver(checkNotNull(lifecycleObserver))
 
     currentCallback = onPaymentResult
@@ -283,7 +315,9 @@ object XenditComponents {
   @Keep
   fun wipeAllSensitiveData() {
     PaymentContainerHostSignals.onWipeTriggerStatic?.invoke()
+    runCatching { safeSessionTelemetry()?.discardAll() }
   }
+
 
   /**
    * Runs an ART garbage-collection pass from the **merchant app layer** to collect any
@@ -317,11 +351,20 @@ object XenditComponents {
     PaymentContainerHostSignals.onWipeTriggerStatic = null
     PaymentContainerHostSignals.onDismissRequestedStatic = null
 
+    val procObs = processLifecycleObserver
+    if (procObs != null) {
+      runCatching {
+        androidx.lifecycle.ProcessLifecycleOwner.get().lifecycle.removeObserver(procObs)
+      }
+    }
+    processLifecycleObserver = null
+
     val owner = lifecycleOwner
     val observer = lifecycleObserver
     if (owner != null && observer != null) {
       owner.lifecycle.removeObserver(observer)
     }
+
     lifecycleOwner = null
     lifecycleObserver = null
     composeView?.let { view -> (view.parent as? ViewGroup)?.removeView(view) }
@@ -340,6 +383,18 @@ object XenditComponents {
     activeComponentsSdkKey = null
     activeMerchantPreferredPm = null
     activeActivity = null
+
+    runCatching {
+      safeSessionTelemetry()?.let { tm ->
+        tm.flush()
+        tm.discardAll()
+      }
+    }
+
+  }
+
+  private fun safeSessionTelemetry(): co.xendit.components.telemetry.SessionTelemetry? {
+    return if (CoreSdkComponent.isInitialized()) TelemetrySdkComponent.sessionTelemetry else null
   }
 
   private fun Context.findActivity(): ComponentActivity? {

@@ -27,6 +27,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.converter.scalars.ScalarsConverterFactory
 import java.lang.reflect.Type
 import java.util.concurrent.TimeUnit
+import kotlin.isInitialized
 
 internal object CoreSdkComponent {
 
@@ -35,6 +36,8 @@ internal object CoreSdkComponent {
   @Volatile private var baseHttpUrl: HttpUrl = baseUrl.toHttpUrl()
   @Volatile private var retrofitInstance: Retrofit? = null
   @Volatile private var apiInstance: XenditApi? = null
+
+  fun isInitialized() = ::appContext.isInitialized
 
   fun init(context: Context) {
     if (!::appContext.isInitialized) {
@@ -78,6 +81,21 @@ internal object CoreSdkComponent {
         connectTimeout(30, TimeUnit.SECONDS)
         writeTimeout(30, TimeUnit.SECONDS)
         addInterceptor(baseUrlInterceptor)
+        addInterceptor(headerInterceptor)
+        addInterceptor(errorInterceptor)
+      }
+      .build()
+  }
+
+  val okHttpTelemetry: OkHttpClient by lazy {
+    val headerInterceptor = HeaderInterceptor(headerProvider)
+    val errorInterceptor = ErrorInterceptor(globalErrorHandler)
+
+    OkHttpClient.Builder()
+      .apply {
+        readTimeout(30, TimeUnit.SECONDS)
+        connectTimeout(30, TimeUnit.SECONDS)
+        writeTimeout(30, TimeUnit.SECONDS)
         addInterceptor(headerInterceptor)
         addInterceptor(errorInterceptor)
       }

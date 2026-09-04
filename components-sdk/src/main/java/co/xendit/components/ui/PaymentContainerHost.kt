@@ -629,6 +629,9 @@ internal fun PaymentContainerHost(
                         filteredAllowedMethods = filteredGooglePayMethods,
                         isTest = !CoreSdkComponent.isProdLive(),
                         isLoading = mviState.awaitingPaymentAction == AwaitingPaymentAction.GooglePayProcessing,
+                        onTrackClick = {
+                          viewModel.trackDigitalWallet()
+                        },
                         onPaymentDataReceived = { json, paymentMethodType ->
                           viewModel.dispatch(
                             ActionIntent.SubmitGooglePay(

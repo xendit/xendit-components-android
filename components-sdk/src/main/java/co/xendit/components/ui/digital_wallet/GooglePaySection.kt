@@ -140,6 +140,7 @@ internal fun GooglePaySection(
   isLoading: Boolean,
   onPaymentDataReceived: (paymentDataJson: String, paymentMethodType: String?) -> Unit,
   onPaymentFailed: (GooglePayPaymentError) -> Unit,
+  onTrackClick: () -> Unit,
   modifier: Modifier = Modifier
 ) {
   if (googlePay == null ||
@@ -235,6 +236,7 @@ internal fun GooglePaySection(
     GooglePayButton(
       isLoading = isLoading,
       onClick = {
+        onTrackClick()
         val loadTask = paymentsClient.loadPaymentData(paymentDataRequest)
         loadTask.addOnSuccessListener { paymentData ->
           handlePaymentData(paymentData, googlePay, onPaymentDataReceived)

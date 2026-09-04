@@ -62,6 +62,7 @@ internal fun ActionVirtualAccountUI(
   instructions: List<PaymentInstructionTab>?,
   onClose: () -> Unit,
   onPaymentMade: () -> Unit,
+  onCopyText: (fieldName: String) -> Unit = {},
   snackbarHostState: SnackbarHostState? = null,
   modifier: Modifier = Modifier
 ) {
@@ -181,6 +182,7 @@ internal fun ActionVirtualAccountUI(
 
               OutlinedButton(
                 onClick = {
+                  onCopyText("VIRTUAL_ACCOUNT_NUMBER")
                   copyToClipboard(
                     scope,
                     clipboard,
@@ -224,6 +226,7 @@ internal fun ActionVirtualAccountUI(
 
                 OutlinedButton(
                   onClick = {
+                    onCopyText("AMOUNT")
                     copyToClipboard(
                       scope,
                       clipboard,
