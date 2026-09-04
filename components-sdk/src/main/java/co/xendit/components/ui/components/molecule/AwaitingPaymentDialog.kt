@@ -1,5 +1,6 @@
 package co.xendit.components.ui.components.molecule
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -26,6 +27,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import co.xendit.components.ui.XenditTestTags
@@ -40,6 +42,7 @@ internal fun AwaitingPaymentDialog(
   title: String,
   subtitle: String,
   channelLogoUrl: String?,
+  channelLogoRes: Int? = null,
   onClose: () -> Unit,
 ) {
   val context = LocalContext.current
@@ -98,6 +101,13 @@ internal fun AwaitingPaymentDialog(
             imageLoader = imageLoader,
             contentDescription = "Channel Logo",
             contentScale = ContentScale.Fit,
+            modifier = Modifier.size(width = 64.dp, height = 40.dp)
+          )
+        }
+        if (channelLogoRes != null) {
+          Image(
+            painter = painterResource(id = channelLogoRes),
+            contentDescription = "Logo",
             modifier = Modifier.size(width = 64.dp, height = 40.dp)
           )
         }

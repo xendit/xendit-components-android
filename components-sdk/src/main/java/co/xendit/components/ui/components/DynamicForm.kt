@@ -26,6 +26,8 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -52,6 +54,8 @@ import co.xendit.components.ui.components.molecule.XenditTextField
 import co.xendit.components.ui.helper.FormChecker.validateField
 import co.xendit.components.ui.helper.toLabelDisplay
 import co.xendit.components.ui.style.xenditAppearance
+import co.xendit.components.util.defaultAutofillHints
+import co.xendit.components.util.resolveTextKeyboardOptions
 
 @Composable
 internal fun DynamicForm(
@@ -635,7 +639,6 @@ private fun FormFieldItem(
         testTag = propertyKey
       )
     }
-
     is FieldType.Country -> {
       CountryField(
         value = currentValue,
@@ -717,20 +720,19 @@ private fun FormFieldItem(
         modifier = Modifier.fillMaxWidth(),
         isError = isError,
         errorMessage = errorMessage,
-        keyboardOptions =
-          when (field.type) {
-            is FieldType.Text -> {
-              if (field.type.numeric == true) {
-                KeyboardOptions(keyboardType = KeyboardType.Number)
-              } else {
-                KeyboardOptions.Default
-              }
-            }
-
-            else -> {
-              KeyboardOptions.Default
-            }
-          },
+        autofillHints = field.type.defaultAutofillHints,
+        keyboardOptions = if (field.type is FieldType.Text) {
+          resolveTextKeyboardOptions(field.type)
+        } else if (field.type is FieldType.Email) {
+          KeyboardOptions(
+            keyboardType = KeyboardType.Email,
+            capitalization = KeyboardCapitalization.None,
+            autoCorrectEnabled = true,
+            imeAction = ImeAction.Next
+          )
+        } else {
+          KeyboardOptions.Default
+        },
         singleLine = true,
         maxLength = if (field.type is FieldType.Text) field.type.maxLength
           ?: Int.MAX_VALUE else Int.MAX_VALUE,
