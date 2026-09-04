@@ -3,7 +3,7 @@
 A drop-in payment UI SDK for Android that lets you accept payments through Xendit with minimal integration effort. Present a fully featured payment sheet in just a few lines of code.
 
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/xendit/xendit-components-android)
-[![Version](https://img.shields.io/badge/version-1.0.0-blue)](https://github.com/xendit/xendit-components-android/releases)
+[![Version](https://img.shields.io/badge/version-1.1.0-blue)](https://github.com/xendit/xendit-components-android/releases)
 [![License](https://img.shields.io/badge/license-Apache%202.0-lightgrey)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Android%2026%2B-green)](https://developer.android.com/)
 
@@ -368,7 +368,7 @@ Then add the dependency to your app module's `build.gradle.kts`:
 
 ```kotlin
 dependencies {
-    implementation("co.xendit:components:1.0.0")
+    implementation("co.xendit:components:1.1.0")
 }
 ```
 
@@ -376,9 +376,17 @@ dependencies {
 
 ```groovy
 dependencies {
-    implementation 'co.xendit:components:1.0.0'
+    implementation 'co.xendit:components:1.1.0'
 }
 ```
+
+### Google Pay Production Requirement
+
+Before you offer Google Pay in production, you must register and approve your Android app with Google Pay using the exact production package name that will be distributed to end users.
+
+If your app is not registered and approved for Google Pay production access, Google Pay can fail at runtime with error code `OR_BIBED_11`.
+
+> **Important:** Complete the Google Pay production app registration and approval before going live. This requirement applies to production usage; test and sandbox flows may still work before production registration is finalized.
 
 ## Documentation & Examples
 
