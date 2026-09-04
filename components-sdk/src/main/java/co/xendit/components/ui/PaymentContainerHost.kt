@@ -2,7 +2,6 @@ package co.xendit.components.ui
 
 import android.content.Intent
 import android.net.Uri
-import android.view.View
 import android.view.WindowManager
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -64,6 +63,7 @@ import co.xendit.components.R
 import co.xendit.components.XenditComponentsPaymentType
 import co.xendit.components.core.CoreSdkComponent
 import co.xendit.components.core.CoreSdkComponent.globalErrorHandler
+import co.xendit.components.data.model.BffGooglePayAllowedMethod
 import co.xendit.components.data.model.BffSessionType
 import co.xendit.components.data.model.ChannelFormField
 import co.xendit.components.data.model.PaymentActionDescriptor
@@ -75,6 +75,7 @@ import co.xendit.components.data.model.XenditPaymentResult
 import co.xendit.components.data.model.isAvailableForAmount
 import co.xendit.components.internal_entry_point.CardViewModelFactory
 import co.xendit.components.internal_entry_point.PaymentViewModelFactory
+import co.xendit.components.ui.AwaitingPaymentAction.GooglePayProcessing
 import co.xendit.components.ui.action.ActionBarcodeUI
 import co.xendit.components.ui.action.ActionQrUI
 import co.xendit.components.ui.action.ActionVirtualAccountUI
@@ -83,9 +84,7 @@ import co.xendit.components.ui.card.CardIntent
 import co.xendit.components.ui.card.CardViewModel
 import co.xendit.components.ui.components.molecule.AwaitingPaymentDialog
 import co.xendit.components.ui.components.molecule.GenericHeader
-import co.xendit.components.data.model.BffGooglePayAllowedMethod
 import co.xendit.components.ui.digital_wallet.GooglePaySection
-import co.xendit.components.ui.filterGooglePayAllowedMethodsByAmount
 import co.xendit.components.ui.helper.FailureCodeMessageUtil
 import co.xendit.components.ui.helper.FormChecker.validateAllField
 import co.xendit.components.ui.method.PaymentMethodsUI
@@ -627,7 +626,7 @@ internal fun PaymentContainerHost(
                         country = mviState.sessionResponse?.session?.country,
                         filteredAllowedMethods = filteredGooglePayMethods,
                         isTest = !CoreSdkComponent.isProdLive(),
-                        isLoading = mviState.isLoading,
+                        isLoading = mviState.awaitingPaymentAction == AwaitingPaymentAction.GooglePayProcessing,
                         onPaymentDataReceived = { json, paymentMethodType ->
                           viewModel.dispatch(
                             ActionIntent.SubmitGooglePay(
@@ -783,6 +782,7 @@ internal fun PaymentContainerHost(
 
           val subtitle =
             when (awaitingPaymentAction) {
+              AwaitingPaymentAction.GooglePayProcessing -> null
               AwaitingPaymentAction.Deeplink -> deeplinkTitleTemplate.replace(
                 "{{channelName}}",
                 resolvedChannelName
@@ -796,10 +796,11 @@ internal fun PaymentContainerHost(
           AwaitingPaymentDialog(
             modifier = Modifier.matchParentSize(),
             appearance = style,
-            channelLogoUrl = mviState.selectedChannel?.brandLogoUrl,
+            channelLogoUrl = mviState.selectedChannel?.brandLogoUrl.takeIf { mviState.awaitingPaymentAction != GooglePayProcessing },
+            channelLogoRes = R.drawable.ic_google_pay.takeIf { mviState.awaitingPaymentAction == GooglePayProcessing },
             onClose = { viewModel.dispatch(ActionIntent.CloseWebPayment) },
             title = stringResource(R.string.sessionaction_deeplink_title),
-            subtitle = subtitle
+            subtitle = subtitle ?: ""
           )
         }
         if (mviState.isLoading) {

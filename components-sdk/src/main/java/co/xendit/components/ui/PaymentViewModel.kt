@@ -66,6 +66,7 @@ internal data class PaymentState(
 internal sealed interface AwaitingPaymentAction {
   data object Deeplink : AwaitingPaymentAction
   data object EmptyPaymentActions : AwaitingPaymentAction
+  data object GooglePayProcessing : AwaitingPaymentAction
 }
 
 internal data class ChannelVariantChannels(
@@ -252,11 +253,13 @@ internal class PaymentViewModel(
           intent.savePaymentMethod,
           intent.installmentPlans
         )
+
       is ActionIntent.SubmitGooglePay ->
         submitGooglePayInternal(
           paymentDataJson = intent.paymentDataJson,
           paymentMethodType = intent.paymentMethodType
         )
+
       is ActionIntent.GooglePayPaymentFailed ->
         onGooglePayPaymentFailedInternal(
           code = intent.code,
@@ -458,7 +461,10 @@ internal class PaymentViewModel(
     if (channelProperties.isEmpty()) {
       onChallengeCompletedInternal(true)
     } else {
-      return submitPaymentInternal(errorPrefix = "Google Pay Payment") { authKey, _key, _paySid ->
+      return submitPaymentInternal(
+        isGooglePay = true,
+        errorPrefix = "Google Pay Payment"
+      ) { authKey, _key, _paySid ->
         PaymentRequest(
           sessionId = authKey,
           channelCode = channelCode,
@@ -491,6 +497,7 @@ internal class PaymentViewModel(
   }
 
   private inline fun submitPaymentInternal(
+    isGooglePay: Boolean = false,
     errorPrefix: String,
     crossinline buildRequest: suspend (
       sessionAuthKey: String,
@@ -501,8 +508,8 @@ internal class PaymentViewModel(
     viewModelScope.launch {
       _state.update {
         it.copy(
-          isLoading = true,
-          awaitingPaymentAction = null,
+          isLoading = if (isGooglePay) false else true,
+          awaitingPaymentAction = if (isGooglePay) AwaitingPaymentAction.GooglePayProcessing else null,
           errorMessage = null,
           paymentResponse = null,
           paymentActionRedirect = null,
@@ -602,7 +609,8 @@ internal class PaymentViewModel(
           onChallengeCompletedInternal()
         } else {
           val error = response.errorBody()?.asApiError()
-          val errorMessage = error?.errorContent?.message1 ?: error?.message ?: "$errorPrefix Failed"
+          val errorMessage =
+            error?.errorContent?.message1 ?: error?.message ?: "$errorPrefix Failed"
           _state.update {
             it.copy(
               isLoading = false,
@@ -726,7 +734,8 @@ internal class PaymentViewModel(
     this.paymentSessionId = paymentSessionId
     if (sessionAuthKey != null) this.sessionAuthKey = sessionAuthKey
     if (publicKey != null) this.publicKey = publicKey
-    if (lastSessionTokenRequestId != null) this.lastSessionTokenRequestId = lastSessionTokenRequestId
+    if (lastSessionTokenRequestId != null) this.lastSessionTokenRequestId =
+      lastSessionTokenRequestId
     _state.update {
       it.copy(
         sessionResponse = sessionResponse,
