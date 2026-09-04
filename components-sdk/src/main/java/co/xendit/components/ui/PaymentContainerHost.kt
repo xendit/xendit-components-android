@@ -45,6 +45,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInteropFilter
+import androidx.compose.ui.platform.LocalAutofillManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
@@ -155,6 +156,7 @@ internal fun PaymentContainerHost(
   val scope = rememberCoroutineScope()
   val appearance = xenditAppearance
   var pendingSnackbarMessage by remember { mutableStateOf<String?>(null) }
+  val autofillManager = LocalAutofillManager.current
 
   val sheetState =
     if (presentation == PaymentContainerPresentation.BottomSheet) {
@@ -712,6 +714,7 @@ internal fun PaymentContainerHost(
                           ?: PaymentDraft(channelCode = selected.channelCode)
                         val installmentPlans =
                           if (selected.pmType == XenditComponentsPaymentType.CARDS) cardState.installmentPlans else draft.installmentPlans
+                        autofillManager?.commit()
                         viewModel.dispatch(
                           ActionIntent.SubmitAction(
                             channelCode = selected.channelCode,
