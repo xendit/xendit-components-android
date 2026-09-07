@@ -12,6 +12,7 @@ internal enum class TelemetryStage(val value: String) {
   @SerializedName("CHECKOUT_ATTEMPT_DISCARD") CHECKOUT_ATTEMPT_DISCARD("CHECKOUT_ATTEMPT_DISCARD"),
   @SerializedName("CHECKOUT_ACTION_BEGIN") CHECKOUT_ACTION_BEGIN("CHECKOUT_ACTION_BEGIN"),
   @SerializedName("CHECKOUT_ACTION_CLOSE") CHECKOUT_ACTION_CLOSE("CHECKOUT_ACTION_CLOSE"),
+  @SerializedName("CHECKOUT_DIGITAL_WALLET_LOADED") CHECKOUT_DIGITAL_WALLET_LOADED("CHECKOUT_DIGITAL_WALLET_LOADED"),
   @SerializedName("CHECKOUT_DIGITAL_WALLET_BEGIN") CHECKOUT_DIGITAL_WALLET_BEGIN("CHECKOUT_DIGITAL_WALLET_BEGIN"),
   @SerializedName("CHECKOUT_DIGITAL_WALLET_CLOSE") CHECKOUT_DIGITAL_WALLET_CLOSE("CHECKOUT_DIGITAL_WALLET_CLOSE"),
   @SerializedName("CHECKOUT_ACTION_COPY_TEXT") CHECKOUT_ACTION_COPY_TEXT("CHECKOUT_ACTION_COPY_TEXT"),
@@ -30,15 +31,31 @@ internal interface SessionTelemetryEvent {
 }
 
 internal object TelemetryEvents {
-  fun Loaded(success: Boolean) = object : SessionTelemetryEvent {
-    override val stage = TelemetryStage.CHECKOUT_LOADED
-    override val success = success
-  }
+  fun Loaded(success: Boolean, selectableChannels: List<String>? = null) =
+    object : SessionTelemetryEvent {
+      override val stage = TelemetryStage.CHECKOUT_LOADED
+      override val success = success
+      override val metadata = selectableChannels?.let { mapOf("channels" to it) }
+    }
 
-  fun ChannelGroup(success: Boolean, groupName: String) = object : SessionTelemetryEvent {
+  fun ChannelGroup(
+    success: Boolean,
+    groupName: String,
+    selectableChannels: List<String>? = null
+  ) = object : SessionTelemetryEvent {
     override val stage = TelemetryStage.CHECKOUT_CHANNEL_GROUP
     override val success = success
-    override val metadata = mapOf("group_name" to groupName)
+    override val metadata = buildMap {
+      put("group_name", groupName)
+      if (selectableChannels != null) {
+        put("channels", selectableChannels)
+      }
+    }
+  }
+
+  fun DigitalWalletLoaded(success: Boolean) = object : SessionTelemetryEvent {
+    override val stage = TelemetryStage.CHECKOUT_DIGITAL_WALLET_LOADED
+    override val success = success
   }
 
   fun Channel(success: Boolean, paymentChannel: String) = object : SessionTelemetryEvent {

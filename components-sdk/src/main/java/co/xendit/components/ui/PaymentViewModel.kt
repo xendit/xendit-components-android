@@ -250,6 +250,7 @@ internal class PaymentViewModel(
   private var endTelemetryEmitted: Boolean = false
   private var sessionPendingTelemetryEmitted: Boolean = false
   private var loadedOrResumeTelemetryPushed: Boolean = false
+  private var digitalWalletLoadedTelemetryEmitted: Boolean = false
 
   // Telemetry scope handles — mirrors Web this.currentChannelTelemetryScope / this.telemetryScope.
   private var currentGroupTelemetryScope: SessionTelemetryScope? = null
@@ -322,10 +323,6 @@ internal class PaymentViewModel(
     viewModelScope.launch {
       _state.update { it.copy(isLoading = true, errorMessage = null) }
       try {
-        if (!loadedOrResumeTelemetryPushed) {
-          loadedTelemetryScope = telemetry.appendAndPushScope(TelemetryEvents.Loaded(true))
-          loadedOrResumeTelemetryPushed = true
-        }
         val response = xenditRepository.getSession(sessionAuthKey)
         if (response.isSuccessful) {
           val body = response.body()
@@ -333,11 +330,19 @@ internal class PaymentViewModel(
           val channels = body?.paymentChannels.orEmpty().filter {
             !BLACKLISTED_CHANNEL.contains(it.channelCode)
           }
+          val allSelectableChannelCodes = channels.map { it.channelCode }
           val variantsByDisplayCode = combinePairedChannels(channels).variantsByDisplayCode
           this@PaymentViewModel.paymentSessionId =
             session?.paymentSessionId ?: session?.id
           val sessionType = body?.session?.sessionType
           val allowSavePaymentMethod = body?.session?.allowSavePaymentMethod
+
+          if (!loadedOrResumeTelemetryPushed) {
+            loadedTelemetryScope = telemetry.appendAndPushScope(
+              TelemetryEvents.Loaded(true, allSelectableChannelCodes)
+            )
+            loadedOrResumeTelemetryPushed = true
+          }
 
           // ===== Telemetry: bind payment_session_id + authId now that FetchSession returned them.
           telemetry.bindSession(
@@ -388,9 +393,10 @@ internal class PaymentViewModel(
           val error = response.errorBody()?.asApiError()
           val errorMessage = error?.message ?: "Failed to fetch session"
           val errorCode = error?.errorCode
-          // getSession failed: append Loaded(false). Loaded scope from above already active (id present) so
-          // Loaded(false) is a 2nd sibling leaf under root, matching Web's fatal-error paths.
-          telemetry.append(TelemetryEvents.Loaded(false))
+          if (!loadedOrResumeTelemetryPushed) {
+            telemetry.append(TelemetryEvents.Loaded(false))
+            loadedOrResumeTelemetryPushed = true
+          }
           _state.update {
             it.copy(
               isLoading = false,
@@ -399,8 +405,10 @@ internal class PaymentViewModel(
           }
         }
       } catch (e: Exception) {
-        // Exception during fetchSession: append Loaded(false) under root.
-        telemetry.append(TelemetryEvents.Loaded(false))
+        if (!loadedOrResumeTelemetryPushed) {
+          telemetry.append(TelemetryEvents.Loaded(false))
+          loadedOrResumeTelemetryPushed = true
+        }
         globalErrorHandler.postError(
           errorMessage = UiText.DynamicString(e.message ?: "Failed to fetch session")
         )
@@ -417,6 +425,7 @@ internal class PaymentViewModel(
     val currentExpanded = _state.value.expandedUiGroup
     val newExpandedUiGroup = if (currentExpanded == uiGroup) null else uiGroup
     val currentSelected = _state.value.selectedChannel
+    val groupChannelCodes = groups[uiGroup]?.map { it.channelCode }
 
     // ---- TELEMETRY: ChannelGroup scope lifecycle (spec: Until group collapse) ----
     when {
@@ -432,7 +441,9 @@ internal class PaymentViewModel(
           telemetry.popScope(currentGroupTelemetryScope)
         }
         currentGroupTelemetryScope =
-          telemetry.appendAndPushScope(TelemetryEvents.ChannelGroup(true, uiGroup))
+          telemetry.appendAndPushScope(
+            TelemetryEvents.ChannelGroup(true, uiGroup, groupChannelCodes)
+          )
       }
     }
 
@@ -1018,6 +1029,7 @@ internal class PaymentViewModel(
     endTelemetryEmitted = false
     sessionPendingTelemetryEmitted = false
     loadedOrResumeTelemetryPushed = false
+    digitalWalletLoadedTelemetryEmitted = false
 
     markClosed()
     popAllTelemetryScopes()
@@ -1039,6 +1051,12 @@ internal class PaymentViewModel(
   internal fun trackDigitalWallet() {
     digitalWalletScope =
       telemetry.appendAndPushScope(TelemetryEvents.DigitalWalletBegin(true, "GOOGLE_PAY"))
+  }
+
+  internal fun trackDigitalWalletLoaded() {
+    if (digitalWalletLoadedTelemetryEmitted) return
+    digitalWalletLoadedTelemetryEmitted = true
+    telemetry.append(TelemetryEvents.DigitalWalletLoaded(true))
   }
 
   @VisibleForTesting

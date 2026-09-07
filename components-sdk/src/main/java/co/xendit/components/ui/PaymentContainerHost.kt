@@ -632,6 +632,9 @@ internal fun PaymentContainerHost(
                         onTrackClick = {
                           viewModel.trackDigitalWallet()
                         },
+                        onLoadedVisible = {
+                          viewModel.trackDigitalWalletLoaded()
+                        },
                         onPaymentDataReceived = { json, paymentMethodType ->
                           viewModel.dispatch(
                             ActionIntent.SubmitGooglePay(
