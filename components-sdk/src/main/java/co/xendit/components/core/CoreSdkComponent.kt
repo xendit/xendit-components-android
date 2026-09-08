@@ -89,15 +89,12 @@ internal object CoreSdkComponent {
 
   val okHttpTelemetry: OkHttpClient by lazy {
     val headerInterceptor = HeaderInterceptor(headerProvider)
-    val errorInterceptor = ErrorInterceptor(globalErrorHandler)
-
     OkHttpClient.Builder()
       .apply {
         readTimeout(30, TimeUnit.SECONDS)
         connectTimeout(30, TimeUnit.SECONDS)
         writeTimeout(30, TimeUnit.SECONDS)
         addInterceptor(headerInterceptor)
-        addInterceptor(errorInterceptor)
       }
       .build()
   }

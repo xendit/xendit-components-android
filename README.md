@@ -335,18 +335,6 @@ To ensure the payment UI is reliable and to identify regressions, fraud patterns
 | **OkHttp Profiler interceptor** | ✅ Attached for Android Studio Profiler visibility | ❌ Not attached |
 | **Network transmission (actual flush)** | ✅ Sends data (test environment) | ✅ Sends data (production telemetry — required for reliability) |
 
-### Merchant debugging APIs
-
-The following public APIs do **not** disable transmission — they only control whether payload contents are printed to logcat during your merchant-integration debugging session:
-
-```kotlin
-// Toggle logcat printing (defaults to BuildConfig.DEBUG — silent in release)
-XenditComponents.setTelemetryLoggingEnabled(true)
-
-// Print a snapshot of the current buffered (not-yet-flushed) events
-XenditComponents.logTelemetryQueueSnapshot("before-submit")
-```
-
 > **Privacy & compliance note.** Full Play-Data-Safety-ready disclosure, exact field-by-field schema, and source-code cross-references for every telemetry value are documented in [PRIVACY.md — Performance Telemetry](PRIVACY.md#performance-telemetry--what-exactly-is-sent). Use that section together with your legal counsel to complete your Google Play Data Safety form and your app's privacy policy.
 
 ## Installation

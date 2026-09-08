@@ -63,14 +63,6 @@ The SDK sends a small, best-effort payload of in-session performance events to `
 - **Release vs debug.** In release builds, telemetry still fires (it must — we need reliability data from production), but **logcat printing is suppressed** via `BuildConfig.DEBUG` gates in [XLogger.kt](file:///Users/arga/Documents/Xendit/XenditComponents/XenditComponentsAndroid/components-sdk/src/main/java/co/xendit/components/util/XLogger.kt#L13-L37). No payload contents are ever logged to logcat in release builds.
 - **Memory pressure discard.** On Android `ComponentCallbacks2.TRIM_MEMORY_BACKGROUND` (OS signals the process entered cached state), the queue is fully discarded via `discardAll()` — no data is persisted to disk. See [XenditComponents.kt#L216-L235](file:///Users/arga/Documents/Xendit/XenditComponents/XenditComponentsAndroid/components-sdk/src/main/java/co/xendit/components/XenditComponents.kt#L216-L235).
 
-### Debug-only visibility (never ship to Play Store)
-
-In `BuildConfig.DEBUG` builds, the telemetry OkHttp client attaches an `OkHttpProfilerInterceptor` that exposes requests to Android Studio's Profiler (and to `setTelemetryLoggingEnabled(true)` logcat prints). This interceptor is **excluded from release builds** by the `if (BuildConfig.DEBUG)` gate in [CoreSdkComponent.kt#L109-L112](file:///Users/arga/Documents/Xendit/XenditComponents/XenditComponentsAndroid/components-sdk/src/main/java/co/xendit/components/core/CoreSdkComponent.kt#L109-L112). Your merchant's production users will never see the profiler or log payloads.
-
-### Public APIs for merchant debugging
-
-The following public APIs are available on the `XenditComponents` object. They have **no effect on whether data is sent** — they only control log visibility for the merchant's debugging session:
-
 | API | Purpose |
 |-----|---------|
 | `setTelemetryLoggingEnabled(Boolean)` | Toggles logcat printing of telemetry events and payloads. Defaults to `BuildConfig.DEBUG`. Has no effect on network transmission. |

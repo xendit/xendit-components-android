@@ -1,7 +1,6 @@
 package co.xendit.components.telemetry
 
 import androidx.annotation.VisibleForTesting
-import co.xendit.components.BuildConfig
 import co.xendit.components.util.XLogger
 import com.google.gson.Gson
 import kotlinx.coroutines.CoroutineScope
@@ -205,14 +204,4 @@ internal class SessionTelemetry(
   @VisibleForTesting
   internal fun testQueueSize(): Int = queue.size
 
-}
-
-private fun Gson.prettyPrint(any: Any): String =
-  runCatching { this.newBuilder().setPrettyPrinting().create().toJson(any) }
-    .getOrDefault(any.toString())
-
-private fun XLogger.d(tag: String, extra: String) {
-  if (BuildConfig.DEBUG) {
-    d("$tag\n$extra")
-  }
 }
