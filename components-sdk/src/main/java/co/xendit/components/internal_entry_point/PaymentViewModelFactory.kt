@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import co.xendit.components.core.CoreSdkComponent.globalErrorHandler
+import co.xendit.components.core.TelemetrySdkComponent.sessionTelemetry
 import co.xendit.components.data.DataSdkComponent.xenditRepository
 import co.xendit.components.ui.PaymentViewModel
 
@@ -13,6 +14,12 @@ internal class PaymentViewModelFactory(private val context: Context) : ViewModel
     co.xendit.components.core.CoreSdkComponent.init(context)
     val repository = xenditRepository
     val errorHandler = globalErrorHandler
-    return PaymentViewModel(repository, errorHandler) as T
+    val telemetry = sessionTelemetry
+    return PaymentViewModel(
+      xenditRepository = repository,
+      globalErrorHandler = errorHandler,
+      telemetry = telemetry,
+    ) as T
+
   }
 }

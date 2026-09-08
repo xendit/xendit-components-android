@@ -28,6 +28,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -140,6 +141,8 @@ internal fun GooglePaySection(
   isLoading: Boolean,
   onPaymentDataReceived: (paymentDataJson: String, paymentMethodType: String?) -> Unit,
   onPaymentFailed: (GooglePayPaymentError) -> Unit,
+  onTrackClick: () -> Unit,
+  onLoadedVisible: () -> Unit = {},
   modifier: Modifier = Modifier
 ) {
   if (googlePay == null ||
@@ -223,7 +226,15 @@ internal fun GooglePaySection(
     }
   }
 
-  if (!isReady || paymentDataRequest == null) return
+  val buttonVisible = isReady && paymentDataRequest != null
+
+  LaunchedEffect(buttonVisible) {
+    if (buttonVisible) {
+      onLoadedVisible()
+    }
+  }
+
+  if (!buttonVisible) return
 
   Column(
     modifier = modifier
@@ -235,6 +246,7 @@ internal fun GooglePaySection(
     GooglePayButton(
       isLoading = isLoading,
       onClick = {
+        onTrackClick()
         val loadTask = paymentsClient.loadPaymentData(paymentDataRequest)
         loadTask.addOnSuccessListener { paymentData ->
           handlePaymentData(paymentData, googlePay, onPaymentDataReceived)
