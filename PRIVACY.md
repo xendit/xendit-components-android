@@ -63,9 +63,4 @@ The SDK sends a small, best-effort payload of in-session performance events to `
 - **Release vs debug.** In release builds, telemetry still fires (it must — we need reliability data from production), but **logcat printing is suppressed** via `BuildConfig.DEBUG` gates in [XLogger.kt](file:///Users/arga/Documents/Xendit/XenditComponents/XenditComponentsAndroid/components-sdk/src/main/java/co/xendit/components/util/XLogger.kt#L13-L37). No payload contents are ever logged to logcat in release builds.
 - **Memory pressure discard.** On Android `ComponentCallbacks2.TRIM_MEMORY_BACKGROUND` (OS signals the process entered cached state), the queue is fully discarded via `discardAll()` — no data is persisted to disk. See [XenditComponents.kt#L216-L235](file:///Users/arga/Documents/Xendit/XenditComponents/XenditComponentsAndroid/components-sdk/src/main/java/co/xendit/components/XenditComponents.kt#L216-L235).
 
-| API | Purpose |
-|-----|---------|
-| `setTelemetryLoggingEnabled(Boolean)` | Toggles logcat printing of telemetry events and payloads. Defaults to `BuildConfig.DEBUG`. Has no effect on network transmission. |
-| `logTelemetryQueueSnapshot(label: String)` | Prints a snapshot of the currently buffered (not-yet-flushed) events to logcat. No-op when `setTelemetryLoggingEnabled(false)`. |
-
 For full details, see the [Xendit Privacy Policy](https://www.xendit.co/en/privacy-policy/).
