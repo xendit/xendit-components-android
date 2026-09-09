@@ -1,35 +1,17 @@
 package co.xendit.components.ui
 
-import android.content.Intent
-import android.net.Uri
 import android.view.WindowManager
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -38,58 +20,31 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInteropFilter
 import androidx.compose.ui.platform.LocalAutofillManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTagsAsResourceId
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.DialogWindowProvider
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import co.xendit.components.BuildConfig
 import co.xendit.components.R
 import co.xendit.components.XenditComponentsPaymentType
-import co.xendit.components.core.CoreSdkComponent
 import co.xendit.components.core.CoreSdkComponent.globalErrorHandler
-import co.xendit.components.data.model.BffGooglePayAllowedMethod
-import co.xendit.components.data.model.BffSessionType
-import co.xendit.components.data.model.ChannelFormField
-import co.xendit.components.data.model.PaymentActionDescriptor
-import co.xendit.components.data.model.PaymentDraft
 import co.xendit.components.data.model.PaymentRequestStatus
 import co.xendit.components.data.model.PaymentSessionStatus
 import co.xendit.components.data.model.XenditError
 import co.xendit.components.data.model.XenditPaymentResult
-import co.xendit.components.data.model.isAvailableForAmount
 import co.xendit.components.internal_entry_point.CardViewModelFactory
 import co.xendit.components.internal_entry_point.PaymentViewModelFactory
-import co.xendit.components.ui.AwaitingPaymentAction.GooglePayProcessing
-import co.xendit.components.ui.action.ActionBarcodeUI
-import co.xendit.components.ui.action.ActionQrUI
-import co.xendit.components.ui.action.ActionVirtualAccountUI
-import co.xendit.components.ui.action.ActionWebViewUI
 import co.xendit.components.ui.card.CardIntent
 import co.xendit.components.ui.card.CardViewModel
-import co.xendit.components.ui.components.molecule.AwaitingPaymentDialog
-import co.xendit.components.ui.components.molecule.GenericHeader
-import co.xendit.components.ui.digital_wallet.GooglePaySection
-import co.xendit.components.ui.helper.FailureCodeMessageUtil
-import co.xendit.components.ui.helper.FormChecker.validateAllField
-import co.xendit.components.ui.method.PaymentMethodsUI
-import co.xendit.components.ui.method.processAndOrderUiGroups
 import co.xendit.components.ui.style.XenditAppearance
 import co.xendit.components.ui.style.xenditAppearance
 import kotlinx.coroutines.delay
@@ -132,7 +87,6 @@ internal class PaymentContainerSessionController {
 private fun ConfigureKeyboardAwareWindow() {
   val view = LocalView.current
   DisposableEffect(view) {
-    // Retrieve the actual Dialog/BottomSheet Window, not the Activity Window
     val dialogWindow = (view.parent as? DialogWindowProvider)?.window
       ?: run {
         var ctx = view.context
@@ -216,10 +170,10 @@ internal fun PaymentContainerHost(
   DisposableEffect(viewModel, cardViewModel) {
     controller.bind(
       onWipeRequested = {
-      scope.launch {
-        performHardWipeAndThen { }
-      }
-    },
+        scope.launch {
+          performHardWipeAndThen { }
+        }
+      },
       onDismissRequested = ::cancelAndDismiss
     )
     onDispose {
@@ -268,7 +222,7 @@ internal fun PaymentContainerHost(
 
   LaunchedEffect(mviState.sessionResponse) {
     val session = mviState.sessionResponse ?: return@LaunchedEffect
-    val bffSession = mviState.sessionResponse?.session ?: return@LaunchedEffect
+    val bffSession = session.session ?: return@LaunchedEffect
     when (bffSession.status) {
       PaymentSessionStatus.COMPLETED ->
         finishWith(
@@ -293,10 +247,10 @@ internal fun PaymentContainerHost(
     val sessionStatus = poll.session?.status
     val prStatus = poll.paymentRequest?.status
     val isSuccess =
-      sessionStatus == PaymentSessionStatus.COMPLETED
-          || prStatus == PaymentRequestStatus.SUCCEEDED
-          || prStatus == PaymentRequestStatus.AUTHORIZED
-          || poll.succeededChannel != null
+      sessionStatus == PaymentSessionStatus.COMPLETED ||
+        prStatus == PaymentRequestStatus.SUCCEEDED ||
+        prStatus == PaymentRequestStatus.AUTHORIZED ||
+        poll.succeededChannel != null
 
     val isCanceled =
       sessionStatus == PaymentSessionStatus.CANCELED || prStatus == PaymentRequestStatus.CANCELED
@@ -322,7 +276,10 @@ internal fun PaymentContainerHost(
       isFailed -> {
         val pollFailureCode = poll.paymentRequest.failure_code
         val pollFailureMessage =
-          FailureCodeMessageUtil.resolveFailureMessage(context, pollFailureCode)
+          co.xendit.components.ui.helper.FailureCodeMessageUtil.resolveFailureMessage(
+            context,
+            pollFailureCode
+          )
 
         pendingSnackbarMessage = pollFailureMessage
         onResult(
@@ -405,22 +362,6 @@ internal fun PaymentContainerHost(
   }
 
   container {
-    val supportedPaymentTypes = remember { XenditComponentsPaymentType.SUPPORTED }
-    val (filteredGroups, orderedUiGroups) =
-      remember(
-        mviState.channels,
-        merchantPreferredPaymentMethod,
-        mviState.sessionResponse?.channelUiGroups,
-        supportedPaymentTypes
-      ) {
-        processAndOrderUiGroups(
-          channels = mviState.channels,
-          merchantPreferredPaymentMethod = merchantPreferredPaymentMethod,
-          channelUiGroups = mviState.sessionResponse?.channelUiGroups,
-          supportedPaymentTypes = supportedPaymentTypes
-        )
-      }
-
     Scaffold(
       snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
       containerColor = style.colorBackground,
@@ -433,431 +374,20 @@ internal fun PaymentContainerHost(
           .fillMaxSize()
           .padding(paddingValues)
       ) {
-        Column(modifier = Modifier.fillMaxSize()) {
-          if (BuildConfig.DEBUG) {
-            Box(
-              modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(appearance.borderRadius))
-                .background(Color(0xFFF7F7F7))
-                .padding(horizontal = 12.dp, vertical = 6.dp)
-            ) {
-              Column {
-                Text(
-                  text = "Debug = ${BuildConfig.DEBUG}",
-                  style = MaterialTheme.typography.bodySmall,
-                  color = Color.Gray
-                )
-                Text(
-                  text = mviState.sessionResponse?.session?.referenceId ?: "",
-                  style = MaterialTheme.typography.bodySmall,
-                  color = Color.Gray
-                )
-              }
-            }
-          }
-
-          Box(
-            modifier = Modifier
-              .fillMaxWidth()
-              .weight(1f)
-          ) {
-            when (val flowState = mviState.flowState) {
-              is PaymentFlowState.Redirecting -> {
-                val redirect = flowState.action
-                val url = redirect.value.orEmpty()
-                if (redirect.descriptor == PaymentActionDescriptor.DEEPLINK_URL) {
-                  LaunchedEffect(url) {
-                    if (url.isNotBlank()) {
-                      val didLaunch = runCatching {
-                        context.startActivity(
-                          Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
-                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                          }
-                        )
-                      }.isSuccess
-                      if (didLaunch) {
-                        viewModel.showLoadingWithAction()
-                      }
-                    }
-                    viewModel.dispatch(ActionIntent.ClearPaymentActionRedirect)
-                  }
-                } else {
-                  ActionWebViewUI(
-                    url = url,
-                    onClose = {
-                      viewModel.dispatch(ActionIntent.CloseWebPayment)
-                    },
-                    onChallengeCompleted = { viewModel.dispatch(ActionIntent.ChallengeCompleted(true)) },
-                    iframeCapable = redirect.iframeCapable ?: true
-                  )
-                }
-              }
-
-              is PaymentFlowState.PresentingCustomerAction -> {
-                val action = flowState.action
-                val merchantName = mviState.sessionResponse?.business?.name
-                val selectedChannel = mviState.selectedChannel
-                val channelName = selectedChannel?.brandName.orEmpty()
-                val channelLogoUrl = selectedChannel?.brandLogoUrl
-                when (action.descriptor) {
-                  PaymentActionDescriptor.VIRTUAL_ACCOUNT_NUMBER -> {
-                    ActionVirtualAccountUI(
-                      title = action.actionTitle,
-                      subtitle = action.actionSubtitle,
-                      channelName = channelName.ifBlank { "Virtual Account" },
-                      channelLogoUrl = channelLogoUrl,
-                      channelBrandColor = selectedChannel?.brandColor,
-                      virtualAccountNumber = action.value.orEmpty(),
-                      merchantName = merchantName,
-                      amount = mviState.sessionResponse?.session?.amount,
-                      currency = mviState.sessionResponse?.session?.currency,
-                      instructions = action.instructions,
-                      onClose = { viewModel.markClosed() },
-                      onPaymentMade = {
-                        viewModel.dispatch(ActionIntent.SimulatePayment)
-                        viewModel.dispatch(ActionIntent.ChallengeCompleted(true))
-                        viewModel.showLoading()
-                      },
-                      snackbarHostState = snackbarHostState
-                    )
-                  }
-
-                  PaymentActionDescriptor.QR_STRING -> {
-                    ActionQrUI(
-                      title = action.actionTitle,
-                      merchantName = merchantName,
-                      channelName = channelName.ifBlank { "QR Code" },
-                      channelLogoUrl = channelLogoUrl,
-                      qrString = action.value.orEmpty(),
-                      amount = mviState.sessionResponse?.session?.amount,
-                      currency = mviState.sessionResponse?.session?.currency,
-                      onClose = { viewModel.markClosed() },
-                      onPaymentMade = {
-                        viewModel.dispatch(ActionIntent.SimulatePayment)
-                        viewModel.dispatch(ActionIntent.ChallengeCompleted(true))
-                        viewModel.showLoading()
-                      },
-                      snackbarHostState = snackbarHostState
-                    )
-                  }
-
-                  PaymentActionDescriptor.PAYMENT_CODE -> {
-                    ActionBarcodeUI(
-                      title = action.actionTitle,
-                      subtitle = action.actionSubtitle,
-                      channelName = channelName.ifBlank { "Payment Code" },
-                      channelLogoUrl = channelLogoUrl,
-                      channelBrandColor = selectedChannel?.brandColor,
-                      paymentCode = action.value.orEmpty(),
-                      merchantName = merchantName,
-                      amount = mviState.sessionResponse?.session?.amount,
-                      currency = mviState.sessionResponse?.session?.currency,
-                      instructions = action.instructions,
-                      onClose = { viewModel.markClosed() },
-                      onPaymentMade = {
-                        viewModel.dispatch(ActionIntent.SimulatePayment)
-                        viewModel.dispatch(ActionIntent.ChallengeCompleted(true))
-                        viewModel.showLoading()
-                      },
-                      snackbarHostState = snackbarHostState
-                    )
-                  }
-
-                  else -> {
-                    viewModel.markClosed()
-                  }
-                }
-              }
-
-              PaymentFlowState.SelectingPaymentMethod -> {
-                Column {
-                  GenericHeader(
-                    title = stringResource(id = R.string.sessionpayment_methods_select_payment_method),
-                    onLeftClick = dismiss
-                  )
-                  Column(
-                    modifier = Modifier
-                      .weight(1f)
-                      .verticalScroll(rememberScrollState())
-                  ) {
-                    val selectedPmType by rememberUpdatedState(mviState.selectedChannel?.pmType)
-                    val installmentPlans by rememberUpdatedState(cardState.installmentPlans)
-                    val onToggleGroup: (String) -> Unit =
-                      remember(viewModel) { { viewModel.dispatch(ActionIntent.ToggleUiGroup(it)) } }
-                    val onSelectChannel: (String) -> Unit =
-                      remember(viewModel) { { viewModel.dispatch(ActionIntent.SelectChannel(it)) } }
-                    val onCardNumberChanged: (String) -> Unit =
-                      remember(cardViewModel) {
-                        {
-                          cardViewModel.dispatch(
-                            CardIntent.CardNumberChanged(
-                              it
-                            )
-                          )
-                        }
-                      }
-                    val onFormChanged:
-                          (String?, Map<String, String>, List<ChannelFormField>, Boolean) -> Unit =
-                      remember(viewModel) {
-                        { channelCode, formValues, visibleFields, save ->
-                          viewModel.dispatch(
-                            ActionIntent.UpdatePaymentDraft(
-                              PaymentDraft(
-                                channelCode = channelCode,
-                                formValues = formValues,
-                                visibleFields = visibleFields,
-                                savePaymentMethod = save,
-                                installmentPlans =
-                                  if (selectedPmType == XenditComponentsPaymentType.CARDS) installmentPlans else null
-                              )
-                            )
-                          )
-                        }
-                      }
-                    val preferredList =
-                      remember(merchantPreferredPaymentMethod) {
-                        merchantPreferredPaymentMethod
-                          ?.filter { it in XenditComponentsPaymentType.SUPPORTED }
-                          ?: emptyList()
-                      }
-                    val googlePayConfig = mviState.sessionResponse?.digitalWallets?.googlePay
-                    val filteredGooglePayMethods: List<BffGooglePayAllowedMethod> =
-                      remember(
-                        googlePayConfig,
-                        mviState.channels,
-                        mviState.sessionResponse?.session?.amount,
-                        mviState.sessionType,
-                      ) {
-                        filterGooglePayAllowedMethodsByAmount(
-                          googlePay = googlePayConfig,
-                          channels = mviState.channels,
-                          amount = mviState.sessionResponse?.session?.amount,
-                          sessionType = mviState.sessionType,
-                        )
-                      }
-                    val shouldShowGooglePay =
-                      shouldRenderGooglePaySection(
-                        googlePay = googlePayConfig,
-                        merchantPreferredPaymentMethod = preferredList,
-                      ) && filteredGooglePayMethods.isNotEmpty()
-                    if (shouldShowGooglePay) {
-                      GooglePaySection(
-                        googlePay = googlePayConfig,
-                        businessName = mviState.sessionResponse?.business?.name.orEmpty(),
-                        paymentSessionId = mviState.sessionResponse?.session?.paymentSessionId,
-                        amount = mviState.sessionResponse?.session?.amount,
-                        currency = mviState.sessionResponse?.session?.currency,
-                        country = mviState.sessionResponse?.session?.country,
-                        filteredAllowedMethods = filteredGooglePayMethods,
-                        isTest = !CoreSdkComponent.isProdLive(),
-                        isLoading = mviState.awaitingPaymentAction == AwaitingPaymentAction.GooglePayProcessing,
-                        onTrackClick = {
-                          viewModel.trackDigitalWallet()
-                        },
-                        onLoadedVisible = {
-                          viewModel.trackDigitalWalletLoaded()
-                        },
-                        onPaymentDataReceived = { json, paymentMethodType ->
-                          viewModel.dispatch(
-                            ActionIntent.SubmitGooglePay(
-                              paymentDataJson = json,
-                              paymentMethodType = paymentMethodType
-                            )
-                          )
-                        },
-                        onPaymentFailed = { err ->
-                          viewModel.dispatch(
-                            ActionIntent.GooglePayPaymentFailed(
-                              code = err.code,
-                              title = err.title,
-                              message = err.message
-                            )
-                          )
-                        },
-                        modifier = Modifier.padding(top = 8.dp)
-                      )
-                    }
-
-                    PaymentMethodsUI(
-                      session = mviState.sessionResponse?.session,
-                      bffBusiness = mviState.sessionResponse?.business,
-                      merchantPreferredPaymentMethod = merchantPreferredPaymentMethod,
-                      channels = mviState.channels,
-                      channelUiGroups = mviState.sessionResponse?.channelUiGroups,
-                      channelVariantsByDisplayCode = mviState.channelVariantsByDisplayCode,
-                      expandedUiGroup = mviState.expandedUiGroup,
-                      selectedChannel = mviState.selectedChannel,
-                      paymentDrafts = mviState.paymentDrafts,
-                      cardDetails = cardState.cardDetails,
-                      installmentPlans = cardState.installmentPlans,
-                      sessionType = mviState.sessionType,
-                      allowSavePaymentMethod = mviState.allowSavePaymentMethod,
-                      onToggleGroup = onToggleGroup,
-                      onSelectChannel = onSelectChannel,
-                      onCardNumberChanged = onCardNumberChanged,
-                      onFormChanged = onFormChanged,
-                      formWipeNonce = mviState.formWipeNonce
-                    )
-                  }
-
-                  val isPaymentSelected =
-                    mviState.expandedUiGroup != null && mviState.selectedChannel != null
-                  val selectedChannel = mviState.selectedChannel
-                  val isSelectedChannelAvailable =
-                    selectedChannel?.isAvailableForAmount(
-                      mviState.sessionResponse?.session?.amount,
-                      mviState.sessionType
-                    ) != false
-                  val currentDraft = if (selectedChannel == null) PaymentDraft() else {
-                    mviState.paymentDrafts[selectedChannel.channelCode]
-                      ?: PaymentDraft(channelCode = selectedChannel.channelCode)
-                  }
-                  val isFormFilled = currentDraft.visibleFields
-                  val formValue = currentDraft.formValues
-                  val isPayEnabled =
-                    isPaymentSelected && isSelectedChannelAvailable && !mviState.isLoading && validateAllField(
-                      isFormFilled,
-                      formValue,
-                      cardDetails = cardState.cardDetails,
-                      bffCardInfo = mviState.selectedChannel?.card
-                    )
-                  val payText =
-                    when (mviState.sessionType) {
-                      BffSessionType.SAVE ->
-                        stringResource(id = R.string.sessionpayment_methods_add_payment_method)
-
-                      BffSessionType.SUBSCRIPTION ->
-                        stringResource(id = R.string.sessionchannel_selection_confirm_subscription)
-
-                      else ->
-                        stringResource(id = R.string.sessionpayment_methods_submit_pay)
-                    }
-
-                  Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
-                    Button(
-                      enabled = isPayEnabled,
-                      onClick = {
-                        val selected = mviState.selectedChannel ?: return@Button
-                        val draft = mviState.paymentDrafts[selected.channelCode]
-                          ?: PaymentDraft(channelCode = selected.channelCode)
-                        val installmentPlans =
-                          if (selected.pmType == XenditComponentsPaymentType.CARDS) cardState.installmentPlans else draft.installmentPlans
-                        autofillManager?.commit()
-                        viewModel.dispatch(
-                          ActionIntent.SubmitAction(
-                            channelCode = selected.channelCode,
-                            formValues = draft.formValues,
-                            fields = draft.visibleFields,
-                            savePaymentMethod = draft.savePaymentMethod,
-                            installmentPlans = installmentPlans
-                          )
-                        )
-                      },
-                      modifier = Modifier
-                        .fillMaxWidth()
-                        .testTag(XenditTestTags.DIALOG_SUBMIT_BUTTON),
-                      shape = RoundedCornerShape(appearance.borderRadius),
-                      colors = ButtonDefaults.buttonColors(
-                        containerColor = style.colorPrimary,
-                        contentColor = style.colorBackground
-                      )
-                    ) {
-                      Row(
-                        verticalAlignment = Alignment.CenterVertically
-                      ) {
-                        Text(
-                          text = payText,
-                          style = MaterialTheme.typography.titleSmall,
-                          modifier = Modifier.padding(end = 8.dp)
-                        )
-                        Icon(
-                          imageVector = Icons.AutoMirrored.Default.ArrowForward,
-                          contentDescription = null,
-                          modifier = Modifier.size(16.dp),
-                        )
-                      }
-                    }
-                  }
-                }
-              }
-
-              PaymentFlowState.LoadingSession,
-              is PaymentFlowState.StartupError -> Unit
-            }
-          }
-        }
-
-          when (val flowState = mviState.flowState) {
-            is PaymentFlowState.StartupError -> {
-              Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                AlertDialog(
-                  onDismissRequest = { onCleanup() },
-                  title = { Text(stringResource(id = R.string.sessiondefault_error_title)) },
-                  text = { Text(flowState.message) },
-                  confirmButton = {
-                    Button(
-                      onClick = { onCleanup() },
-                      modifier = Modifier.testTag(XenditTestTags.DIALOG_ERROR_CLOSE_BUTTON)
-                    ) {
-                      Text(stringResource(R.string.sessiondialog_close))
-                    }
-                  }
-                )
-              }
-            }
-
-            else -> Unit
-          }
-
-          when (val overlayState = mviState.overlayState) {
-            is PaymentOverlayState.AwaitingAction -> {
-              val awaitingPaymentAction = overlayState.action
-              val resolvedChannelName =
-                mviState.selectedChannel?.brandName.orEmpty().ifBlank { "payment" }
-              val deeplinkTitleTemplate =
-                stringResource(R.string.sessionaction_deeplink_instructions)
-              val emptyPaymentActions =
-                stringResource(R.string.sessionaction_empty_list_push_notification_subtext)
-
-              val subtitle =
-                when (awaitingPaymentAction) {
-                  AwaitingPaymentAction.GooglePayProcessing -> null
-                  AwaitingPaymentAction.Deeplink -> deeplinkTitleTemplate.replace(
-                    "{{channelName}}",
-                    resolvedChannelName
-                  )
-
-                  AwaitingPaymentAction.EmptyPaymentActions -> emptyPaymentActions.replace(
-                    "{{channelName}}",
-                    resolvedChannelName
-                  )
-                }
-              AwaitingPaymentDialog(
-                modifier = Modifier.matchParentSize(),
-                appearance = style,
-                channelLogoUrl = mviState.selectedChannel?.brandLogoUrl.takeIf { awaitingPaymentAction != GooglePayProcessing },
-                channelLogoRes = R.drawable.ic_google_pay.takeIf { awaitingPaymentAction == GooglePayProcessing },
-                onClose = { viewModel.dispatch(ActionIntent.CloseWebPayment) },
-                title = stringResource(R.string.sessionaction_deeplink_title),
-                subtitle = subtitle ?: ""
-              )
-            }
-
-            PaymentOverlayState.Loading -> {
-              Box(
-                modifier = Modifier
-                  .matchParentSize()
-                  .background(Color.Black.copy(alpha = 0.08f))
-                  .pointerInteropFilter { true },
-                contentAlignment = Alignment.Center
-              ) {
-                CircularProgressIndicator()
-              }
-            }
-
-            null -> Unit
-          }
+        PaymentContainerContent(
+          state = mviState,
+          cardState = cardState,
+          style = style,
+          appearance = appearance,
+          merchantPreferredPaymentMethod = merchantPreferredPaymentMethod,
+          snackbarHostState = snackbarHostState,
+          dismiss = dismiss,
+          onCleanup = onCleanup,
+          viewModel = viewModel,
+          cardViewModel = cardViewModel,
+          onCommitAutofill = { autofillManager?.commit() },
+          context = context
+        )
       }
     }
   }
