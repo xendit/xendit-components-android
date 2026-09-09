@@ -53,7 +53,8 @@ internal fun PaymentSelectionScreen(
   cardViewModel: CardViewModel,
   onCommitAutofill: () -> Unit
 ) {
-  val selectedPmType by rememberUpdatedState(state.selectedChannel?.pmType)
+  val selectionUi = state.selectionUi
+  val selectedPmType by rememberUpdatedState(selectionUi.selectedChannel?.pmType)
   val installmentPlans by rememberUpdatedState(cardState.installmentPlans)
   val onToggleGroup: (String) -> Unit =
     remember(viewModel) { { viewModel.dispatch(ActionIntent.ToggleUiGroup(it)) } }
@@ -97,14 +98,14 @@ internal fun PaymentSelectionScreen(
       )
 
       PaymentMethodsUI(
-        session = state.sessionResponse?.session,
-        bffBusiness = state.sessionResponse?.business,
+        session = selectionUi.sessionResponse?.session,
+        bffBusiness = selectionUi.sessionResponse?.business,
         merchantPreferredPaymentMethod = merchantPreferredPaymentMethod,
-        channels = state.channels,
-        channelUiGroups = state.sessionResponse?.channelUiGroups,
+        channels = selectionUi.availableChannels,
+        channelUiGroups = selectionUi.sessionResponse?.channelUiGroups,
         channelVariantsByDisplayCode = state.channelVariantsByDisplayCode,
-        expandedUiGroup = state.expandedUiGroup,
-        selectedChannel = state.selectedChannel,
+        expandedUiGroup = selectionUi.expandedGroup,
+        selectedChannel = selectionUi.selectedChannel,
         paymentDrafts = state.paymentDrafts,
         cardDetails = cardState.cardDetails,
         installmentPlans = cardState.installmentPlans,

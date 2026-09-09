@@ -14,6 +14,7 @@ import co.xendit.components.data.model.PaymentSessionStatus
 import co.xendit.components.data.model.PollResponse
 import co.xendit.components.data.model.SessionResponse
 import co.xendit.components.data.network.repo.session.XenditRepository
+import co.xendit.components.data.network.repo.session.XenditRepositoryResult
 import co.xendit.components.telemetry.SessionTelemetry
 import co.xendit.components.ui.components.molecule.UiText
 import com.google.gson.JsonObject
@@ -38,7 +39,6 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import retrofit2.Response
 import java.math.BigDecimal
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -358,7 +358,7 @@ class PaymentViewModelGooglePayTest {
     runTest {
       coEvery {
         repository.pollSession(sessionId = "auth-key-123", tokenRequestId = any(), any())
-      } returns Response.success(
+      } returns XenditRepositoryResult.Success(
         PollResponse(
           session = null,
           paymentRequest = null,

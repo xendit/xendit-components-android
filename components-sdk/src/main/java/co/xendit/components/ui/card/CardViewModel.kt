@@ -7,6 +7,7 @@ import co.xendit.components.data.model.CardDetails
 import co.xendit.components.data.model.InstallmentPlan
 import co.xendit.components.data.model.PaymentOptionsRequest
 import co.xendit.components.data.network.repo.session.XenditRepository
+import co.xendit.components.data.network.repo.session.XenditRepositoryResult
 import co.xendit.components.ui.helper.FormCheckerUtil.isValidCreditCard
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -100,7 +101,10 @@ internal class CardViewModel(
               encryptedCardNumber = encryptedCardNumber
             )
 
-          val newCardDetails = if (cardInfoResponse.isSuccessful) cardInfoResponse.body() else null
+          val newCardDetails = when (cardInfoResponse) {
+            is XenditRepositoryResult.Success -> cardInfoResponse.data
+            else -> null
+          }
 
           if (isValidCreditCard(cleanedCardNumber)) {
             val optionsRequest =
@@ -117,11 +121,11 @@ internal class CardViewModel(
               }.getOrNull()
 
             val newInstallments =
-              if (optionsResponse?.isSuccessful == true) {
-                val plans = optionsResponse.body()?.installmentPlans
+              if (optionsResponse is XenditRepositoryResult.Success) {
+                val plans = optionsResponse.data.installmentPlans
                 if (!plans.isNullOrEmpty()) {
-                  val amount = optionsResponse.body()?.amount ?: plans.first().totalAmount ?: BigDecimal.ZERO
-                  val currencyCode = optionsResponse.body()?.currency ?: "IDR"
+                  val amount = optionsResponse.data.amount ?: plans.first().totalAmount ?: BigDecimal.ZERO
+                  val currencyCode = optionsResponse.data.currency ?: "IDR"
                   val formattedAmount = AmountFormat.format(amount, currencyCode)
                   val dummyPlan =
                     InstallmentPlan(
@@ -150,5 +154,4 @@ internal class CardViewModel(
   }
 
 }
-
 

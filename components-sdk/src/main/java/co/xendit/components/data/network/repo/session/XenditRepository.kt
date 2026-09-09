@@ -8,53 +8,52 @@ import co.xendit.components.data.model.SessionResponse
 import co.xendit.components.data.model.PollResponse
 import co.xendit.components.data.model.PaymentOptionsResponse
 import co.xendit.components.data.model.SimulatePaymentRequest
-import retrofit2.Response
 
 internal interface XenditRepository {
   suspend fun getSession(
     sessionId: String,
     componentsVersion: String = COMPONENT_VERSION
-  ): Response<SessionResponse>
+  ): XenditRepositoryResult<SessionResponse>
 
   suspend fun createPaymentRequest(
     request: PaymentRequest,
     componentsVersion: String = COMPONENT_VERSION
-  ): Response<PaymentResponse>
+  ): XenditRepositoryResult<PaymentResponse>
 
   suspend fun createPaymentToken(
     request: PaymentRequest,
     componentsVersion: String = COMPONENT_VERSION
-  ): Response<PaymentResponse>
+  ): XenditRepositoryResult<PaymentResponse>
 
   suspend fun getPaymentRequest(
     paymentRequestId: String,
     componentsVersion: String = COMPONENT_VERSION
-  ): Response<PaymentResponse>
+  ): XenditRepositoryResult<PaymentResponse>
 
   suspend fun getCardInfo(
     sessionId: String,
     componentsVersion: String = COMPONENT_VERSION,
     encryptedCardNumber: String
-  ): Response<CardDetails>
+  ): XenditRepositoryResult<CardDetails>
 
   suspend fun pollSession(
     sessionId: String,
     tokenRequestId: String?,
     componentsVersion: String = COMPONENT_VERSION
-  ): Response<PollResponse>
+  ): XenditRepositoryResult<PollResponse>
 
   suspend fun simulatePaymentRequest(
     sessionId: String,
     paymentRequestId: String,
     request: SimulatePaymentRequest,
     componentsVersion: String = COMPONENT_VERSION
-  ): Response<PaymentResponse>
+  ): XenditRepositoryResult<PaymentResponse>
 
   suspend fun getPaymentOptions(
     sessionId: String,
     componentsVersion: String = COMPONENT_VERSION,
     request: PaymentOptionsRequest
-  ): Response<PaymentOptionsResponse>
+  ): XenditRepositoryResult<PaymentOptionsResponse>
 }
 
 const val COMPONENT_VERSION = "v0.0.24"
