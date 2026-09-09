@@ -73,10 +73,40 @@ internal sealed interface AwaitingPaymentAction {
   data object GooglePayProcessing : AwaitingPaymentAction
 }
 
+internal sealed interface PaymentFlowState {
+  data object LoadingSession : PaymentFlowState
+  data object SelectingPaymentMethod : PaymentFlowState
+  data class Redirecting(val action: PaymentAction) : PaymentFlowState
+  data class PresentingCustomerAction(val action: PaymentAction) : PaymentFlowState
+  data class StartupError(val message: String) : PaymentFlowState
+}
+
+internal sealed interface PaymentOverlayState {
+  data object Loading : PaymentOverlayState
+  data class AwaitingAction(val action: AwaitingPaymentAction) : PaymentOverlayState
+}
+
 internal data class ChannelVariantChannels(
   val saveChannel: BffChannel? = null,
   val nonSaveChannel: BffChannel? = null
 )
+
+internal val PaymentState.flowState: PaymentFlowState
+  get() = when {
+    paymentActionRedirect != null -> PaymentFlowState.Redirecting(paymentActionRedirect)
+    presentToCustomerPaymentAction != null ->
+      PaymentFlowState.PresentingCustomerAction(presentToCustomerPaymentAction)
+    errorMessage != null && sessionResponse == null -> PaymentFlowState.StartupError(errorMessage)
+    channels.isNotEmpty() -> PaymentFlowState.SelectingPaymentMethod
+    else -> PaymentFlowState.LoadingSession
+  }
+
+internal val PaymentState.overlayState: PaymentOverlayState?
+  get() = when {
+    awaitingPaymentAction != null -> PaymentOverlayState.AwaitingAction(awaitingPaymentAction)
+    isLoading -> PaymentOverlayState.Loading
+    else -> null
+  }
 
 internal data class CombinedChannelsResult(
   val channels: List<BffChannel>,

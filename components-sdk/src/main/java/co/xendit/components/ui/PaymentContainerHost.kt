@@ -439,9 +439,9 @@ internal fun PaymentContainerHost(
               .fillMaxWidth()
               .weight(1f)
           ) {
-            when {
-              mviState.paymentActionRedirect != null -> {
-                val redirect = mviState.paymentActionRedirect!!
+            when (val flowState = mviState.flowState) {
+              is PaymentFlowState.Redirecting -> {
+                val redirect = flowState.action
                 val url = redirect.value.orEmpty()
                 if (redirect.descriptor == PaymentActionDescriptor.DEEPLINK_URL) {
                   LaunchedEffect(url) {
@@ -471,8 +471,8 @@ internal fun PaymentContainerHost(
                 }
               }
 
-              mviState.presentToCustomerPaymentAction != null -> {
-                val action = mviState.presentToCustomerPaymentAction!!
+              is PaymentFlowState.PresentingCustomerAction -> {
+                val action = flowState.action
                 val merchantName = mviState.sessionResponse?.business?.name
                 val selectedChannel = mviState.selectedChannel
                 val channelName = selectedChannel?.brandName.orEmpty()
@@ -547,7 +547,7 @@ internal fun PaymentContainerHost(
                 }
               }
 
-              mviState.channels.isNotEmpty() -> {
+              PaymentFlowState.SelectingPaymentMethod -> {
                 Column {
                   GenericHeader(
                     title = stringResource(id = R.string.sessionpayment_methods_select_payment_method),
@@ -758,71 +758,83 @@ internal fun PaymentContainerHost(
                   }
                 }
               }
+
+              PaymentFlowState.LoadingSession,
+              is PaymentFlowState.StartupError -> Unit
             }
           }
         }
 
-        if (mviState.errorMessage != null && mviState.sessionResponse == null) {
-          Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            AlertDialog(
-              onDismissRequest = { onCleanup() },
-              title = { Text(stringResource(id = R.string.sessiondefault_error_title)) },
-              text = { Text(mviState.errorMessage ?: "") },
-              confirmButton = {
-                Button(
-                  onClick = { onCleanup() },
-                  modifier = Modifier.testTag(XenditTestTags.DIALOG_ERROR_CLOSE_BUTTON)
-                ) {
-                  Text(stringResource(R.string.sessiondialog_close))
-                }
+          when (val flowState = mviState.flowState) {
+            is PaymentFlowState.StartupError -> {
+              Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                AlertDialog(
+                  onDismissRequest = { onCleanup() },
+                  title = { Text(stringResource(id = R.string.sessiondefault_error_title)) },
+                  text = { Text(flowState.message) },
+                  confirmButton = {
+                    Button(
+                      onClick = { onCleanup() },
+                      modifier = Modifier.testTag(XenditTestTags.DIALOG_ERROR_CLOSE_BUTTON)
+                    ) {
+                      Text(stringResource(R.string.sessiondialog_close))
+                    }
+                  }
+                )
               }
-            )
+            }
+
+            else -> Unit
           }
-        }
 
-        val awaitingPaymentAction = mviState.awaitingPaymentAction
-        if (awaitingPaymentAction != null) {
-          val resolvedChannelName =
-            mviState.selectedChannel?.brandName.orEmpty().ifBlank { "payment" }
-          val deeplinkTitleTemplate =
-            stringResource(R.string.sessionaction_deeplink_instructions)
-          val emptyPaymentActions =
-            stringResource(R.string.sessionaction_empty_list_push_notification_subtext)
+          when (val overlayState = mviState.overlayState) {
+            is PaymentOverlayState.AwaitingAction -> {
+              val awaitingPaymentAction = overlayState.action
+              val resolvedChannelName =
+                mviState.selectedChannel?.brandName.orEmpty().ifBlank { "payment" }
+              val deeplinkTitleTemplate =
+                stringResource(R.string.sessionaction_deeplink_instructions)
+              val emptyPaymentActions =
+                stringResource(R.string.sessionaction_empty_list_push_notification_subtext)
 
-          val subtitle =
-            when (awaitingPaymentAction) {
-              AwaitingPaymentAction.GooglePayProcessing -> null
-              AwaitingPaymentAction.Deeplink -> deeplinkTitleTemplate.replace(
-                "{{channelName}}",
-                resolvedChannelName
-              )
+              val subtitle =
+                when (awaitingPaymentAction) {
+                  AwaitingPaymentAction.GooglePayProcessing -> null
+                  AwaitingPaymentAction.Deeplink -> deeplinkTitleTemplate.replace(
+                    "{{channelName}}",
+                    resolvedChannelName
+                  )
 
-              AwaitingPaymentAction.EmptyPaymentActions -> emptyPaymentActions.replace(
-                "{{channelName}}",
-                resolvedChannelName
+                  AwaitingPaymentAction.EmptyPaymentActions -> emptyPaymentActions.replace(
+                    "{{channelName}}",
+                    resolvedChannelName
+                  )
+                }
+              AwaitingPaymentDialog(
+                modifier = Modifier.matchParentSize(),
+                appearance = style,
+                channelLogoUrl = mviState.selectedChannel?.brandLogoUrl.takeIf { awaitingPaymentAction != GooglePayProcessing },
+                channelLogoRes = R.drawable.ic_google_pay.takeIf { awaitingPaymentAction == GooglePayProcessing },
+                onClose = { viewModel.dispatch(ActionIntent.CloseWebPayment) },
+                title = stringResource(R.string.sessionaction_deeplink_title),
+                subtitle = subtitle ?: ""
               )
             }
-          AwaitingPaymentDialog(
-            modifier = Modifier.matchParentSize(),
-            appearance = style,
-            channelLogoUrl = mviState.selectedChannel?.brandLogoUrl.takeIf { mviState.awaitingPaymentAction != GooglePayProcessing },
-            channelLogoRes = R.drawable.ic_google_pay.takeIf { mviState.awaitingPaymentAction == GooglePayProcessing },
-            onClose = { viewModel.dispatch(ActionIntent.CloseWebPayment) },
-            title = stringResource(R.string.sessionaction_deeplink_title),
-            subtitle = subtitle ?: ""
-          )
-        }
-        if (mviState.isLoading) {
-          Box(
-            modifier = Modifier
-              .matchParentSize()
-              .background(Color.Black.copy(alpha = 0.08f))
-              .pointerInteropFilter { true },
-            contentAlignment = Alignment.Center
-          ) {
-            CircularProgressIndicator()
+
+            PaymentOverlayState.Loading -> {
+              Box(
+                modifier = Modifier
+                  .matchParentSize()
+                  .background(Color.Black.copy(alpha = 0.08f))
+                  .pointerInteropFilter { true },
+                contentAlignment = Alignment.Center
+              ) {
+                CircularProgressIndicator()
+              }
+            }
+
+            null -> Unit
           }
-        }
       }
     }
   }
