@@ -81,6 +81,7 @@ object XenditComponents {
 
   private class ActivePresentationSession(
     val activity: ComponentActivity,
+    val sessionHandle: XenditComponentsSession,
     val controller: PaymentContainerSessionController,
     val composeView: ComposeView,
     val onPaymentResult: (XenditPaymentResult) -> Unit,
@@ -165,10 +166,35 @@ object XenditComponents {
     merchantPreferredPaymentMethod: List<XenditComponentsPaymentType>? = null,
     onPaymentResult: (XenditPaymentResult) -> Unit
   ) {
+    launcher(activity).present(
+      componentsSdkKey = componentsSdkKey,
+      merchantPreferredPaymentMethod = merchantPreferredPaymentMethod,
+      onPaymentResult = onPaymentResult
+    )
+  }
+
+  @Keep
+  fun launcher(activity: ComponentActivity): XenditComponentsLauncher {
+    return XenditComponentsLauncher(
+      activity = activity,
+      configuration = currentLauncherConfiguration(),
+      presenter = ::presentFromLauncher
+    )
+  }
+
+  private fun presentFromLauncher(
+    activity: ComponentActivity,
+    configuration: XenditLauncherConfiguration,
+    componentsSdkKey: String,
+    merchantPreferredPaymentMethod: List<XenditComponentsPaymentType>?,
+    onPaymentResult: (XenditPaymentResult) -> Unit
+  ): XenditComponentsSession {
     CoreSdkComponent.init(activity.applicationContext)
     CoreSdkComponent.headerProvider.setMerchantAppId(activity.packageName ?: "")
 
+    this.xenditAppearance = configuration.appearance
     this.merchantPreferredPaymentMethod = merchantPreferredPaymentMethod
+      ?: configuration.merchantPreferredPaymentMethod
 
     val keys =
       try {
@@ -184,16 +210,25 @@ object XenditComponents {
             )
           )
         )
-        return
+        return XenditComponentsSession(dismissAction = {}, wipeAction = {})
       }
 
     CoreSdkComponent.setBaseUrl(resolveBaseUrlForHostId(keys.hostId))
 
     cleanup()
     val controller = PaymentContainerSessionController()
+    val sessionHandle =
+      XenditComponentsSession(
+        dismissAction = { controller.requestDismiss() },
+        wipeAction = {
+          controller.requestWipe()
+          runCatching { safeSessionTelemetry()?.discardAll() }
+        }
+      )
     val session =
       ActivePresentationSession(
         activity = activity,
+        sessionHandle = sessionHandle,
         controller = controller,
         composeView =
           ComposeView(activity).apply {
@@ -282,11 +317,12 @@ object XenditComponents {
         ViewGroup.LayoutParams.MATCH_PARENT
       )
     )
+    return sessionHandle
   }
 
   /** Dismisses the payment bottom sheet manually */
   fun dismiss() {
-    activeSession?.controller?.requestDismiss()
+    activeSession?.sessionHandle?.dismiss()
   }
 
   /**
@@ -302,8 +338,7 @@ object XenditComponents {
    */
   @Keep
   fun wipeAllSensitiveData() {
-    activeSession?.controller?.requestWipe()
-    runCatching { safeSessionTelemetry()?.discardAll() }
+    activeSession?.sessionHandle?.wipeAllSensitiveData()
   }
 
 
@@ -328,11 +363,15 @@ object XenditComponents {
    */
   @Keep
   fun performSensitiveDataGcPass() {
-    runCatching {
-      Runtime.getRuntime().gc()
-      Runtime.getRuntime().runFinalization()
-      Runtime.getRuntime().gc()
-    }
+    activeSession?.sessionHandle?.performSensitiveDataGcPass()
+      ?: XenditComponentsSession(dismissAction = {}, wipeAction = {}).performSensitiveDataGcPass()
+  }
+
+  private fun currentLauncherConfiguration(): XenditLauncherConfiguration {
+    return XenditLauncherConfiguration(
+      appearance = xenditAppearance,
+      merchantPreferredPaymentMethod = merchantPreferredPaymentMethod
+    )
   }
 
   private fun cleanup(session: ActivePresentationSession? = activeSession) {

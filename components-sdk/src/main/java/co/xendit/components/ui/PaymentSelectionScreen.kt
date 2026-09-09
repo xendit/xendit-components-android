@@ -79,6 +79,7 @@ internal fun PaymentSelectionScreen(
         )
       }
     }
+  val selectedChannel = selectionUi.selectedChannel
 
   Column {
     GenericHeader(
@@ -225,45 +226,29 @@ internal fun PaymentSubmitButton(
   ) -> Unit
 ) {
   val selectedChannel = state.selectedChannel
+  val draftUi = state.toSubmitUi(isEnabled = false)
   val isPaymentSelected = state.expandedUiGroup != null && selectedChannel != null
   val isSelectedChannelAvailable =
     selectedChannel?.isAvailableForAmount(
       state.sessionResponse?.session?.amount,
       state.sessionType
     ) != false
-  val currentDraft =
-    if (selectedChannel == null) {
-      PaymentDraft()
-    } else {
-      state.paymentDrafts[selectedChannel.channelCode]
-        ?: PaymentDraft(channelCode = selectedChannel.channelCode)
-    }
   val isPayEnabled =
     isPaymentSelected && isSelectedChannelAvailable && !state.isLoading && validateAllField(
-      currentDraft.visibleFields,
-      currentDraft.formValues,
+      draftUi.currentDraft.visibleFields,
+      draftUi.currentDraft.formValues,
       cardDetails = cardState.cardDetails,
       bffCardInfo = selectedChannel.card
     )
-  val payText =
-    when (state.sessionType) {
-      BffSessionType.SAVE ->
-        stringResource(id = R.string.sessionpayment_methods_add_payment_method)
-
-      BffSessionType.SUBSCRIPTION ->
-        stringResource(id = R.string.sessionchannel_selection_confirm_subscription)
-
-      else ->
-        stringResource(id = R.string.sessionpayment_methods_submit_pay)
-    }
+  val submitUi = state.toSubmitUi(isEnabled = isPayEnabled)
+  val payText = submitUi.buttonText.asString()
 
   Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
     Button(
-      enabled = isPayEnabled,
+      enabled = submitUi.isEnabled,
       onClick = {
-        val selected = state.selectedChannel ?: return@Button
-        val draft = state.paymentDrafts[selected.channelCode]
-          ?: PaymentDraft(channelCode = selected.channelCode)
+        val selected = submitUi.selectedChannel ?: return@Button
+        val draft = submitUi.currentDraft
         val installmentPlans =
           if (selected.pmType == XenditComponentsPaymentType.CARDS) {
             cardState.installmentPlans

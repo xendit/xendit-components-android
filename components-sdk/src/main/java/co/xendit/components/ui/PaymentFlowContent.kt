@@ -113,23 +113,20 @@ internal fun CustomerActionScreen(
   onClose: () -> Unit,
   onPaymentMade: () -> Unit
 ) {
-  val merchantName = state.sessionResponse?.business?.name
-  val selectedChannel = state.selectedChannel
-  val channelName = selectedChannel?.brandName.orEmpty()
-  val channelLogoUrl = selectedChannel?.brandLogoUrl
+  val actionUi = state.customerActionUi ?: return
 
   when (action.descriptor) {
     PaymentActionDescriptor.VIRTUAL_ACCOUNT_NUMBER -> {
       ActionVirtualAccountUI(
         title = action.actionTitle,
         subtitle = action.actionSubtitle,
-        channelName = channelName.ifBlank { "Virtual Account" },
-        channelLogoUrl = channelLogoUrl,
-        channelBrandColor = selectedChannel?.brandColor,
+        channelName = actionUi.channelName.ifBlank { "Virtual Account" },
+        channelLogoUrl = actionUi.channelLogoUrl,
+        channelBrandColor = actionUi.channelBrandColor,
         virtualAccountNumber = action.value.orEmpty(),
-        merchantName = merchantName,
-        amount = state.sessionResponse?.session?.amount,
-        currency = state.sessionResponse?.session?.currency,
+        merchantName = actionUi.merchantName,
+        amount = actionUi.amount,
+        currency = actionUi.currency,
         instructions = action.instructions,
         onClose = onClose,
         onPaymentMade = onPaymentMade,
@@ -140,12 +137,12 @@ internal fun CustomerActionScreen(
     PaymentActionDescriptor.QR_STRING -> {
       ActionQrUI(
         title = action.actionTitle,
-        merchantName = merchantName,
-        channelName = channelName.ifBlank { "QR Code" },
-        channelLogoUrl = channelLogoUrl,
+        merchantName = actionUi.merchantName,
+        channelName = actionUi.channelName.ifBlank { "QR Code" },
+        channelLogoUrl = actionUi.channelLogoUrl,
         qrString = action.value.orEmpty(),
-        amount = state.sessionResponse?.session?.amount,
-        currency = state.sessionResponse?.session?.currency,
+        amount = actionUi.amount,
+        currency = actionUi.currency,
         onClose = onClose,
         onPaymentMade = onPaymentMade,
         snackbarHostState = snackbarHostState
@@ -156,13 +153,13 @@ internal fun CustomerActionScreen(
       ActionBarcodeUI(
         title = action.actionTitle,
         subtitle = action.actionSubtitle,
-        channelName = channelName.ifBlank { "Payment Code" },
-        channelLogoUrl = channelLogoUrl,
-        channelBrandColor = selectedChannel?.brandColor,
+        channelName = actionUi.channelName.ifBlank { "Payment Code" },
+        channelLogoUrl = actionUi.channelLogoUrl,
+        channelBrandColor = actionUi.channelBrandColor,
         paymentCode = action.value.orEmpty(),
-        merchantName = merchantName,
-        amount = state.sessionResponse?.session?.amount,
-        currency = state.sessionResponse?.session?.currency,
+        merchantName = actionUi.merchantName,
+        amount = actionUi.amount,
+        currency = actionUi.currency,
         instructions = action.instructions,
         onClose = onClose,
         onPaymentMade = onPaymentMade,

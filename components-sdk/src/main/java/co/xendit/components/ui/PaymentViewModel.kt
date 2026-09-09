@@ -4,7 +4,6 @@ import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import co.xendit.components.XenditComponentsPaymentType
-import co.xendit.components.XenditComponentsPaymentType.Companion.BLACKLISTED_CHANNEL
 import co.xendit.components.core.CoreSdkComponent
 import co.xendit.components.core.model.GlobalErrorHandler
 import co.xendit.components.data.model.BffChannel
@@ -26,9 +25,7 @@ import co.xendit.components.data.model.SessionResponse
 import co.xendit.components.data.model.SimulatePaymentRequest
 import co.xendit.components.data.model.isPaySession
 import co.xendit.components.data.model.primaryChannelPropertyKey
-import co.xendit.components.data.model.usesPaymentTokenSubmission
 import co.xendit.components.data.network.repo.session.XenditRepository
-import co.xendit.components.data.network.repo.session.XenditRepositoryResult
 import co.xendit.components.telemetry.SessionTelemetry
 import co.xendit.components.ui.components.molecule.UiText
 import co.xendit.components.util.PaymentRequestMapper
@@ -244,7 +241,11 @@ internal sealed class ActionIntent {
 internal class PaymentViewModel(
   private val xenditRepository: XenditRepository,
   private val globalErrorHandler: GlobalErrorHandler,
-  private val telemetry: SessionTelemetry
+  private val telemetry: SessionTelemetry,
+  private val sessionRuntime: PaymentSessionRuntime = PaymentSessionRuntime(),
+  private val sessionLoader: PaymentSessionLoader = PaymentSessionLoader(xenditRepository),
+  private val submissionCoordinator: PaymentSubmissionCoordinator = PaymentSubmissionCoordinator(xenditRepository),
+  private val pollingCoordinator: PaymentPollingCoordinator = PaymentPollingCoordinator(xenditRepository)
 ) : ViewModel() {
   private val telemetryCoordinator = PaymentTelemetryCoordinator(telemetry)
 
@@ -262,20 +263,16 @@ internal class PaymentViewModel(
   private val _state = MutableStateFlow(PaymentState())
   val state: StateFlow<PaymentState> = _state.asStateFlow()
 
-  private var publicKey: String? = null
-  private var sessionAuthKey: String? = null
-  private var paymentSessionId: String? = null
-  private var lastPaymentRequestId: String? = null
-  private var lastSessionTokenRequestId: String? = null
   private var challengePollingJob: Job? = null
-  private val lastSelectedChannelCodeByUiGroup: MutableMap<String, String> = mutableMapOf()
 
   fun dispatch(intent: ActionIntent) {
     when (intent) {
       is ActionIntent.Initialize -> {
         wipeAllSensitiveData()
-        this.sessionAuthKey = intent.sessionAuthKey
-        this.publicKey = intent.publicKey
+        sessionRuntime.initialize(
+          sessionAuthKey = intent.sessionAuthKey,
+          publicKey = intent.publicKey
+        )
         dispatch(ActionIntent.FetchSession(intent.sessionAuthKey))
       }
 
@@ -331,58 +328,42 @@ internal class PaymentViewModel(
     viewModelScope.launch {
       _state.update { it.copy(isLoading = true, errorMessage = null) }
       try {
-        when (val response = xenditRepository.getSession(sessionAuthKey)) {
-          is XenditRepositoryResult.Success -> {
-            val body = response.data
-              val session = body.session
-              val channels = body.paymentChannels.orEmpty().filter {
-                !BLACKLISTED_CHANNEL.contains(it.channelCode)
-              }
-              val allSelectableChannelCodes = channels.map { it.channelCode }
-              val variantsByDisplayCode = combinePairedChannels(channels).variantsByDisplayCode
-              this@PaymentViewModel.paymentSessionId =
-                session?.paymentSessionId ?: session?.id
-              val sessionType = body.session?.sessionType
-              val allowSavePaymentMethod = body.session?.allowSavePaymentMethod
+        when (val result = sessionLoader.load(sessionAuthKey)) {
+          is PaymentSessionLoadResult.Success -> {
+            val data = result.data
+            sessionRuntime.updatePaymentSessionId(data.paymentSessionId)
 
-              telemetryCoordinator.onSessionLoadedSuccess(
-                selectableChannelCodes = allSelectableChannelCodes,
-                paymentSessionId = this@PaymentViewModel.paymentSessionId,
-                sessionStatus = session?.status
-              )
+            telemetryCoordinator.onSessionLoadedSuccess(
+              selectableChannelCodes = data.selectableChannelCodes,
+              paymentSessionId = data.paymentSessionId,
+              sessionStatus = data.sessionStatus
+            )
 
-              if (channels.isNotEmpty()) {
-                _state.update {
-                  it.copy(
-                    isLoading = false,
-                    channels = channels,
-                    channelVariantsByDisplayCode = variantsByDisplayCode,
-                    paymentSessionId = this@PaymentViewModel.paymentSessionId,
-                    sessionResponse = body,
-                    errorMessage = null,
-                    sessionType = sessionType,
-                    allowSavePaymentMethod = allowSavePaymentMethod
-                  )
-                }
-              } else {
-                _state.update { it.copy(isLoading = false, sessionResponse = body) }
+            if (data.channels.isNotEmpty()) {
+              _state.update {
+                it.copy(
+                  isLoading = false,
+                  channels = data.channels,
+                  channelVariantsByDisplayCode = data.channelVariantsByDisplayCode,
+                  paymentSessionId = data.paymentSessionId,
+                  sessionResponse = data.sessionResponse,
+                  errorMessage = null,
+                  sessionType = data.sessionType,
+                  allowSavePaymentMethod = data.allowSavePaymentMethod
+                )
               }
+            } else {
+              _state.update { it.copy(isLoading = false, sessionResponse = data.sessionResponse) }
+            }
           }
-          is XenditRepositoryResult.Failure -> {
-            val errorMessage = response.message ?: "Failed to fetch session"
-            val errorCode = response.errorCode
+
+          is PaymentSessionLoadResult.Failure -> {
             telemetryCoordinator.onSessionLoadedFailure()
             _state.update {
               it.copy(
                 isLoading = false,
-                errorMessage = if (errorCode == "NETWORK_ERROR") null else errorMessage
+                errorMessage = if (result.errorCode == "NETWORK_ERROR") null else result.message
               )
-            }
-          }
-          is XenditRepositoryResult.EmptyBody -> {
-            telemetryCoordinator.onSessionLoadedFailure()
-            _state.update {
-              it.copy(isLoading = false, errorMessage = "Failed to fetch session")
             }
           }
         }
@@ -420,7 +401,7 @@ internal class PaymentViewModel(
       } else if (currentSelected?.uiGroup == newExpandedUiGroup) {
         currentSelected
       } else {
-        val lastSelectedCode = lastSelectedChannelCodeByUiGroup[newExpandedUiGroup]
+        val lastSelectedCode = sessionRuntime.lastSelectedChannel(newExpandedUiGroup)
         val lastSelected =
           lastSelectedCode?.let { code -> channels.firstOrNull { it.channelCode == code } }
         lastSelected ?: (groups[newExpandedUiGroup]?.firstOrNull()
@@ -428,7 +409,7 @@ internal class PaymentViewModel(
       }
 
     if (nextSelected != null) {
-      lastSelectedChannelCodeByUiGroup[nextSelected.uiGroup] = nextSelected.channelCode
+      sessionRuntime.rememberSelectedChannel(nextSelected.uiGroup, nextSelected.channelCode)
       applySelectedChannelTelemetry(nextSelected.channelCode)
     } else {
       telemetryCoordinator.clearSelectedChannel()
@@ -449,7 +430,7 @@ internal class PaymentViewModel(
 
   private fun selectChannelInternal(channelCode: String) {
     val selected = _state.value.channels.firstOrNull { it.channelCode == channelCode } ?: return
-    lastSelectedChannelCodeByUiGroup[selected.uiGroup] = selected.channelCode
+    sessionRuntime.rememberSelectedChannel(selected.uiGroup, selected.channelCode)
     applySelectedChannelTelemetry(channelCode)
     _state.update {
       it.copy(
@@ -612,38 +593,6 @@ internal class PaymentViewModel(
     ) -> PaymentRequest
   ) {
     viewModelScope.launch {
-      // ---- Spec "CHECKOUT_ATTEMPT_BEGIN - Fail If: Validation error" -----------------------
-      // Before anything (loading state update / attempt scope push), scan all ChannelFormFields
-      // where required=true. If any required key is blank, emit AttemptBegin(false) with
-      // metadata.validation_error = "<KEY>_REQUIRED", show the user error in UI, and return
-      // WITHOUT calling the API.
-      val requiredValidationError: String? = run validation@{
-        fields
-          .filter { it.required }
-          .forEach { field ->
-            val key = field.primaryChannelPropertyKey()
-            val value = formValues[key]?.takeIf { it.isNotBlank() }
-            if (value == null) {
-              return@validation "${key.uppercase()}_REQUIRED"
-            }
-          }
-        null
-      }
-      if (requiredValidationError != null) {
-        telemetryCoordinator.onAttemptValidationFailed(requiredValidationError)
-        val userMessage = "Missing required field: $requiredValidationError"
-        XLogger.d("submitPaymentInternal validation failed: $userMessage")
-        globalErrorHandler.postError(errorMessage = UiText.DynamicString(userMessage))
-        _state.update {
-          it.copy(
-            isLoading = false,
-            awaitingPaymentAction = null,
-            errorMessage = userMessage
-          )
-        }
-        return@launch
-      }
-
       _state.update {
         it.copy(
           isLoading = if (isGooglePay) false else true,
@@ -657,164 +606,144 @@ internal class PaymentViewModel(
       }
       telemetryCoordinator.onAttemptStarted()
 
-      try {
-        val key = publicKey ?: throw IllegalStateException("Public Key not set")
-        val authKey = sessionAuthKey ?: throw IllegalStateException("Session ID not set")
-        val paySid = paymentSessionId ?: throw IllegalStateException("Payment Session ID not set")
-
-        val request = buildRequest(authKey, key, paySid)
-
-        when (
-          val response =
-          if (_state.value.sessionType.usesPaymentTokenSubmission()) {
-            xenditRepository.createPaymentToken(request = request)
-          } else {
-            xenditRepository.createPaymentRequest(request = request)
-          }
-        ) {
-          is XenditRepositoryResult.Success -> {
-            val body = response.data
-          lastPaymentRequestId = body.id
-          lastSessionTokenRequestId = body.sessionTokenRequestId
-          telemetryCoordinator.onPaymentEntityCreated(body)
-
-          val actions = body.paymentActions.orEmpty()
-          val redirect =
-            actions.firstOrNull {
-              it.type == "REDIRECT_CUSTOMER" &&
-                  (it.descriptor == PaymentActionDescriptor.WEB_URL ||
-                      it.descriptor == PaymentActionDescriptor.DEEPLINK_URL ||
-                      it.descriptor == PaymentActionDescriptor.WEB_GOOGLE_PAYLINK)
-            }
-          if (body.status == PaymentRequestStatus.REQUIRES_ACTION) {
-            val presentToCustomer =
-              actions.firstOrNull {
-                it.type == "PRESENT_TO_CUSTOMER" &&
-                    it.value != null &&
-                    (it.descriptor == PaymentActionDescriptor.VIRTUAL_ACCOUNT_NUMBER ||
-                        it.descriptor == PaymentActionDescriptor.QR_STRING)
-              } ?: actions.firstOrNull { it.type == "PRESENT_TO_CUSTOMER" && it.value != null }
-            when {
-              redirect?.value != null -> {
-                telemetryCoordinator.onRedirectActionPresented()
-
-                _state.update {
-                  it.copy(
-                    isLoading = false,
-                    awaitingPaymentAction = null,
-                    paymentActionRedirect = redirect,
-                    presentToCustomerPaymentAction = null,
-                    paymentResponse = null
-                  )
-                }
-              }
-
-              presentToCustomer != null -> {
-                telemetryCoordinator.onPresentToCustomerActionPresented()
-
-                _state.update {
-                  it.copy(
-                    isLoading = false,
-                    awaitingPaymentAction = null,
-                    presentToCustomerPaymentAction = presentToCustomer,
-                    paymentActionRedirect = null,
-                    paymentResponse = null
-                  )
-                }
-              }
-
-              actions.isEmpty() -> {
-                _state.update {
-                  it.copy(
-                    isLoading = false,
-                    awaitingPaymentAction = AwaitingPaymentAction.EmptyPaymentActions,
-                    paymentActionRedirect = null,
-                    presentToCustomerPaymentAction = null,
-                    paymentResponse = body
-                  )
-                }
-              }
-
-              else -> {
-                // body.status != REQUIRES_ACTION + no action presented.
-                // If the entity itself ended in FAILED/CANCELED/EXPIRED (payment failure screen
-                // case A in spec), emit AttemptDiscard with the entity status as failure_code.
-                // This mirrors Web SubmissionBehavior.exit() + discardPaymentEntity() for
-                // entities that fail before reaching REQUIRES_ACTION or any action screen.
-                when (body.status) {
-                  PaymentRequestStatus.FAILED,
-                  PaymentRequestStatus.CANCELED,
-                  PaymentRequestStatus.EXPIRED -> {
-                    telemetryCoordinator.discardAttemptIfInFlight(
-                      success = false,
-                      failureCode = body.status.name
-                    )
-                  }
-
-                  else -> Unit
-                }
-                _state.update {
-                  it.copy(
-                    isLoading = false,
-                    awaitingPaymentAction = null,
-                    paymentResponse = body
-                  )
-                }
-              }
-            }
-          } else {
-            _state.update {
-              it.copy(
-                isLoading = false,
-                awaitingPaymentAction = null,
-                paymentResponse = body
-              )
-            }
-          }
-          onChallengeCompletedInternal()
-          }
-          is XenditRepositoryResult.Failure -> {
-            val errorCode = response.errorCode ?: "-1"
-            telemetryCoordinator.onAttemptError(errorCode)
-            val errorMessage =
-              response.apiError?.errorContent?.message1 ?: response.message ?: "$errorPrefix Failed"
-            _state.update {
-              it.copy(
-                isLoading = false,
-                awaitingPaymentAction = null,
-                errorMessage = errorMessage
-              )
-            }
-          }
-          is XenditRepositoryResult.EmptyBody -> {
-            telemetryCoordinator.onAttemptError("EMPTY_BODY")
-            _state.update {
-              it.copy(
-                isLoading = false,
-                awaitingPaymentAction = null,
-                errorMessage = "$errorPrefix Failed"
-              )
-            }
-          }
-        }
-      } catch (e: Exception) {
-        telemetryCoordinator.onAttemptError(e.message)
-        val errorMessage = e.message ?: "$errorPrefix Error"
-        globalErrorHandler.postError(errorMessage = UiText.DynamicString(errorMessage))
+      val executionContext = sessionRuntime.executionContext()
+      if (executionContext == null) {
+        telemetryCoordinator.onAttemptError("MISSING_SESSION_CONTEXT")
         _state.update {
           it.copy(
             isLoading = false,
             awaitingPaymentAction = null,
-            errorMessage = errorMessage
+            errorMessage = "$errorPrefix Error"
           )
+        }
+        return@launch
+      }
+
+      when (
+        val result = submissionCoordinator.submit(
+          sessionType = _state.value.sessionType,
+          context = executionContext,
+          formValues = formValues,
+          fields = fields,
+        ) { context ->
+          buildRequest(
+            context.sessionAuthKey,
+            context.publicKey,
+            context.paymentSessionId
+          )
+        }
+      ) {
+        is PaymentSubmissionResult.ValidationFailure -> {
+          telemetryCoordinator.onAttemptValidationFailed(result.validationError)
+          XLogger.d("submitPaymentInternal validation failed: ${result.userMessage}")
+          globalErrorHandler.postError(errorMessage = UiText.DynamicString(result.userMessage))
+          _state.update {
+            it.copy(
+              isLoading = false,
+              awaitingPaymentAction = null,
+              errorMessage = result.userMessage
+            )
+          }
+        }
+
+        is PaymentSubmissionResult.ApiFailure -> {
+          telemetryCoordinator.onAttemptError(result.errorCode)
+          _state.update {
+            it.copy(
+              isLoading = false,
+              awaitingPaymentAction = null,
+              errorMessage = result.errorMessage
+            )
+          }
+        }
+
+        is PaymentSubmissionResult.UnexpectedFailure -> {
+          telemetryCoordinator.onAttemptError(result.errorMessage)
+          globalErrorHandler.postError(errorMessage = UiText.DynamicString(result.errorMessage))
+          _state.update {
+            it.copy(
+              isLoading = false,
+              awaitingPaymentAction = null,
+              errorMessage = result.errorMessage
+            )
+          }
+        }
+
+        is PaymentSubmissionResult.Success -> {
+          val body = result.data.response
+          sessionRuntime.recordSubmittedEntity(
+            paymentRequestId = body.id,
+            sessionTokenRequestId = body.sessionTokenRequestId
+          )
+          telemetryCoordinator.onPaymentEntityCreated(body)
+
+          when (val presentation = result.data.presentationTarget) {
+            is PaymentPresentationTarget.Redirect -> {
+              telemetryCoordinator.onRedirectActionPresented()
+              _state.update {
+                it.copy(
+                  isLoading = false,
+                  awaitingPaymentAction = null,
+                  paymentActionRedirect = presentation.action,
+                  presentToCustomerPaymentAction = null,
+                  paymentResponse = null
+                )
+              }
+            }
+
+            is PaymentPresentationTarget.PresentToCustomer -> {
+              telemetryCoordinator.onPresentToCustomerActionPresented()
+              _state.update {
+                it.copy(
+                  isLoading = false,
+                  awaitingPaymentAction = null,
+                  presentToCustomerPaymentAction = presentation.action,
+                  paymentActionRedirect = null,
+                  paymentResponse = null
+                )
+              }
+            }
+
+            PaymentPresentationTarget.AwaitingActionList -> {
+              _state.update {
+                it.copy(
+                  isLoading = false,
+                  awaitingPaymentAction = AwaitingPaymentAction.EmptyPaymentActions,
+                  paymentActionRedirect = null,
+                  presentToCustomerPaymentAction = null,
+                  paymentResponse = body
+                )
+              }
+            }
+
+            null -> {
+              if (body.status == PaymentRequestStatus.FAILED ||
+                body.status == PaymentRequestStatus.CANCELED ||
+                body.status == PaymentRequestStatus.EXPIRED
+              ) {
+                telemetryCoordinator.discardAttemptIfInFlight(
+                  success = false,
+                  failureCode = body.status.name
+                )
+              }
+              _state.update {
+                it.copy(
+                  isLoading = false,
+                  awaitingPaymentAction = null,
+                  paymentResponse = body
+                )
+              }
+            }
+          }
+          onChallengeCompletedInternal()
         }
       }
     }
   }
 
   private fun onChallengeCompletedInternal(forceStart: Boolean = false) {
-    val authKey = sessionAuthKey ?: return
-    val tokenReqId = lastSessionTokenRequestId
+    val authKey = sessionRuntime.sessionAuthKey ?: return
+    val tokenReqId = sessionRuntime.lastSessionTokenRequestId
 
     if (forceStart) {
       cancelChallenge()
@@ -827,40 +756,33 @@ internal class PaymentViewModel(
         try {
           var delayMs = 3000L
           while (isActive) {
-            when (val res = xenditRepository.pollSession(authKey, tokenReqId)) {
-              is XenditRepositoryResult.Success -> {
-                val poll = res.data
-                // Session-level CHECKOUT_PENDING (per spec: "On session pending, NOT PR/PT pending") —
-                // fire exactly once, like Web SessionPendingBehavior.enter().
-                if (poll.session?.status == PaymentSessionStatus.PENDING) {
+            when (val result = pollingCoordinator.poll(authKey, tokenReqId)) {
+              is PaymentPollingResult.Success -> {
+                val snapshot = result.snapshot
+                if (snapshot.sessionPending) {
                   telemetryCoordinator.onSessionPending()
                 }
 
-                val eitherTerminal =
-                  poll.session?.status.isTerminalSessionStatus() ||
-                      poll.paymentRequest?.status.isTerminalPaymentEntityStatus()
-                if (eitherTerminal && telemetryCoordinator.hasOpenActionScope()) {
+                if (snapshot.hasTerminalEntity && telemetryCoordinator.hasOpenActionScope()) {
                   markClosed()
                 }
-                val pollSessionStatus = poll.session?.status
-                if (pollSessionStatus.isTerminalSessionStatus() && pollSessionStatus != null) {
-                  telemetryCoordinator.onTerminalSessionStatus(pollSessionStatus)
+                if (snapshot.sessionStatus.isTerminalSessionStatus() && snapshot.sessionStatus != null) {
+                  telemetryCoordinator.onTerminalSessionStatus(snapshot.sessionStatus)
                 }
 
-                val prStatus = poll.paymentRequest?.status
-                val sessionNotTerminal = poll.session?.status.isTerminalSessionStatus().not()
+                val sessionNotTerminal = snapshot.sessionStatus.isTerminalSessionStatus().not()
                 if (sessionNotTerminal) {
-                  telemetryCoordinator.onPaymentRequestStatusWhileSessionActive(prStatus)
+                  telemetryCoordinator.onPaymentRequestStatusWhileSessionActive(snapshot.paymentRequestStatus)
                 }
                 _state.update {
                   it.copy(
-                    pollResponse = poll,
+                    pollResponse = snapshot.poll,
                   )
                 }
               }
-              else -> {
-              // On unauthorized or errors, just backoff and retry within timeout
-                XLogger.d("Challenge Error: $res")
+
+              is PaymentPollingResult.Failure -> {
+                XLogger.d("Challenge Error: ${result.reason}")
               }
             }
             delay(delayMs)
@@ -881,12 +803,12 @@ internal class PaymentViewModel(
   }
 
   private fun onSimulatePayment() {
-    val authKey = sessionAuthKey ?: return
+    val authKey = sessionRuntime.sessionAuthKey ?: return
     viewModelScope.launch {
       val isPaySession = _state.value.sessionType.isPaySession()
       val shouldSimulate = isPaySession && !CoreSdkComponent.isProdLive()
       if (shouldSimulate) {
-        val prId = lastPaymentRequestId
+        val prId = sessionRuntime.lastPaymentRequestId
         val channelCode = _state.value.selectedChannel?.channelCode
         if (!prId.isNullOrBlank() && !channelCode.isNullOrBlank()) {
           runCatching {
@@ -918,13 +840,7 @@ internal class PaymentViewModel(
     cancelChallenge()
     challengePollingJob = null
 
-    sessionAuthKey = null
-    publicKey = null
-    paymentSessionId = null
-    lastPaymentRequestId = null
-    lastSessionTokenRequestId = null
-
-    lastSelectedChannelCodeByUiGroup.clear()
+    sessionRuntime.clear()
     _state.value = PaymentState()
   }
 
@@ -945,11 +861,17 @@ internal class PaymentViewModel(
     publicKey: String? = null,
     lastSessionTokenRequestId: String? = null
   ) {
-    this.paymentSessionId = paymentSessionId
-    if (sessionAuthKey != null) this.sessionAuthKey = sessionAuthKey
-    if (publicKey != null) this.publicKey = publicKey
-    if (lastSessionTokenRequestId != null) this.lastSessionTokenRequestId =
-      lastSessionTokenRequestId
+    this.sessionRuntime.updatePaymentSessionId(paymentSessionId)
+    if (sessionAuthKey != null && publicKey != null) {
+      this.sessionRuntime.initialize(sessionAuthKey = sessionAuthKey, publicKey = publicKey)
+      this.sessionRuntime.updatePaymentSessionId(paymentSessionId)
+    }
+    if (lastSessionTokenRequestId != null) {
+      this.sessionRuntime.recordSubmittedEntity(
+        paymentRequestId = sessionRuntime.lastPaymentRequestId,
+        sessionTokenRequestId = lastSessionTokenRequestId
+      )
+    }
     _state.update {
       it.copy(
         sessionResponse = sessionResponse,
@@ -1000,34 +922,6 @@ internal class PaymentViewModel(
   private fun cancelChallenge() {
     challengePollingJob?.cancel()
   }
-
-  private fun PaymentSessionStatus?.isTerminalSessionStatus(): Boolean {
-    return when (this) {
-      PaymentSessionStatus.COMPLETED,
-      PaymentSessionStatus.EXPIRED,
-      PaymentSessionStatus.CANCELED -> true
-
-      PaymentSessionStatus.ACTIVE,
-      PaymentSessionStatus.PENDING,
-      null -> false
-    }
-  }
-
-  private fun PaymentRequestStatus?.isTerminalPaymentEntityStatus(): Boolean {
-    return when (this) {
-      PaymentRequestStatus.SUCCEEDED,
-      PaymentRequestStatus.FAILED,
-      PaymentRequestStatus.CANCELED,
-      PaymentRequestStatus.EXPIRED -> true
-
-      PaymentRequestStatus.ACCEPTING_PAYMENTS,
-      PaymentRequestStatus.REQUIRES_ACTION,
-      PaymentRequestStatus.PENDING,
-      PaymentRequestStatus.AUTHORIZED,
-      null -> false
-    }
-  }
-
 }
 
 internal fun buildPaymentRequest(
