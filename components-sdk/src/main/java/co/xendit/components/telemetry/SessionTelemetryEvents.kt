@@ -53,11 +53,6 @@ internal object TelemetryEvents {
     }
   }
 
-  fun DigitalWalletLoaded(success: Boolean) = object : SessionTelemetryEvent {
-    override val stage = TelemetryStage.CHECKOUT_DIGITAL_WALLET_LOADED
-    override val success = success
-  }
-
   fun Channel(success: Boolean, paymentChannel: String) = object : SessionTelemetryEvent {
     override val stage = TelemetryStage.CHECKOUT_CHANNEL
     override val success = success
@@ -108,6 +103,12 @@ internal object TelemetryEvents {
   fun ActionClose(success: Boolean) = object : SessionTelemetryEvent {
     override val stage = TelemetryStage.CHECKOUT_ACTION_CLOSE
     override val success = success
+  }
+
+  fun DigitalWalletLoaded(success: Boolean, digitalWallet: String) = object : SessionTelemetryEvent {
+    override val stage = TelemetryStage.CHECKOUT_DIGITAL_WALLET_LOADED
+    override val success = success
+    override val metadata = mapOf("digital_wallet" to digitalWallet)
   }
 
   fun DigitalWalletBegin(success: Boolean, digitalWallet: String) = object : SessionTelemetryEvent {

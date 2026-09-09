@@ -1056,7 +1056,7 @@ internal class PaymentViewModel(
   internal fun trackDigitalWalletLoaded() {
     if (digitalWalletLoadedTelemetryEmitted) return
     digitalWalletLoadedTelemetryEmitted = true
-    telemetry.append(TelemetryEvents.DigitalWalletLoaded(true))
+    telemetry.append(TelemetryEvents.DigitalWalletLoaded(true, "GOOGLE_PAY"))
   }
 
   @VisibleForTesting
