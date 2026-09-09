@@ -1,8 +1,5 @@
 package co.xendit.components
 
-import android.app.Activity
-import android.content.Context
-import android.content.ContextWrapper
 import android.view.ViewGroup
 import androidx.activity.ComponentActivity
 import androidx.annotation.Keep
@@ -20,15 +17,12 @@ import co.xendit.components.data.model.XenditError
 import co.xendit.components.data.model.XenditPaymentResult
 import co.xendit.components.telemetry.TelemetryHostResolver
 import co.xendit.components.ui.PaymentContainerHost
-import co.xendit.components.ui.PaymentContainerHostSignals
 import co.xendit.components.ui.PaymentContainerPresentation
+import co.xendit.components.ui.PaymentContainerSessionController
 import co.xendit.components.ui.style.XenditAppearance
 import co.xendit.components.ui.theme.XenditTheme
 import co.xendit.components.util.XLogger
 import com.google.gson.annotations.SerializedName
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 
 /** Main SDK entry point for displaying payment UI */
 @Keep
@@ -81,19 +75,19 @@ enum class XenditComponentsPaymentType(val value: String) {
 
 object XenditComponents {
 
-  private var composeView: ComposeView? = null
-  private var currentCallback: ((XenditPaymentResult) -> Unit)? = null
   private var xenditAppearance: XenditAppearance? = null
   private var merchantPreferredPaymentMethod: List<XenditComponentsPaymentType>? = null
-  private var lifecycleOwner: LifecycleOwner? = null
-  private var lifecycleObserver: DefaultLifecycleObserver? = null
-  private val scope = CoroutineScope(Dispatchers.Main)
+  private var activeSession: ActivePresentationSession? = null
 
-  private var activeComponentsSdkKey: String? = null
-  private var activeActivity: ComponentActivity? = null
-  private var activeMerchantPreferredPm: List<XenditComponentsPaymentType>? = null
-  private var componentCallbacks: android.content.ComponentCallbacks2? = null
-  private var processLifecycleObserver: DefaultLifecycleObserver? = null
+  private class ActivePresentationSession(
+    val activity: ComponentActivity,
+    val controller: PaymentContainerSessionController,
+    val composeView: ComposeView,
+    val onPaymentResult: (XenditPaymentResult) -> Unit,
+    var componentCallbacks: android.content.ComponentCallbacks2? = null,
+    var lifecycleObserver: DefaultLifecycleObserver? = null,
+    var processLifecycleObserver: DefaultLifecycleObserver? = null,
+  )
 
   /**
    * Global configuration for the SDK appearance. This is called before show() to apply custom styles.
@@ -171,10 +165,6 @@ object XenditComponents {
     merchantPreferredPaymentMethod: List<XenditComponentsPaymentType>? = null,
     onPaymentResult: (XenditPaymentResult) -> Unit
   ) {
-    if (activity !is Activity) {
-      throw IllegalArgumentException("Context must be an Activity to show the Payment SDK.")
-    }
-
     CoreSdkComponent.init(activity.applicationContext)
     CoreSdkComponent.headerProvider.setMerchantAppId(activity.packageName ?: "")
 
@@ -200,10 +190,20 @@ object XenditComponents {
     CoreSdkComponent.setBaseUrl(resolveBaseUrlForHostId(keys.hostId))
 
     cleanup()
-
-    activeComponentsSdkKey = componentsSdkKey
-    activeActivity = activity
-    activeMerchantPreferredPm = merchantPreferredPaymentMethod
+    val controller = PaymentContainerSessionController()
+    val session =
+      ActivePresentationSession(
+        activity = activity,
+        controller = controller,
+        composeView =
+          ComposeView(activity).apply {
+            setViewTreeLifecycleOwner(activity)
+            setViewTreeViewModelStoreOwner(activity)
+            setViewTreeSavedStateRegistryOwner(activity)
+          },
+        onPaymentResult = onPaymentResult
+      )
+    activeSession = session
 
     // ===== Telemetry: bind host + session auth key early, payment_session_id from FetchSession later.
     val telemetryHost = TelemetryHostResolver.fromHostId(keys.hostId)
@@ -224,21 +224,19 @@ object XenditComponents {
           // TRIM_MEMORY_MODERATE/COMPLETE = OS needs RAM now.
           // On any of these, do a full wipe (including form values):
           if (level >= android.content.ComponentCallbacks2.TRIM_MEMORY_BACKGROUND) {
-            PaymentContainerHostSignals.onWipeTriggerStatic?.invoke()
+            session.controller.requestWipe()
             runCatching { safeSessionTelemetry()?.discardAll() }
           }
         }
 
         override fun onConfigurationChanged(newConfig: android.content.res.Configuration) = Unit
         override fun onLowMemory() {
-          PaymentContainerHostSignals.onWipeTriggerStatic?.invoke()
+          session.controller.requestWipe()
           runCatching { safeSessionTelemetry()?.discardAll() }
         }
       }
-    this.componentCallbacks = callbacks
+    session.componentCallbacks = callbacks
     runCatching { activity.registerComponentCallbacks(callbacks) }
-
-    lifecycleOwner = activity
 
     // Single onStop flush callback, reused for both lifecycle owners to avoid duplicate code.
     val sharedFlushObserver = object : DefaultLifecycleObserver {
@@ -248,57 +246,47 @@ object XenditComponents {
     }
 
     // Process-scoped observer (app-wide background). Mirrors Web visibilitychange→hidden flush.
-    this.processLifecycleObserver = sharedFlushObserver
+    session.processLifecycleObserver = sharedFlushObserver
     runCatching {
       androidx.lifecycle.ProcessLifecycleOwner.get().lifecycle.addObserver(sharedFlushObserver)
     }
 
     // Activity-scoped observer: extends sharedFlushObserver with onDestroy -> flush + cleanup().
-    lifecycleObserver = object : DefaultLifecycleObserver by sharedFlushObserver {
+    session.lifecycleObserver = object : DefaultLifecycleObserver by sharedFlushObserver {
       override fun onDestroy(owner: LifecycleOwner) {
         runCatching { safeSessionTelemetry()?.flush() }
-        cleanup()
+        cleanup(session)
       }
     }
-    activity.lifecycle.addObserver(checkNotNull(lifecycleObserver))
+    activity.lifecycle.addObserver(checkNotNull(session.lifecycleObserver))
 
-    currentCallback = onPaymentResult
-
-    composeView =
-      ComposeView(activity).apply {
-        setViewTreeLifecycleOwner(activity)
-        setViewTreeViewModelStoreOwner(activity)
-        setViewTreeSavedStateRegistryOwner(activity)
-      }
-
-    composeView?.setContent {
+    session.composeView.setContent {
       XenditTheme(style = this.xenditAppearance ?: XenditAppearance()) {
         PaymentContainerHost(
+          controller = controller,
           presentation = PaymentContainerPresentation.Dialog,
           sessionAuthKey = keys.sessionAuthKey,
           publicKey = keys.publicKey,
           merchantPreferredPaymentMethod = merchantPreferredPaymentMethod,
           style = xenditAppearance ?: XenditAppearance(),
-          onResult = { result -> currentCallback?.invoke(result) },
-          onCleanup = { cleanup() }
+          onResult = session.onPaymentResult,
+          onCleanup = { cleanup(session) }
         )
       }
     }
 
-    composeView?.let { view ->
-      activity.addContentView(
-        view,
-        ViewGroup.LayoutParams(
-          ViewGroup.LayoutParams.MATCH_PARENT,
-          ViewGroup.LayoutParams.MATCH_PARENT
-        )
+    activity.addContentView(
+      session.composeView,
+      ViewGroup.LayoutParams(
+        ViewGroup.LayoutParams.MATCH_PARENT,
+        ViewGroup.LayoutParams.MATCH_PARENT
       )
-    }
+    )
   }
 
   /** Dismisses the payment bottom sheet manually */
   fun dismiss() {
-    PaymentContainerHostSignals.onDismissRequestedStatic?.invoke()
+    activeSession?.controller?.requestDismiss()
   }
 
   /**
@@ -314,7 +302,7 @@ object XenditComponents {
    */
   @Keep
   fun wipeAllSensitiveData() {
-    PaymentContainerHostSignals.onWipeTriggerStatic?.invoke()
+    activeSession?.controller?.requestWipe()
     runCatching { safeSessionTelemetry()?.discardAll() }
   }
 
@@ -347,42 +335,35 @@ object XenditComponents {
     }
   }
 
-  private fun cleanup() {
-    PaymentContainerHostSignals.onWipeTriggerStatic = null
-    PaymentContainerHostSignals.onDismissRequestedStatic = null
+  private fun cleanup(session: ActivePresentationSession? = activeSession) {
+    val target = session ?: return
+    if (activeSession === target) {
+      activeSession = null
+    }
 
-    val procObs = processLifecycleObserver
+    target.controller.unbind()
+
+    val procObs = target.processLifecycleObserver
     if (procObs != null) {
       runCatching {
         androidx.lifecycle.ProcessLifecycleOwner.get().lifecycle.removeObserver(procObs)
       }
     }
-    processLifecycleObserver = null
+    target.processLifecycleObserver = null
 
-    val owner = lifecycleOwner
-    val observer = lifecycleObserver
-    if (owner != null && observer != null) {
-      owner.lifecycle.removeObserver(observer)
+    val observer = target.lifecycleObserver
+    if (observer != null) {
+      target.activity.lifecycle.removeObserver(observer)
     }
-
-    lifecycleOwner = null
-    lifecycleObserver = null
-    composeView?.let { view -> (view.parent as? ViewGroup)?.removeView(view) }
-    composeView = null
-    currentCallback = null
-
-    val activityForCallbacks = activeActivity
+    target.lifecycleObserver = null
 
     // Unregister ComponentCallbacks2 (onTrimMemory / onLowMemory hook)
-    val cb = componentCallbacks
-    if (cb != null && activityForCallbacks != null) {
-      runCatching { activityForCallbacks.unregisterComponentCallbacks(cb) }
+    val cb = target.componentCallbacks
+    if (cb != null) {
+      runCatching { target.activity.unregisterComponentCallbacks(cb) }
     }
-    componentCallbacks = null
-
-    activeComponentsSdkKey = null
-    activeMerchantPreferredPm = null
-    activeActivity = null
+    target.componentCallbacks = null
+    (target.composeView.parent as? ViewGroup)?.removeView(target.composeView)
 
     runCatching {
       safeSessionTelemetry()?.let { tm ->
@@ -395,14 +376,5 @@ object XenditComponents {
 
   private fun safeSessionTelemetry(): co.xendit.components.telemetry.SessionTelemetry? {
     return if (CoreSdkComponent.isInitialized()) TelemetrySdkComponent.sessionTelemetry else null
-  }
-
-  private fun Context.findActivity(): ComponentActivity? {
-    var context = this
-    while (context is ContextWrapper) {
-      if (context is ComponentActivity) return context
-      context = context.baseContext
-    }
-    return null
   }
 }

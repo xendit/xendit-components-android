@@ -102,6 +102,32 @@ internal enum class PaymentContainerPresentation {
   BottomSheet
 }
 
+internal class PaymentContainerSessionController {
+  private var onWipeRequested: (() -> Unit)? = null
+  private var onDismissRequested: (() -> Unit)? = null
+
+  fun bind(
+    onWipeRequested: () -> Unit,
+    onDismissRequested: () -> Unit
+  ) {
+    this.onWipeRequested = onWipeRequested
+    this.onDismissRequested = onDismissRequested
+  }
+
+  fun unbind() {
+    onWipeRequested = null
+    onDismissRequested = null
+  }
+
+  fun requestWipe() {
+    onWipeRequested?.invoke()
+  }
+
+  fun requestDismiss() {
+    onDismissRequested?.invoke()
+  }
+}
+
 @Composable
 private fun ConfigureKeyboardAwareWindow() {
   val view = LocalView.current
@@ -129,14 +155,10 @@ private fun ConfigureKeyboardAwareWindow() {
   }
 }
 
-internal object PaymentContainerHostSignals {
-  var onWipeTriggerStatic: (() -> Unit)? = null
-  var onDismissRequestedStatic: (() -> Unit)? = null
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun PaymentContainerHost(
+  controller: PaymentContainerSessionController,
   presentation: PaymentContainerPresentation,
   sessionAuthKey: String,
   publicKey: String,
@@ -192,15 +214,16 @@ internal fun PaymentContainerHost(
   }
 
   DisposableEffect(viewModel, cardViewModel) {
-    PaymentContainerHostSignals.onWipeTriggerStatic = {
+    controller.bind(
+      onWipeRequested = {
       scope.launch {
         performHardWipeAndThen { }
       }
-    }
-    PaymentContainerHostSignals.onDismissRequestedStatic = ::cancelAndDismiss
+    },
+      onDismissRequested = ::cancelAndDismiss
+    )
     onDispose {
-      PaymentContainerHostSignals.onWipeTriggerStatic = null
-      PaymentContainerHostSignals.onDismissRequestedStatic = null
+      controller.unbind()
     }
   }
 
