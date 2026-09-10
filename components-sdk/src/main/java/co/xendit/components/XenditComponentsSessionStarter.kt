@@ -8,7 +8,6 @@ import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.lifecycle.setViewTreeViewModelStoreOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import co.xendit.components.core.CoreSdkComponent
-import co.xendit.components.core.TelemetrySdkComponent
 import co.xendit.components.data.model.XenditError
 import co.xendit.components.data.model.XenditPaymentResult
 import co.xendit.components.telemetry.TelemetryHostResolver
@@ -19,15 +18,15 @@ import co.xendit.components.ui.style.XenditAppearance
 import co.xendit.components.ui.theme.XenditTheme
 import co.xendit.components.util.XLogger
 
-internal class XenditComponentsPresenter(
+internal class XenditComponentsSessionStarter(
   private val resolveBaseUrlForHostId: (String) -> String,
   private val parseSdkKey: (String) -> XenditComponents.Keys,
   private val cleanupActiveSession: (XenditComponents.ActivePresentationSession?) -> Unit,
   private val setActiveSession: (XenditComponents.ActivePresentationSession?) -> Unit,
   private val currentSessionTelemetry: () -> co.xendit.components.telemetry.SessionTelemetry?
 ) {
-  fun present(
-    request: XenditPresentRequest,
+  fun start(
+    request: XenditSessionStartRequest,
     currentAppearance: XenditAppearance?
   ): XenditComponentsSession {
     val activity = request.activity
@@ -96,6 +95,8 @@ internal class XenditComponentsPresenter(
         }
 
         override fun onConfigurationChanged(newConfig: android.content.res.Configuration) = Unit
+
+        @Deprecated("Android deprecated this callback; retained for legacy memory-pressure handling.")
         override fun onLowMemory() {
           session.controller.requestWipe()
           runCatching { currentSessionTelemetry()?.discardAll() }

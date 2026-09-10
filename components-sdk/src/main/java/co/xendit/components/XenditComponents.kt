@@ -77,8 +77,8 @@ object XenditComponents {
     var processLifecycleObserver: androidx.lifecycle.DefaultLifecycleObserver? = null,
   )
 
-  private val presenter =
-    XenditComponentsPresenter(
+  private val sessionStarter =
+    XenditComponentsSessionStarter(
       resolveBaseUrlForHostId = ::resolveBaseUrlForHostId,
       parseSdkKey = ::parseSdkKey,
       cleanupActiveSession = { session -> if (session == null) cleanup() else cleanup(session) },
@@ -174,17 +174,17 @@ object XenditComponents {
     return XenditComponentsLauncher(
       activity = activity,
       configuration = currentLauncherConfiguration(),
-      presenter = ::presentFromLauncher
+      startSession = ::startSessionFromLauncher
     )
   }
 
-  private fun presentFromLauncher(
-    request: XenditPresentRequest
+  private fun startSessionFromLauncher(
+    request: XenditSessionStartRequest
   ): XenditComponentsSession {
     this.xenditAppearance = request.configuration.appearance
     this.merchantPreferredPaymentMethod = request.merchantPreferredPaymentMethod
       ?: request.configuration.merchantPreferredPaymentMethod
-    return presenter.present(
+    return sessionStarter.start(
       request = request,
       currentAppearance = xenditAppearance
     )

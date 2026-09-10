@@ -10,7 +10,7 @@ internal data class XenditLauncherConfiguration(
   val merchantPreferredPaymentMethod: List<XenditComponentsPaymentType>?
 )
 
-internal data class XenditPresentRequest(
+internal data class XenditSessionStartRequest(
   val activity: ComponentActivity,
   val configuration: XenditLauncherConfiguration,
   val componentsSdkKey: String,
@@ -44,15 +44,15 @@ class XenditComponentsSession internal constructor(
 class XenditComponentsLauncher internal constructor(
   private val activity: ComponentActivity,
   private val configuration: XenditLauncherConfiguration,
-  private val presenter: (XenditPresentRequest) -> XenditComponentsSession
+  private val startSession: (XenditSessionStartRequest) -> XenditComponentsSession
 ) {
   fun present(
     componentsSdkKey: String,
     merchantPreferredPaymentMethod: List<XenditComponentsPaymentType>? = configuration.merchantPreferredPaymentMethod,
     onPaymentResult: (XenditPaymentResult) -> Unit
   ): XenditComponentsSession {
-    return presenter(
-      XenditPresentRequest(
+    return startSession(
+      XenditSessionStartRequest(
         activity = activity,
         configuration = configuration,
         componentsSdkKey = componentsSdkKey,
