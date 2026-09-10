@@ -10,6 +10,14 @@ internal data class XenditLauncherConfiguration(
   val merchantPreferredPaymentMethod: List<XenditComponentsPaymentType>?
 )
 
+internal data class XenditPresentRequest(
+  val activity: ComponentActivity,
+  val configuration: XenditLauncherConfiguration,
+  val componentsSdkKey: String,
+  val merchantPreferredPaymentMethod: List<XenditComponentsPaymentType>?,
+  val onPaymentResult: (XenditPaymentResult) -> Unit
+)
+
 @Keep
 class XenditComponentsSession internal constructor(
   private val dismissAction: () -> Unit,
@@ -36,13 +44,7 @@ class XenditComponentsSession internal constructor(
 class XenditComponentsLauncher internal constructor(
   private val activity: ComponentActivity,
   private val configuration: XenditLauncherConfiguration,
-  private val presenter: (
-    activity: ComponentActivity,
-    configuration: XenditLauncherConfiguration,
-    componentsSdkKey: String,
-    merchantPreferredPaymentMethod: List<XenditComponentsPaymentType>?,
-    onPaymentResult: (XenditPaymentResult) -> Unit
-  ) -> XenditComponentsSession
+  private val presenter: (XenditPresentRequest) -> XenditComponentsSession
 ) {
   fun present(
     componentsSdkKey: String,
@@ -50,11 +52,13 @@ class XenditComponentsLauncher internal constructor(
     onPaymentResult: (XenditPaymentResult) -> Unit
   ): XenditComponentsSession {
     return presenter(
-      activity,
-      configuration,
-      componentsSdkKey,
-      merchantPreferredPaymentMethod,
-      onPaymentResult
+      XenditPresentRequest(
+        activity = activity,
+        configuration = configuration,
+        componentsSdkKey = componentsSdkKey,
+        merchantPreferredPaymentMethod = merchantPreferredPaymentMethod,
+        onPaymentResult = onPaymentResult
+      )
     )
   }
 }

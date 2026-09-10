@@ -34,12 +34,7 @@ import androidx.compose.ui.window.DialogWindowProvider
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import co.xendit.components.R
 import co.xendit.components.XenditComponentsPaymentType
-import co.xendit.components.core.CoreSdkComponent.globalErrorHandler
-import co.xendit.components.data.model.PaymentRequestStatus
-import co.xendit.components.data.model.PaymentSessionStatus
-import co.xendit.components.data.model.XenditError
 import co.xendit.components.data.model.XenditPaymentResult
 import co.xendit.components.internal_entry_point.CardViewModelFactory
 import co.xendit.components.internal_entry_point.PaymentViewModelFactory
@@ -178,6 +173,8 @@ internal fun PaymentContainerHost(
     )
     onDispose {
       controller.unbind()
+      viewModel.wipeAllSensitiveData()
+      cardViewModel.wipeAllSensitiveData()
     }
   }
 
@@ -196,123 +193,19 @@ internal fun PaymentContainerHost(
 
   val dismiss: () -> Unit = ::cancelAndDismiss
 
-  LaunchedEffect(sessionAuthKey, publicKey) {
-    viewModel.dispatch(ActionIntent.Initialize(sessionAuthKey, publicKey))
-  }
-
-  LaunchedEffect(Unit) {
-    globalErrorHandler.apiErrorFlow.collect { (errorCode, message) ->
-      val msg = message?.asString(context) ?: return@collect
-      if (errorCode == "NETWORK_ERROR") {
-        snackbarHostState.showSnackbar(msg)
-        onResult(
-          XenditPaymentResult.Failed(
-            XenditError(
-              code = "NETWORK_ERROR",
-              message = msg,
-              cause = Throwable(msg)
-            )
-          )
-        )
-        return@collect
-      }
-      snackbarHostState.showSnackbar(msg)
-    }
-  }
-
-  LaunchedEffect(mviState.sessionResponse) {
-    val session = mviState.sessionResponse ?: return@LaunchedEffect
-    val bffSession = session.session ?: return@LaunchedEffect
-    when (bffSession.status) {
-      PaymentSessionStatus.COMPLETED ->
-        finishWith(
-          XenditPaymentResult.Success(
-            paymentRequestId = bffSession.paymentSessionId,
-            channelCode = session.succeededChannel?.channelCode
-          )
-        )
-
-      PaymentSessionStatus.CANCELED ->
-        finishWith(XenditPaymentResult.Canceled)
-
-      PaymentSessionStatus.EXPIRED ->
-        finishWith(XenditPaymentResult.Expired)
-
-      else -> Unit
-    }
-  }
-
-  LaunchedEffect(mviState.pollResponse) {
-    val poll = mviState.pollResponse ?: return@LaunchedEffect
-    val sessionStatus = poll.session?.status
-    val prStatus = poll.paymentRequest?.status
-    val isSuccess =
-      sessionStatus == PaymentSessionStatus.COMPLETED ||
-        prStatus == PaymentRequestStatus.SUCCEEDED ||
-        prStatus == PaymentRequestStatus.AUTHORIZED ||
-        poll.succeededChannel != null
-
-    val isCanceled =
-      sessionStatus == PaymentSessionStatus.CANCELED || prStatus == PaymentRequestStatus.CANCELED
-    val isFailed = prStatus == PaymentRequestStatus.FAILED
-    val isExpired =
-      sessionStatus == PaymentSessionStatus.EXPIRED || prStatus == PaymentRequestStatus.EXPIRED
-
-    when {
-      isSuccess ->
-        finishWith(
-          XenditPaymentResult.Success(
-            paymentRequestId = poll.session?.paymentSessionId,
-            channelCode = poll.succeededChannel?.channelCode ?: poll.paymentRequest?.channelCode
-          )
-        )
-
-      isCanceled ->
-        finishWith(XenditPaymentResult.Canceled)
-
-      isExpired ->
-        finishWith(XenditPaymentResult.Expired)
-
-      isFailed -> {
-        val pollFailureCode = poll.paymentRequest.failure_code
-        val pollFailureMessage =
-          co.xendit.components.ui.helper.FailureCodeMessageUtil.resolveFailureMessage(
-            context,
-            pollFailureCode
-          )
-
-        pendingSnackbarMessage = pollFailureMessage
-        onResult(
-          XenditPaymentResult.Failed(
-            XenditError(
-              code = pollFailureCode?.trim().takeIf { !it.isNullOrBlank() } ?: "UNKNOWN",
-              message = pollFailureMessage,
-              cause = Throwable("Payment failed Session: $sessionStatus, PR: $prStatus")
-            )
-          )
-        )
-        viewModel.dispatch(ActionIntent.CloseWebPayment)
-      }
-    }
-  }
-
-  LaunchedEffect(sessionAuthKey, publicKey, mviState.paymentSessionId) {
-    val paymentSessionId = mviState.paymentSessionId ?: return@LaunchedEffect
-    cardViewModel.dispatch(
-      CardIntent.ConfigureSession(
-        sessionAuthKey = sessionAuthKey,
-        publicKey = publicKey,
-        paymentSessionId = paymentSessionId
-      )
-    )
-  }
-
-  DisposableEffect(Unit) {
-    onDispose {
-      viewModel.wipeAllSensitiveData()
-      cardViewModel.wipeAllSensitiveData()
-    }
-  }
+  ObservePaymentContainerSideEffects(
+    viewModel = viewModel,
+    cardViewModel = cardViewModel,
+    snackbarHostState = snackbarHostState,
+    sessionAuthKey = sessionAuthKey,
+    publicKey = publicKey,
+    state = mviState,
+    context = context,
+    onFinish = ::finishWith,
+    onEmitResult = onResult,
+    onCloseWebPayment = { viewModel.dispatch(ActionIntent.CloseWebPayment) },
+    onPendingSnackbar = { pendingSnackbarMessage = it }
+  )
 
   val container: @Composable (@Composable () -> Unit) -> Unit = { content ->
     when (presentation) {

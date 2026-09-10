@@ -4,24 +4,11 @@ import android.view.ViewGroup
 import androidx.activity.ComponentActivity
 import androidx.annotation.Keep
 import androidx.annotation.VisibleForTesting
-import androidx.compose.ui.platform.ComposeView
-import androidx.lifecycle.DefaultLifecycleObserver
-import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.setViewTreeLifecycleOwner
-import androidx.lifecycle.setViewTreeViewModelStoreOwner
-import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import co.xendit.components.core.CoreSdkComponent
 import co.xendit.components.core.TelemetrySdkComponent
 import co.xendit.components.core.model.FallbackValue
-import co.xendit.components.data.model.XenditError
 import co.xendit.components.data.model.XenditPaymentResult
-import co.xendit.components.telemetry.TelemetryHostResolver
-import co.xendit.components.ui.PaymentContainerHost
-import co.xendit.components.ui.PaymentContainerPresentation
-import co.xendit.components.ui.PaymentContainerSessionController
 import co.xendit.components.ui.style.XenditAppearance
-import co.xendit.components.ui.theme.XenditTheme
-import co.xendit.components.util.XLogger
 import com.google.gson.annotations.SerializedName
 
 /** Main SDK entry point for displaying payment UI */
@@ -79,16 +66,25 @@ object XenditComponents {
   private var merchantPreferredPaymentMethod: List<XenditComponentsPaymentType>? = null
   private var activeSession: ActivePresentationSession? = null
 
-  private class ActivePresentationSession(
+  internal class ActivePresentationSession(
     val activity: ComponentActivity,
     val sessionHandle: XenditComponentsSession,
-    val controller: PaymentContainerSessionController,
-    val composeView: ComposeView,
-    val onPaymentResult: (XenditPaymentResult) -> Unit,
+    val controller: co.xendit.components.ui.PaymentContainerSessionController,
+    val composeView: androidx.compose.ui.platform.ComposeView,
+    val onPaymentResult: (co.xendit.components.data.model.XenditPaymentResult) -> Unit,
     var componentCallbacks: android.content.ComponentCallbacks2? = null,
-    var lifecycleObserver: DefaultLifecycleObserver? = null,
-    var processLifecycleObserver: DefaultLifecycleObserver? = null,
+    var lifecycleObserver: androidx.lifecycle.DefaultLifecycleObserver? = null,
+    var processLifecycleObserver: androidx.lifecycle.DefaultLifecycleObserver? = null,
   )
+
+  private val presenter =
+    XenditComponentsPresenter(
+      resolveBaseUrlForHostId = ::resolveBaseUrlForHostId,
+      parseSdkKey = ::parseSdkKey,
+      cleanupActiveSession = { session -> if (session == null) cleanup() else cleanup(session) },
+      setActiveSession = { activeSession = it },
+      currentSessionTelemetry = ::safeSessionTelemetry
+    )
 
   /**
    * Global configuration for the SDK appearance. This is called before show() to apply custom styles.
@@ -183,141 +179,15 @@ object XenditComponents {
   }
 
   private fun presentFromLauncher(
-    activity: ComponentActivity,
-    configuration: XenditLauncherConfiguration,
-    componentsSdkKey: String,
-    merchantPreferredPaymentMethod: List<XenditComponentsPaymentType>?,
-    onPaymentResult: (XenditPaymentResult) -> Unit
+    request: XenditPresentRequest
   ): XenditComponentsSession {
-    CoreSdkComponent.init(activity.applicationContext)
-    CoreSdkComponent.headerProvider.setMerchantAppId(activity.packageName ?: "")
-
-    this.xenditAppearance = configuration.appearance
-    this.merchantPreferredPaymentMethod = merchantPreferredPaymentMethod
-      ?: configuration.merchantPreferredPaymentMethod
-
-    val keys =
-      try {
-        parseSdkKey(componentsSdkKey)
-      } catch (e: Exception) {
-        XLogger.e("Failed to parse SDK Key", e)
-        onPaymentResult.invoke(
-          XenditPaymentResult.Failed(
-            XenditError(
-              code = "001",
-              message = e.toString(),
-              cause = e
-            )
-          )
-        )
-        return XenditComponentsSession(dismissAction = {}, wipeAction = {})
-      }
-
-    CoreSdkComponent.setBaseUrl(resolveBaseUrlForHostId(keys.hostId))
-
-    cleanup()
-    val controller = PaymentContainerSessionController()
-    val sessionHandle =
-      XenditComponentsSession(
-        dismissAction = { controller.requestDismiss() },
-        wipeAction = {
-          controller.requestWipe()
-          runCatching { safeSessionTelemetry()?.discardAll() }
-        }
-      )
-    val session =
-      ActivePresentationSession(
-        activity = activity,
-        sessionHandle = sessionHandle,
-        controller = controller,
-        composeView =
-          ComposeView(activity).apply {
-            setViewTreeLifecycleOwner(activity)
-            setViewTreeViewModelStoreOwner(activity)
-            setViewTreeSavedStateRegistryOwner(activity)
-          },
-        onPaymentResult = onPaymentResult
-      )
-    activeSession = session
-
-    // ===== Telemetry: bind host + session auth key early, payment_session_id from FetchSession later.
-    val telemetryHost = TelemetryHostResolver.fromHostId(keys.hostId)
-    runCatching {
-      safeSessionTelemetry()?.let { tm ->
-        tm.discardAll()
-        tm.bindSession(host = telemetryHost, sessionId = null, authId = keys.sessionAuthKey)
-      }
-    }
-    // ===== End telemetry setup
-
-
-    // ===== Mitigation 3: Aggressively purge state when Android signals memory pressure =====
-    val callbacks =
-      object : android.content.ComponentCallbacks2 {
-        override fun onTrimMemory(level: Int) {
-          // TRIM_MEMORY_BACKGROUND = process entered cached state;
-          // TRIM_MEMORY_MODERATE/COMPLETE = OS needs RAM now.
-          // On any of these, do a full wipe (including form values):
-          if (level >= android.content.ComponentCallbacks2.TRIM_MEMORY_BACKGROUND) {
-            session.controller.requestWipe()
-            runCatching { safeSessionTelemetry()?.discardAll() }
-          }
-        }
-
-        override fun onConfigurationChanged(newConfig: android.content.res.Configuration) = Unit
-        override fun onLowMemory() {
-          session.controller.requestWipe()
-          runCatching { safeSessionTelemetry()?.discardAll() }
-        }
-      }
-    session.componentCallbacks = callbacks
-    runCatching { activity.registerComponentCallbacks(callbacks) }
-
-    // Single onStop flush callback, reused for both lifecycle owners to avoid duplicate code.
-    val sharedFlushObserver = object : DefaultLifecycleObserver {
-      override fun onStop(owner: LifecycleOwner) {
-        runCatching { safeSessionTelemetry()?.flush() }
-      }
-    }
-
-    // Process-scoped observer (app-wide background). Mirrors Web visibilitychange→hidden flush.
-    session.processLifecycleObserver = sharedFlushObserver
-    runCatching {
-      androidx.lifecycle.ProcessLifecycleOwner.get().lifecycle.addObserver(sharedFlushObserver)
-    }
-
-    // Activity-scoped observer: extends sharedFlushObserver with onDestroy -> flush + cleanup().
-    session.lifecycleObserver = object : DefaultLifecycleObserver by sharedFlushObserver {
-      override fun onDestroy(owner: LifecycleOwner) {
-        runCatching { safeSessionTelemetry()?.flush() }
-        cleanup(session)
-      }
-    }
-    activity.lifecycle.addObserver(checkNotNull(session.lifecycleObserver))
-
-    session.composeView.setContent {
-      XenditTheme(style = this.xenditAppearance ?: XenditAppearance()) {
-        PaymentContainerHost(
-          controller = controller,
-          presentation = PaymentContainerPresentation.Dialog,
-          sessionAuthKey = keys.sessionAuthKey,
-          publicKey = keys.publicKey,
-          merchantPreferredPaymentMethod = merchantPreferredPaymentMethod,
-          style = xenditAppearance ?: XenditAppearance(),
-          onResult = session.onPaymentResult,
-          onCleanup = { cleanup(session) }
-        )
-      }
-    }
-
-    activity.addContentView(
-      session.composeView,
-      ViewGroup.LayoutParams(
-        ViewGroup.LayoutParams.MATCH_PARENT,
-        ViewGroup.LayoutParams.MATCH_PARENT
-      )
+    this.xenditAppearance = request.configuration.appearance
+    this.merchantPreferredPaymentMethod = request.merchantPreferredPaymentMethod
+      ?: request.configuration.merchantPreferredPaymentMethod
+    return presenter.present(
+      request = request,
+      currentAppearance = xenditAppearance
     )
-    return sessionHandle
   }
 
   /** Dismisses the payment bottom sheet manually */

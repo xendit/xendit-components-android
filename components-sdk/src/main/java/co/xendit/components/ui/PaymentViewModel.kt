@@ -11,10 +11,8 @@ import co.xendit.components.data.model.BffSessionAllowSavePaymentMethod
 import co.xendit.components.data.model.BffSessionType
 import co.xendit.components.data.model.ChannelFormField
 import co.xendit.components.data.model.Country
-import co.xendit.components.data.model.FieldType
 import co.xendit.components.data.model.InstallmentPlan
 import co.xendit.components.data.model.PaymentAction
-import co.xendit.components.data.model.PaymentActionDescriptor
 import co.xendit.components.data.model.PaymentDraft
 import co.xendit.components.data.model.PaymentRequest
 import co.xendit.components.data.model.PaymentRequestStatus
@@ -24,11 +22,9 @@ import co.xendit.components.data.model.PollResponse
 import co.xendit.components.data.model.SessionResponse
 import co.xendit.components.data.model.SimulatePaymentRequest
 import co.xendit.components.data.model.isPaySession
-import co.xendit.components.data.model.primaryChannelPropertyKey
 import co.xendit.components.data.network.repo.session.XenditRepository
 import co.xendit.components.telemetry.SessionTelemetry
 import co.xendit.components.ui.components.molecule.UiText
-import co.xendit.components.util.PaymentRequestMapper
 import co.xendit.components.util.XLogger
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -244,8 +240,11 @@ internal class PaymentViewModel(
   private val telemetry: SessionTelemetry,
   private val sessionRuntime: PaymentSessionRuntime = PaymentSessionRuntime(),
   private val sessionLoader: PaymentSessionLoader = PaymentSessionLoader(xenditRepository),
+  private val selectionCoordinator: PaymentSelectionCoordinator = PaymentSelectionCoordinator(),
   private val submissionCoordinator: PaymentSubmissionCoordinator = PaymentSubmissionCoordinator(xenditRepository),
-  private val pollingCoordinator: PaymentPollingCoordinator = PaymentPollingCoordinator(xenditRepository)
+  private val pollingCoordinator: PaymentPollingCoordinator = PaymentPollingCoordinator(xenditRepository),
+  private val requestBuilder: PaymentRequestBuilder = PaymentRequestBuilder(),
+  private val googlePaySubmissionCoordinator: GooglePaySubmissionCoordinator = GooglePaySubmissionCoordinator()
 ) : ViewModel() {
   private val telemetryCoordinator = PaymentTelemetryCoordinator(telemetry)
 
@@ -383,30 +382,24 @@ internal class PaymentViewModel(
     val channels = _state.value.channels
     val groups = channels.groupBy { it.uiGroup }
     val currentExpanded = _state.value.expandedUiGroup
-    val newExpandedUiGroup = if (currentExpanded == uiGroup) null else uiGroup
     val currentSelected = _state.value.selectedChannel
     val groupChannelCodes = groups[uiGroup]?.map { it.channelCode }
+    val selectionResult = selectionCoordinator.toggleGroup(
+      channels = channels,
+      currentExpandedUiGroup = currentExpanded,
+      currentSelectedChannel = currentSelected,
+      uiGroup = uiGroup,
+      lastSelectedChannelCode = sessionRuntime.lastSelectedChannel(uiGroup)
+    )
 
     // ---- TELEMETRY: ChannelGroup scope lifecycle (spec: Until group collapse) ----
     telemetryCoordinator.onGroupSelectionChanged(
       currentExpandedUiGroup = currentExpanded,
-      newExpandedUiGroup = newExpandedUiGroup,
+      newExpandedUiGroup = selectionResult.expandedUiGroup,
       uiGroup = uiGroup,
       groupChannelCodes = groupChannelCodes
     )
-
-    val nextSelected =
-      if (newExpandedUiGroup == null) {
-        currentSelected
-      } else if (currentSelected?.uiGroup == newExpandedUiGroup) {
-        currentSelected
-      } else {
-        val lastSelectedCode = sessionRuntime.lastSelectedChannel(newExpandedUiGroup)
-        val lastSelected =
-          lastSelectedCode?.let { code -> channels.firstOrNull { it.channelCode == code } }
-        lastSelected ?: (groups[newExpandedUiGroup]?.firstOrNull()
-          .takeIf { groups[newExpandedUiGroup]?.size == 1 })
-      }
+    val nextSelected = selectionResult.selectedChannel
 
     if (nextSelected != null) {
       sessionRuntime.rememberSelectedChannel(nextSelected.uiGroup, nextSelected.channelCode)
@@ -417,7 +410,7 @@ internal class PaymentViewModel(
 
     _state.update {
       it.copy(
-        expandedUiGroup = newExpandedUiGroup,
+        expandedUiGroup = selectionResult.expandedUiGroup,
         selectedChannel = nextSelected,
         paymentActionRedirect = null,
         presentToCustomerPaymentAction = null,
@@ -429,7 +422,7 @@ internal class PaymentViewModel(
   }
 
   private fun selectChannelInternal(channelCode: String) {
-    val selected = _state.value.channels.firstOrNull { it.channelCode == channelCode } ?: return
+    val selected = selectionCoordinator.selectChannel(_state.value.channels, channelCode) ?: return
     sessionRuntime.rememberSelectedChannel(selected.uiGroup, selected.channelCode)
     applySelectedChannelTelemetry(channelCode)
     _state.update {
@@ -479,27 +472,15 @@ internal class PaymentViewModel(
     errorPrefix = "Payment",
     formValues = formValues,
     fields = fields
-  ) { authKey, key, paySid ->
-    val variantsForDisplay = _state.value.channelVariantsByDisplayCode[channelCode]
-    val effectiveChannel =
-      variantsForDisplay?.let { variants ->
-        when {
-          savePaymentMethod && variants.saveChannel != null -> variants.saveChannel
-          !savePaymentMethod && variants.nonSaveChannel != null -> variants.nonSaveChannel
-          else -> null
-        }
-      }
-    val effectiveChannelCode = effectiveChannel?.channelCode ?: channelCode
-    buildPaymentRequest(
-      sessionAuthKey = authKey,
-      publicKey = key,
-      paymentSessionId = paySid,
-      effectiveChannelCode = effectiveChannelCode,
+  ) { executionContext ->
+    requestBuilder.build(
+      executionContext = executionContext,
+      displayedChannelCode = channelCode,
+      channelVariantsByDisplayCode = _state.value.channelVariantsByDisplayCode,
       formValues = formValues,
       fields = fields,
       savePaymentMethod = savePaymentMethod,
-      installmentPlans = installmentPlans,
-      effectiveChannelForm = effectiveChannel?.form
+      installmentPlans = installmentPlans
     )
   }
 
@@ -518,16 +499,15 @@ internal class PaymentViewModel(
     paymentDataJson: String,
     paymentMethodType: String?
   ) {
-    val googlePay = _state.value.sessionResponse?.digitalWallets?.googlePay
-    val channelResolution = resolveGooglePayChannelCodeOrError(googlePay, paymentMethodType)
-    val channelCode = when (channelResolution) {
-      is ResolvedGooglePayChannel.Ok -> {
-        closeDigitalWalletTelemetry(success = true)
-        channelResolution.code
-      }
-
-      is ResolvedGooglePayChannel.Err -> {
-        val userMessage = channelResolution.userMessage
+    when (
+      val preparation = googlePaySubmissionCoordinator.prepare(
+        digitalWallets = _state.value.sessionResponse?.digitalWallets,
+        paymentDataJson = paymentDataJson,
+        paymentMethodType = paymentMethodType
+      )
+    ) {
+      is GooglePaySubmissionResult.ResolutionError -> {
+        val userMessage = preparation.userMessage
         globalErrorHandler.postError(errorMessage = UiText.DynamicString(userMessage))
         closeDigitalWalletTelemetry(success = false, errorCode = "GOOGLE_PAY_RESOLUTION")
 
@@ -537,22 +517,21 @@ internal class PaymentViewModel(
             errorMessage = userMessage
           )
         }
-        return
       }
-    }
-    val channelProperties = buildGooglePayChannelProperties(paymentDataJson, channelCode)
-    if (channelProperties.isEmpty()) {
-      onChallengeCompletedInternal(true)
-    } else {
-      return submitPaymentInternal(
+
+      is GooglePaySubmissionResult.PendingWithoutSubmission -> {
+        closeDigitalWalletTelemetry(success = true)
+        onChallengeCompletedInternal(true)
+      }
+
+      is GooglePaySubmissionResult.ReadyToSubmit -> {
+        closeDigitalWalletTelemetry(success = true)
+        submitPaymentInternal(
         isGooglePay = true,
         errorPrefix = "Google Pay Payment"
-      ) { authKey, _key, _paySid ->
-        PaymentRequest(
-          sessionId = authKey,
-          channelCode = channelCode,
-          channelProperties = channelProperties
-        )
+        ) { executionContext ->
+          googlePaySubmissionCoordinator.toPaymentRequest(executionContext, preparation)
+        }
       }
     }
   }
@@ -581,16 +560,12 @@ internal class PaymentViewModel(
     }
   }
 
-  private inline fun submitPaymentInternal(
+  private fun submitPaymentInternal(
     isGooglePay: Boolean = false,
     errorPrefix: String,
     formValues: Map<String, String> = emptyMap(),
     fields: List<ChannelFormField> = emptyList(),
-    crossinline buildRequest: suspend (
-      sessionAuthKey: String,
-      publicKey: String,
-      paymentSessionId: String
-    ) -> PaymentRequest
+    buildRequest: suspend (PaymentExecutionContext) -> PaymentRequest
   ) {
     viewModelScope.launch {
       _state.update {
@@ -625,13 +600,8 @@ internal class PaymentViewModel(
           context = executionContext,
           formValues = formValues,
           fields = fields,
-        ) { context ->
-          buildRequest(
-            context.sessionAuthKey,
-            context.publicKey,
-            context.paymentSessionId
-          )
-        }
+          buildRequest = buildRequest
+        )
       ) {
         is PaymentSubmissionResult.ValidationFailure -> {
           telemetryCoordinator.onAttemptValidationFailed(result.validationError)
@@ -922,67 +892,4 @@ internal class PaymentViewModel(
   private fun cancelChallenge() {
     challengePollingJob?.cancel()
   }
-}
-
-internal fun buildPaymentRequest(
-  sessionAuthKey: String,
-  publicKey: String,
-  paymentSessionId: String,
-  effectiveChannelCode: String,
-  formValues: Map<String, String>,
-  fields: List<ChannelFormField>,
-  savePaymentMethod: Boolean,
-  installmentPlans: List<InstallmentPlan>?,
-  effectiveChannelForm: List<ChannelFormField>?
-): PaymentRequest {
-  val allowedKeysFromChannelForm =
-    effectiveChannelForm
-      ?.map { it.primaryChannelPropertyKey() }
-      ?.filter { it.isNotBlank() }
-      ?.toSet()
-      .orEmpty()
-  val shouldFilterByChannelForm = allowedKeysFromChannelForm.isNotEmpty()
-  val filteredFields =
-    if (shouldFilterByChannelForm) {
-      fields.filter { it.primaryChannelPropertyKey() in allowedKeysFromChannelForm }
-    } else {
-      fields
-    }
-  val allowedValueKeys =
-    if (shouldFilterByChannelForm) {
-      mutableSetOf<String>().apply {
-        addAll(allowedKeysFromChannelForm)
-        filteredFields.forEach { field ->
-          val primaryKey = field.primaryChannelPropertyKey()
-          if (primaryKey.isBlank()) return@forEach
-          if (field.type is FieldType.PhoneNumber) {
-            add("${primaryKey}_country_code")
-          }
-        }
-      }
-    } else {
-      null
-    }
-  val filteredFormValues =
-    if (shouldFilterByChannelForm) {
-      formValues.filterKeys { it in allowedValueKeys.orEmpty() }
-    } else {
-      formValues
-    }
-
-  val channelProperties =
-    PaymentRequestMapper.mapFormValuesToChannelProperties(
-      formValues = filteredFormValues,
-      fields = filteredFields,
-      publicKey = publicKey,
-      sessionId = paymentSessionId,
-      installmentPlans = installmentPlans
-    )
-
-  return PaymentRequest(
-    sessionId = sessionAuthKey,
-    channelCode = effectiveChannelCode,
-    channelProperties = channelProperties,
-    savePaymentMethod = if (savePaymentMethod) true else null
-  )
 }
