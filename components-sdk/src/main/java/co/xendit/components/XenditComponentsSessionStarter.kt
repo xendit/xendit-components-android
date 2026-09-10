@@ -26,19 +26,21 @@ internal class XenditComponentsSessionStarter(
   private val currentSessionTelemetry: () -> co.xendit.components.telemetry.SessionTelemetry?
 ) {
   fun start(
-    request: XenditSessionStartRequest,
-    currentAppearance: XenditAppearance?
+    activity: androidx.activity.ComponentActivity,
+    componentsSdkKey: String,
+    merchantPreferredPaymentMethod: List<XenditComponentsPaymentType>?,
+    currentAppearance: XenditAppearance?,
+    onPaymentResult: (XenditPaymentResult) -> Unit
   ): XenditComponentsSession {
-    val activity = request.activity
     CoreSdkComponent.init(activity.applicationContext)
     CoreSdkComponent.headerProvider.setMerchantAppId(activity.packageName ?: "")
 
     val keys =
       try {
-        parseSdkKey(request.componentsSdkKey)
+        parseSdkKey(componentsSdkKey)
       } catch (e: Exception) {
         XLogger.e("Failed to parse SDK Key", e)
-        request.onPaymentResult.invoke(
+        onPaymentResult.invoke(
           XenditPaymentResult.Failed(
             XenditError(
               code = "001",
@@ -73,7 +75,7 @@ internal class XenditComponentsSessionStarter(
             setViewTreeViewModelStoreOwner(activity)
             setViewTreeSavedStateRegistryOwner(activity)
           },
-        onPaymentResult = request.onPaymentResult
+        onPaymentResult = onPaymentResult
       )
     setActiveSession(session)
 
@@ -131,8 +133,7 @@ internal class XenditComponentsSessionStarter(
           presentation = PaymentContainerPresentation.Dialog,
           sessionAuthKey = keys.sessionAuthKey,
           publicKey = keys.publicKey,
-          merchantPreferredPaymentMethod = request.merchantPreferredPaymentMethod
-            ?: request.configuration.merchantPreferredPaymentMethod,
+          merchantPreferredPaymentMethod = merchantPreferredPaymentMethod,
           style = currentAppearance ?: XenditAppearance(),
           onResult = session.onPaymentResult,
           onCleanup = { cleanupActiveSession(session) }

@@ -162,31 +162,14 @@ object XenditComponents {
     merchantPreferredPaymentMethod: List<XenditComponentsPaymentType>? = null,
     onPaymentResult: (XenditPaymentResult) -> Unit
   ) {
-    launcher(activity).present(
-      componentsSdkKey = componentsSdkKey,
-      merchantPreferredPaymentMethod = merchantPreferredPaymentMethod,
-      onPaymentResult = onPaymentResult
-    )
-  }
-
-  @Keep
-  fun launcher(activity: ComponentActivity): XenditComponentsLauncher {
-    return XenditComponentsLauncher(
+    val resolvedPreferredPaymentMethod =
+      merchantPreferredPaymentMethod ?: this.merchantPreferredPaymentMethod
+    sessionStarter.start(
       activity = activity,
-      configuration = currentLauncherConfiguration(),
-      startSession = ::startSessionFromLauncher
-    )
-  }
-
-  private fun startSessionFromLauncher(
-    request: XenditSessionStartRequest
-  ): XenditComponentsSession {
-    this.xenditAppearance = request.configuration.appearance
-    this.merchantPreferredPaymentMethod = request.merchantPreferredPaymentMethod
-      ?: request.configuration.merchantPreferredPaymentMethod
-    return sessionStarter.start(
-      request = request,
-      currentAppearance = xenditAppearance
+      componentsSdkKey = componentsSdkKey,
+      merchantPreferredPaymentMethod = resolvedPreferredPaymentMethod,
+      currentAppearance = xenditAppearance,
+      onPaymentResult = onPaymentResult
     )
   }
 
@@ -235,13 +218,6 @@ object XenditComponents {
   fun performSensitiveDataGcPass() {
     activeSession?.sessionHandle?.performSensitiveDataGcPass()
       ?: XenditComponentsSession(dismissAction = {}, wipeAction = {}).performSensitiveDataGcPass()
-  }
-
-  private fun currentLauncherConfiguration(): XenditLauncherConfiguration {
-    return XenditLauncherConfiguration(
-      appearance = xenditAppearance,
-      merchantPreferredPaymentMethod = merchantPreferredPaymentMethod
-    )
   }
 
   private fun cleanup(session: ActivePresentationSession? = activeSession) {
