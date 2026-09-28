@@ -25,7 +25,8 @@ data class XenditAppearance(
   val colorBackground: Color = Color(0xFFFFFFFF),
   val qrForegroundColor: Color = Color(0xFF000000),
   val qrBackgroundColor: Color = Color(0xFFFFFFFF),
-  val borderRadius: Dp = 8.dp
+  val borderRadius: Dp = 8.dp,
+  val isLightStatusBars: Boolean? = null
 )
 
 internal val LocalXenditAppearance = staticCompositionLocalOf { XenditAppearance() }
