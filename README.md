@@ -180,6 +180,7 @@ Use `XenditAppearance` to match the payment sheet to your app's brand. All color
 | `qrForegroundColor` | `Color` | `#000000` | Tint of the container shown around the QR code image. |
 | `qrBackgroundColor` | `Color` | `#FFFFFF` | Background of the container box behind the QR code image. |
 | `borderRadius` | `Dp` | `8.dp` | Corner radius for buttons, fields, and cards. |
+| `isLightStatusBars` | `Boolean?`| `null` | Forces status bar icon color. `true` for dark icons, `false` for white icons. Defaults to automatic adjustment based on `colorBackground` luminance. |
 
 ### Kotlin
 
@@ -212,7 +213,8 @@ val appearance = XenditAppearance(
     colorBackground       = Color(0xFFFFFFFF),
     qrForegroundColor     = Color(0xFF000000),
     qrBackgroundColor     = Color(0xFFFFFFFF),
-    borderRadius          = 12.dp
+    borderRadius          = 12.dp,
+    isLightStatusBars     = true
 )
 
 XenditComponents.initialize(appearance = appearance)
@@ -267,7 +269,8 @@ XenditAppearance appearance = new XenditAppearance(
     new Color(0xFFFFFFFFL),  // colorBackground
     new Color(0xFF000000L),  // qrForegroundColor
     new Color(0xFFFFFFFFL),  // qrBackgroundColor
-    DpKt.getDp(12)           // borderRadius
+    DpKt.getDp(12),          // borderRadius
+    true                     // isLightStatusBars
 );
 
 XenditComponents.INSTANCE.initialize(appearance);

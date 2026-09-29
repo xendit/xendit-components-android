@@ -44,6 +44,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.pointer.pointerInteropFilter
 import androidx.compose.ui.platform.LocalAutofillManager
 import androidx.compose.ui.platform.LocalContext
@@ -57,6 +58,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.DialogWindowProvider
 import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import co.xendit.components.BuildConfig
@@ -105,7 +107,8 @@ internal enum class PaymentContainerPresentation {
 @Composable
 private fun ConfigureKeyboardAwareWindow() {
   val view = LocalView.current
-  DisposableEffect(view) {
+  val style = xenditAppearance
+  DisposableEffect(view, style) {
     // Retrieve the actual Dialog/BottomSheet Window, not the Activity Window
     val dialogWindow = (view.parent as? DialogWindowProvider)?.window
       ?: run {
@@ -123,6 +126,9 @@ private fun ConfigureKeyboardAwareWindow() {
             or WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN
       )
       WindowCompat.setDecorFitsSystemWindows(win, false)
+      
+      val isLight = style.isLightStatusBars ?: (style.colorBackground.luminance() > 0.5f)
+      WindowInsetsControllerCompat(win, win.decorView).isAppearanceLightStatusBars = isLight
     }
 
     onDispose { }
