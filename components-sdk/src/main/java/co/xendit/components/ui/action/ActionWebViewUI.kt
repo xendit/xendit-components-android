@@ -52,7 +52,6 @@ internal fun ActionWebViewUI(
   onChallengeCompleted: () -> Unit,
   iframeCapable: Boolean = true,
 ) {
-  Log.e("ActionWebViewUI", "Initializing WebView with URL: $url")
   Box(modifier = Modifier.fillMaxSize()) {
     AndroidView(
       factory = { ctx ->
