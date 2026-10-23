@@ -3,7 +3,7 @@
 A drop-in payment UI SDK for Android that lets you accept payments through Xendit with minimal integration effort. Present a fully featured payment sheet in just a few lines of code.
 
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/xendit/xendit-components-android)
-[![Version](https://img.shields.io/badge/version-1.2.0-blue)](https://github.com/xendit/xendit-components-android/releases)
+[![Version](https://img.shields.io/badge/version-1.2.2-blue)](https://github.com/xendit/xendit-components-android/releases)
 [![License](https://img.shields.io/badge/license-Apache%202.0-lightgrey)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Android%2026%2B-green)](https://developer.android.com/)
 
@@ -16,7 +16,6 @@ A drop-in payment UI SDK for Android that lets you accept payments through Xendi
 - **Secure by default** — Client-side encryption of sensitive card data using ECDH + AES-GCM.
 
 ## Requirements
-
 | Requirement | Minimum              |
 |-------------|----------------------|
 | Android     | API 26 (Android 8.0) |
@@ -359,7 +358,7 @@ Then add the dependency to your app module's `build.gradle.kts`:
 
 ```kotlin
 dependencies {
-    implementation("co.xendit:components:1.2.0")
+    implementation("co.xendit:components:1.2.2")
 }
 ```
 
@@ -367,7 +366,7 @@ dependencies {
 
 ```groovy
 dependencies {
-    implementation 'co.xendit:components:1.2.0'
+    implementation 'co.xendit:components:1.2.2'
 }
 ```
 
