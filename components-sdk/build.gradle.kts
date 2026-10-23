@@ -8,7 +8,7 @@ plugins {
 }
 
 group = "co.xendit"
-version = "1.2.1"
+version = "1.2.2"
 
 android {
   namespace = "co.xendit.components"
