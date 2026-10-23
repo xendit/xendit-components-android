@@ -2,6 +2,7 @@ package co.xendit.components.ui.action
 
 import android.graphics.Bitmap
 import android.net.Uri
+import android.util.Log
 import android.webkit.CookieManager
 import android.webkit.JavascriptInterface
 import android.webkit.WebResourceError
@@ -19,6 +20,7 @@ import co.xendit.components.util.XLogger
 import java.net.URI
 import java.security.SecureRandom
 import java.util.concurrent.atomic.AtomicBoolean
+import androidx.core.net.toUri
 
 internal fun generateBridgeToken(): String {
   val bytes = ByteArray(32)
@@ -48,14 +50,15 @@ internal fun ActionWebViewUI(
   url: String,
   onClose: () -> Unit,
   onChallengeCompleted: () -> Unit,
-  iframeCapable: Boolean = true
+  iframeCapable: Boolean = true,
 ) {
+  Log.e("ActionWebViewUI", "Initializing WebView with URL: $url")
   Box(modifier = Modifier.fillMaxSize()) {
     AndroidView(
       factory = { ctx ->
         WebView(ctx).apply {
           val bridgeToken = generateBridgeToken()
-          val uri = runCatching { Uri.parse(url) }.getOrNull()
+          val uri = runCatching { url.toUri() }.getOrNull()
           val baseUrl =
             if (uri != null && uri.scheme == "https" && uri.host != null) {
               val portPart = if (uri.port != -1) ":${uri.port}" else ""
@@ -122,7 +125,7 @@ internal fun ActionWebViewUI(
             object : WebViewClient() {
               override fun shouldOverrideUrlLoading(
                 view: WebView?,
-                request: WebResourceRequest?
+                request: WebResourceRequest?,
               ): Boolean {
                 val u = request?.url ?: return false
                 val scheme = u.scheme?.lowercase() ?: return true
@@ -137,13 +140,13 @@ internal fun ActionWebViewUI(
               override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
                 val currentUrl = view?.url ?: url
-                val u = currentUrl?.let { Uri.parse(it) }
+                val u = currentUrl?.let { it.toUri() }
                 XLogger.e("AcWeb:PageFinished")
               }
 
               override fun shouldInterceptRequest(
                 view: WebView?,
-                request: WebResourceRequest?
+                request: WebResourceRequest?,
               ): WebResourceResponse? {
                 return super.shouldInterceptRequest(view, request)
               }
@@ -151,7 +154,7 @@ internal fun ActionWebViewUI(
               override fun onReceivedError(
                 view: WebView?,
                 request: WebResourceRequest?,
-                error: WebResourceError?
+                error: WebResourceError?,
               ) {
                 super.onReceivedError(view, request, error)
                 XLogger.e(
@@ -162,7 +165,7 @@ internal fun ActionWebViewUI(
               override fun onReceivedHttpError(
                 view: WebView?,
                 request: WebResourceRequest?,
-                errorResponse: WebResourceResponse?
+                errorResponse: WebResourceResponse?,
               ) {
                 super.onReceivedHttpError(view, request, errorResponse)
                 XLogger.e(
