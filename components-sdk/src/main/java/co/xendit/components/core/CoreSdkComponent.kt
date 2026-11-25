@@ -5,6 +5,8 @@ import co.xendit.components.core.model.EnumWithFallbackValueTypeAdapterFactory
 import co.xendit.components.core.model.GlobalErrorHandler
 import co.xendit.components.core.model.GlobalLoadingHandler
 import co.xendit.components.core.model.SafeApiCall
+import co.xendit.components.core.network.cookie.InMemoryCookieJar
+import co.xendit.components.core.network.cookie.PublicSuffixDatabaseCompat
 import co.xendit.components.core.network.interceptor.BaseUrlInterceptor
 import co.xendit.components.core.network.interceptor.ErrorInterceptor
 import co.xendit.components.core.network.interceptor.HeaderInterceptor
@@ -40,9 +42,11 @@ internal object CoreSdkComponent {
   fun isInitialized() = ::appContext.isInitialized
 
   fun init(context: Context) {
+    val resolvedContext = context.applicationContext ?: context
     if (!::appContext.isInitialized) {
-      appContext = context.applicationContext
+      appContext = resolvedContext
     }
+    PublicSuffixDatabaseCompat.ensureInitialized(resolvedContext)
   }
 
   fun setBaseUrl(url: String) {
@@ -58,6 +62,7 @@ internal object CoreSdkComponent {
   }
 
   val headerProvider: HeaderProvider by lazy { HeaderProvider() }
+  val cookieJar: InMemoryCookieJar by lazy { InMemoryCookieJar() }
   val globalErrorHandler: GlobalErrorHandler by lazy { GlobalErrorHandler(appContext) }
   val globalLoadingHandler: GlobalLoadingHandler by lazy { GlobalLoadingHandler(appContext) }
 
@@ -80,6 +85,7 @@ internal object CoreSdkComponent {
         readTimeout(30, TimeUnit.SECONDS)
         connectTimeout(30, TimeUnit.SECONDS)
         writeTimeout(30, TimeUnit.SECONDS)
+        cookieJar(cookieJar)
         addInterceptor(baseUrlInterceptor)
         addInterceptor(headerInterceptor)
         addInterceptor(errorInterceptor)
